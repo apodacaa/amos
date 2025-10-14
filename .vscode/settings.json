@@ -1,9 +1,7 @@
 {
   "editor.formatOnSave": true,
   "editor.codeActionsOnSave": {
-    "source.organizeImports": true
+    "source.organizeImports": "explicit"
   },
-  "python.formatting.provider": "black",
-  "python.testing.pytestEnabled": true,
-  "python.testing.pytestArgs": ["tests"]
+  "python.formatting.provider": "black"
 }

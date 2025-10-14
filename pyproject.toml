@@ -13,7 +13,6 @@ textual = "^6.1.0"
 black = "^24.3.0"
 ruff = "^0.14.0"
 isort = "^5.12.0"
-pre-commit = "^3.4.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

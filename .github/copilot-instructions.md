@@ -1,47 +1,74 @@
 # Copilot Instructions for Amos
 
 ## Project Overview
-Amos is an early-stage Python project currently in initial setup phase. The project structure indicates preparation for modern Python development workflows.
+Amos is a minimal Textual TUI (Terminal User Interface) prototype for fast iteration. It's a Python project using Poetry for dependency management and Textual for building interactive terminal applications.
 
-## Development Environment Setup
-- **Python Focus**: This is a Python-centric project based on the comprehensive `.gitignore` configuration
-- **Multiple Tooling Support**: The `.gitignore` includes support for various Python package managers and tools:
-  - **Package Management**: UV, Poetry, PDM, Pixi, Pipenv
-  - **Code Quality**: Ruff, MyPy, Pytype
-  - **Development**: Jupyter notebooks, Marimo, IPython
-  - **Process Automation**: Abstra framework integration
-  - **Testing**: pytest, coverage, tox, nox
+## Architecture
+- **Framework**: Textual (Python TUI framework)
+- **Package Manager**: Poetry (no Makefile - all commands via Poetry)
+- **Main App**: `amos/app.py` contains `AmosApp` class
+- **Entry Point**: `poetry run textual run --dev amos.app:AmosApp`
+
+## Development Workflow
+
+### Running the App
+```bash
+# Development mode with hot reload
+poetry run textual run --dev amos.app:AmosApp
+
+# Debug with console (use 2 terminals)
+poetry run textual console  # Terminal 1
+poetry run textual run --dev amos.app:AmosApp --console  # Terminal 2
+```
+
+### Code Quality (No Makefile - Direct Poetry Commands)
+```bash
+# Format
+poetry run black .
+poetry run isort .
+
+# Lint
+poetry run ruff check --fix .
+
+# All at once
+poetry run black . && poetry run isort . && poetry run ruff check --fix .
+```
 
 ## Project Conventions
-- **Environment Management**: The project supports multiple Python environment tools (venv, conda, poetry, uv, pdm, pixi)
-- **Code Quality**: Configured for Ruff linting and various type checkers (MyPy, Pytype)
-- **Notebook Support**: Ready for Jupyter and Marimo notebook development
-- **AI Tooling**: Includes Cursor and Abstra configurations for AI-assisted development
 
-## Key Files and Structure
-- `README.md`: Minimal project documentation (currently just title)
-- `.gitignore`: Comprehensive Python development exclusions with modern tooling support
-- Project appears to be in bootstrap phase - no source code or configuration files yet
+### Code Style
+- **Black** for formatting (line length: default 88)
+- **isort** for import sorting
+- **Ruff** for linting (configured with auto-fix)
+- No pre-commit hooks - run formatters manually before commits
 
-## Development Workflow Guidance
-When adding code to this project:
+### App Structure Pattern
+The `AmosApp` class in `amos/app.py` follows this pattern:
+- `compose()` - Define widget layout (Header, Static, Footer)
+- `on_key()` - Handle keyboard events asynchronously
+- CSS-in-Python via `CSS` class variable
+- State management via instance variables (e.g., `self.count`)
 
-1. **Package Management**: Choose one primary tool (UV, Poetry, PDM, or Pixi) and create appropriate configuration files
-2. **Project Structure**: Follow standard Python package layout with `src/amos/` or `amos/` for main code
-3. **Configuration**: Add `pyproject.toml` for modern Python project configuration
-4. **Testing**: Set up pytest with coverage reporting
-5. **Code Quality**: Configure Ruff for linting and formatting
-6. **Type Checking**: Add MyPy configuration for static type analysis
+### Adding New Features
+1. Edit `amos/app.py` directly
+2. The `--dev` flag auto-reloads changes
+3. Use `query_one("#id", Widget)` to update widgets
+4. Keep UI logic in `on_key()` or event handlers
 
-## Notable Patterns
-- The `.gitignore` suggests this project may use Abstra for process automation
-- Support for multiple environment managers indicates flexibility in deployment scenarios
-- Marimo support suggests potential for reactive notebook-style development
+## Key Files
+- `amos/app.py` - Main Textual application with `AmosApp` class
+- `pyproject.toml` - Poetry config (Python >=3.10, textual >=6.1.0)
+- `README.md` - Setup and workflow documentation
+- `claude-guardrails.md` - Safety guidelines for AI assistance
 
-## Next Steps for Development
-The project is ready for initial implementation. Consider:
-1. Define project purpose and update README.md
-2. Choose and configure package management tool
-3. Set up basic project structure
-4. Add CI/CD configuration in `.github/workflows/`
-5. Define project dependencies and requirements
+## Critical Patterns
+- **No Makefile**: All commands use `poetry run` directly
+- **Development Mode**: Always use `--dev` flag for hot reload
+- **Widget Updates**: Use `widget.update()` method to refresh UI
+- **Async Handlers**: Event handlers are `async` functions
+- **CSS Styling**: Inline CSS in Python via class variable
+
+## Dependencies
+- **Main**: textual ^6.1.0
+- **Dev**: black, ruff, isort
+- **No testing framework yet** - add pytest if needed

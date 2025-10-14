@@ -1,6 +1,7 @@
-from textual.app import App
-from textual.widgets import Header, Footer, Static
 from textual import events
+from textual.app import App
+from textual.widgets import Footer, Header, Static
+
 
 class AmosApp(App):
     """A tiny Textual app for quick prototyping.
