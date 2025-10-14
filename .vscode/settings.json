@@ -3,5 +3,10 @@
   "editor.codeActionsOnSave": {
     "source.organizeImports": "explicit"
   },
-  "python.formatting.provider": "black"
+  "[go]": {
+    "editor.defaultFormatter": "golang.go",
+    "editor.formatOnSave": true
+  },
+  "go.lintOnSave": "workspace",
+  "go.formatTool": "gofmt"
 }

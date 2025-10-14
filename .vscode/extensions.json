@@ -1,10 +1,6 @@
 {
   "recommendations": [
-    "ms-python.python",
-    "ms-python.vscode-pylance",
-    "charliermarsh.ruff",
-    "ms-azuretools.vscode-docker",
-    "eamodio.gitlens",
-    "ms-vscode-remote.remote-containers"
+    "golang.go",
+    "eamodio.gitlens"
   ]
 }

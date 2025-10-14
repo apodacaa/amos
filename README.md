@@ -1,76 +1,84 @@
 # Amos
 
-Minimal Textual TUI prototype for fast iteration.
+Minimal Bubble Tea (Go) TUI for journal + todo management. Brutalist design, fast iteration.
 
 ## Quick Start
 
-### 1. Install Poetry
-If you don't have it: https://python-poetry.org/docs/#installation
+### Prerequisites
+- Go 1.24+ (project uses Bubble Tea v1.3.10)
 
-### 2. Install Dependencies
+### 1. Install Dependencies
 ```bash
-poetry install
+go mod download
 ```
 
-### 3. Run the App
+### 2. Run the App
 ```bash
-poetry run textual run --dev amos.app:AmosApp
+go run main.go
 ```
 
 **Controls:**
-- `i` - Increment counter
-- `d` - Decrement counter
+- `n` - New Entry
+- `t` - Todos
+- `e` - Entries
+- `s` - Search
 - `q` - Quit
 
 ## Development Workflow
 
-### Run with Hot Reload
+### Run with Auto-Reload
+Use `air` for hot reloading:
 ```bash
-poetry run textual run --dev amos.app:AmosApp
+# Install air
+go install github.com/air-verse/air@latest
+
+# Run with hot reload
+air
 ```
 
-### Code Quality
-
-**Format code:**
+### Code Formatting
 ```bash
-poetry run black .
-poetry run isort .
-```
+# Format code
+go fmt ./...
 
-**Lint and auto-fix:**
-```bash
-poetry run ruff check --fix .
-```
+# Run linter
+golangci-lint run
 
-**Run all formatting at once:**
-```bash
-poetry run black . && poetry run isort . && poetry run ruff check --fix .
-```
-
-### Debug with Console
-
-**Terminal 1 - Start the console:**
-```bash
-poetry run textual console
-```
-
-**Terminal 2 - Run with console logging:**
-```bash
-poetry run textual run --dev amos.app:AmosApp --console
+# Run tests
+go test ./...
 ```
 
 ## Project Structure
 
 ```
-amos/
-├── amos/
-│   ├── __init__.py
-│   └── app.py              # Main Textual app
-├── pyproject.toml          # Poetry config & dependencies
+.
+├── main.go              # Main entry point
+├── go.mod              # Go module definition
+├── go.sum              # Dependency checksums
 └── README.md
 ```
 
+## Architecture
+
+- **Bubble Tea** - TUI framework (Elm architecture)
+- **Model** - Application state
+- **Update** - Handle messages, update state
+- **View** - Render UI from state
+
+## Critical Patterns
+
+- **Elm Architecture** - Model, Update, View cycle
+- **Messages** - Commands return tea.Cmd for async operations
+- **No Side Effects in Update** - Return commands, don't execute
+- **Immutable Updates** - Return new model, don't mutate
+
+## Dependencies
+
+- **bubbletea** v1.3.10 - TUI framework
+- **lipgloss** (transitive) - Styling
+
 ## Notes
 
-- Requires Python >=3.10 (see `pyproject.toml`)
-- The `--dev` flag enables hot reloading for faster development
+- Go 1.24+ required
+- Simple brutalist design (minimal styling)
+- Data stored in `~/.amos/` (JSON)
