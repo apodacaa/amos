@@ -9,5 +9,5 @@ type Entry struct {
 	Body      string    `json:"body"`
 	Tags      []string  `json:"tags"`
 	Timestamp time.Time `json:"timestamp"`
-	TodoRefs  []string  `json:"todo_refs,omitempty"` // References to related todos (future)
+	TodoIDs   []string  `json:"todo_ids,omitempty"` // IDs of todos created in this entry
 }
