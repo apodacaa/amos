@@ -14,7 +14,7 @@ import (
 
 // Model holds the application state
 type Model struct {
-	view             string         // Current view: "dashboard", "entry", "entries", or "view_entry"
+	view             string         // Current view: "dashboard", "entry", "entries", "view_entry", or "todos"
 	width            int            // Terminal width
 	height           int            // Terminal height
 	textarea         textarea.Model // Textarea for entry input
@@ -28,6 +28,8 @@ type Model struct {
 	entries          []models.Entry // All entries (for list view)
 	selectedEntry    int            // Selected entry index in list
 	confirmingDelete bool           // Whether showing delete confirmation
+	todos            []models.Todo  // All todos (for todo list view)
+	selectedTodo     int            // Selected todo index in list
 }
 
 // saveCompleteMsg is sent when save operation completes
@@ -43,6 +45,17 @@ type entriesLoadedMsg struct {
 
 // entryDeletedMsg is sent when entry is deleted
 type entryDeletedMsg struct {
+	err error
+}
+
+// todosLoadedMsg is sent when todos are loaded
+type todosLoadedMsg struct {
+	todos []models.Todo
+	err   error
+}
+
+// todoToggledMsg is sent when todo status is toggled
+type todoToggledMsg struct {
 	err error
 }
 
@@ -91,6 +104,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m.handleEntriesListKeys(msg)
 		} else if m.view == "view_entry" {
 			return m.handleViewEntryKeys(msg)
+		} else if m.view == "todos" {
+			return m.handleTodosListKeys(msg)
 		}
 		return m.handleKeyPress(msg)
 
@@ -124,6 +139,15 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 
+	case todosLoadedMsg:
+		if msg.err != nil {
+			m.statusMsg = "Error loading todos: " + msg.err.Error()
+		} else {
+			m.todos = msg.todos
+			m.selectedTodo = 0
+		}
+		return m, nil
+
 	case entryDeletedMsg:
 		if msg.err != nil {
 			m.statusMsg = "Error deleting entry: " + msg.err.Error()
@@ -132,6 +156,16 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.confirmingDelete = false
 			// Reload entries to update the list
 			return m, m.loadEntries()
+		}
+		m.statusTime = time.Now()
+		return m, nil
+
+	case todoToggledMsg:
+		if msg.err != nil {
+			m.statusMsg = "Error toggling todo: " + msg.err.Error()
+		} else {
+			// Reload todos to update the list
+			return m, m.loadTodos()
 		}
 		m.statusTime = time.Now()
 		return m, nil
@@ -169,6 +203,11 @@ func (m Model) handleKeyPress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.view = "entries"
 		m.selectedEntry = 0
 		return m, m.loadEntries()
+	case "t":
+		// View todos list
+		m.view = "todos"
+		m.selectedTodo = 0
+		return m, m.loadTodos()
 	case "esc":
 		m.view = "dashboard"
 	}
@@ -233,41 +272,43 @@ func (m Model) handleEntryKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 
 // handleEntriesListKeys processes keyboard input (entries list view)
 func (m Model) handleEntriesListKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	// If confirming delete, only allow 'd' to proceed or anything else to cancel
+	if m.confirmingDelete {
+		switch msg.String() {
+		case "d":
+			// User pressed 'd' again - proceed with delete
+			return m, m.deleteEntry()
+		default:
+			// Any other key cancels delete confirmation
+			m.confirmingDelete = false
+			m.statusMsg = ""
+			return m, nil
+		}
+	}
+
+	// Normal navigation (not confirming delete)
 	switch msg.String() {
 	case "q", "ctrl+c":
 		return m, tea.Quit
 	case "esc":
 		m.view = "dashboard"
-		m.confirmingDelete = false
-		m.statusMsg = ""
 		return m, nil
 	case "j", "down":
-		if !m.confirmingDelete && m.selectedEntry < len(m.entries)-1 {
+		if m.selectedEntry < len(m.entries)-1 {
 			m.selectedEntry++
 		}
 		return m, nil
 	case "k", "up":
-		if !m.confirmingDelete && m.selectedEntry > 0 {
+		if m.selectedEntry > 0 {
 			m.selectedEntry--
 		}
 		return m, nil
 	case "d":
-		if m.confirmingDelete {
-			// User pressed 'd' again - proceed with delete
-			return m, m.deleteEntry()
-		} else {
-			// First 'd' press - show confirmation
-			m.confirmingDelete = true
-			m.statusMsg = "⚠ Delete entry? Press 'd' again to confirm, or any other key to cancel"
-			return m, nil
-		}
+		// First 'd' press - show confirmation
+		m.confirmingDelete = true
+		m.statusMsg = "⚠ Delete entry? Press 'd' again to confirm, or any other key to cancel"
+		return m, nil
 	case "enter":
-		// Cancel delete if confirming, otherwise view entry
-		if m.confirmingDelete {
-			m.confirmingDelete = false
-			m.statusMsg = ""
-			return m, nil
-		}
 		// Open selected entry for read-only viewing
 		if m.selectedEntry >= 0 && m.selectedEntry < len(m.entries) {
 			// Need to get the sorted entry (newest first)
@@ -285,13 +326,6 @@ func (m Model) handleEntriesListKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.view = "view_entry"
 		}
 		return m, nil
-	default:
-		// Any other key cancels delete confirmation
-		if m.confirmingDelete {
-			m.confirmingDelete = false
-			m.statusMsg = ""
-			return m, nil
-		}
 	}
 	return m, nil
 }
@@ -309,11 +343,83 @@ func (m Model) handleViewEntryKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
+// handleTodosListKeys processes keyboard input (todos list view)
+func (m Model) handleTodosListKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch msg.String() {
+	case "q", "ctrl+c":
+		return m, tea.Quit
+	case "esc":
+		m.view = "dashboard"
+		m.statusMsg = ""
+		return m, nil
+	case "j", "down":
+		if m.selectedTodo < len(m.todos)-1 {
+			m.selectedTodo++
+		}
+		return m, nil
+	case "k", "up":
+		if m.selectedTodo > 0 {
+			m.selectedTodo--
+		}
+		return m, nil
+	case " ":
+		// Toggle todo status
+		return m, m.toggleTodo()
+	}
+	return m, nil
+}
+
 // loadEntries loads all entries from storage
 func (m Model) loadEntries() tea.Cmd {
 	return func() tea.Msg {
 		entries, err := storage.LoadEntries()
 		return entriesLoadedMsg{entries: entries, err: err}
+	}
+}
+
+// loadTodos loads all todos from storage (async)
+func (m Model) loadTodos() tea.Cmd {
+	return func() tea.Msg {
+		todos, err := storage.LoadTodos()
+		return todosLoadedMsg{todos: todos, err: err}
+	}
+}
+
+// toggleTodo toggles the status of the currently selected todo
+func (m Model) toggleTodo() tea.Cmd {
+	return func() tea.Msg {
+		// Get the sorted todo to toggle (same sorting as display)
+		sorted := make([]models.Todo, len(m.todos))
+		copy(sorted, m.todos)
+		// Sort: open before done, then newest first within each group
+		for i := 0; i < len(sorted)-1; i++ {
+			for j := i + 1; j < len(sorted); j++ {
+				if sorted[i].Status == "done" && sorted[j].Status == "open" {
+					sorted[i], sorted[j] = sorted[j], sorted[i]
+				} else if sorted[i].Status == sorted[j].Status {
+					if sorted[j].CreatedAt.After(sorted[i].CreatedAt) {
+						sorted[i], sorted[j] = sorted[j], sorted[i]
+					}
+				}
+			}
+		}
+
+		if m.selectedTodo < 0 || m.selectedTodo >= len(sorted) {
+			return todoToggledMsg{err: nil}
+		}
+
+		todoToToggle := sorted[m.selectedTodo]
+
+		// Toggle status
+		if todoToToggle.Status == "open" {
+			todoToToggle.Status = "done"
+		} else {
+			todoToToggle.Status = "open"
+		}
+
+		// Save the updated todo
+		err := storage.SaveTodo(todoToToggle)
+		return todoToggledMsg{err: err}
 	}
 }
 
@@ -417,6 +523,8 @@ func (m Model) View() string {
 		return ui.RenderEntryList(m.width, m.height, m.entries, m.selectedEntry, m.statusMsg)
 	case "view_entry":
 		return ui.RenderEntryView(m.width, m.height, m.viewingEntry)
+	case "todos":
+		return ui.RenderTodoList(m.width, m.height, m.todos, m.selectedTodo, m.statusMsg)
 	default:
 		return ui.RenderDashboard(m.width, m.height)
 	}
