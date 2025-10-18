@@ -40,6 +40,16 @@ func NewModel() Model {
 	ta.SetWidth(60)
 	ta.SetHeight(10)
 
+	// Style textarea with brutalist colors
+	ta.FocusedStyle.CursorLine = ui.GetTextareaStyle()
+	ta.BlurredStyle.CursorLine = ui.GetTextareaStyle()
+	ta.FocusedStyle.Placeholder = ui.GetPlaceholderStyle()
+	ta.BlurredStyle.Placeholder = ui.GetPlaceholderStyle()
+	ta.FocusedStyle.Prompt = ui.GetPromptStyle()
+	ta.BlurredStyle.Prompt = ui.GetPromptStyle()
+	ta.FocusedStyle.Text = ui.GetTextStyle()
+	ta.BlurredStyle.Text = ui.GetTextStyle()
+
 	return Model{
 		view:     "dashboard",
 		width:    80, // Default width

@@ -3,10 +3,17 @@ package ui
 import "github.com/charmbracelet/lipgloss"
 
 // Brutalist color palette
+// Gainsboro (#DBDCE8), Metallic Silver (#AAA3B4), Purple Taupe (#463848),
+// Deep Tuscan Red (#6E3F52), Mauve Taupe (#976775)
 var (
-	subtleColor = lipgloss.AdaptiveColor{Light: "#000000", Dark: "#FFFFFF"}
-	accentColor = lipgloss.AdaptiveColor{Light: "#000000", Dark: "#00FF00"}
-	mutedColor  = lipgloss.AdaptiveColor{Light: "#666666", Dark: "#888888"}
+	// Primary text and borders - Purple Taupe (dark) / Gainsboro (light)
+	subtleColor = lipgloss.AdaptiveColor{Light: "#463848", Dark: "#DBDCE8"}
+
+	// Accent/highlight - Deep Tuscan Red (both themes)
+	accentColor = lipgloss.AdaptiveColor{Light: "#6E3F52", Dark: "#976775"}
+
+	// Muted/help text - Metallic Silver (light) / Mauve Taupe (dark)
+	mutedColor = lipgloss.AdaptiveColor{Light: "#AAA3B4", Dark: "#976775"}
 )
 
 // GetContainerStyle returns a container style sized to terminal dimensions
@@ -44,3 +51,20 @@ var (
 			Italic(true).
 			MarginTop(1)
 )
+
+// Textarea style helpers
+func GetTextareaStyle() lipgloss.Style {
+	return lipgloss.NewStyle().Foreground(subtleColor)
+}
+
+func GetPlaceholderStyle() lipgloss.Style {
+	return lipgloss.NewStyle().Foreground(mutedColor)
+}
+
+func GetPromptStyle() lipgloss.Style {
+	return lipgloss.NewStyle().Foreground(accentColor)
+}
+
+func GetTextStyle() lipgloss.Style {
+	return lipgloss.NewStyle().Foreground(subtleColor)
+}

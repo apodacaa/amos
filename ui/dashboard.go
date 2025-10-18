@@ -12,16 +12,16 @@ func RenderDashboard(width, height int) string {
 	var menuItems []string
 
 	menuItems = append(menuItems,
-		menuItemStyle.Render(fmt.Sprintf("%s New Entry", keyStyle.Render("[n]"))),
+		fmt.Sprintf("%s %s", keyStyle.Render("[n]"), menuItemStyle.Render("New Entry")),
 	)
 	menuItems = append(menuItems,
-		menuItemStyle.Render(fmt.Sprintf("%s Todos", keyStyle.Render("[t]"))),
+		fmt.Sprintf("%s %s", keyStyle.Render("[t]"), menuItemStyle.Render("Todos")),
 	)
 	menuItems = append(menuItems,
-		menuItemStyle.Render(fmt.Sprintf("%s Entries", keyStyle.Render("[e]"))),
+		fmt.Sprintf("%s %s", keyStyle.Render("[e]"), menuItemStyle.Render("Entries")),
 	)
 	menuItems = append(menuItems,
-		menuItemStyle.Render(fmt.Sprintf("%s Search", keyStyle.Render("[s]"))),
+		fmt.Sprintf("%s %s", keyStyle.Render("[s]"), menuItemStyle.Render("Search")),
 	)
 
 	menu := strings.Join(menuItems, "\n")
