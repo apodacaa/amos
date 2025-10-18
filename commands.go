@@ -108,8 +108,15 @@ func (m Model) moveTodo(direction string) tea.Cmd {
 			}
 		}
 		if needsInit {
+			// Set positions based on current sort order
 			for i := range sorted {
 				sorted[i].Position = i
+			}
+			// Save all todos with their new positions
+			for _, todo := range sorted {
+				if err := storage.SaveTodo(todo); err != nil {
+					return todoMovedMsg{err: err}
+				}
 			}
 		}
 
