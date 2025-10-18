@@ -99,6 +99,20 @@ func (m Model) moveTodo(direction string) tea.Cmd {
 			return todoMovedMsg{err: nil}
 		}
 
+		// Initialize positions if they're all zero (for existing todos without positions)
+		needsInit := true
+		for _, t := range sorted {
+			if t.Position != 0 {
+				needsInit = false
+				break
+			}
+		}
+		if needsInit {
+			for i := range sorted {
+				sorted[i].Position = i
+			}
+		}
+
 		currentTodo := sorted[m.selectedTodo]
 
 		// Determine target position based on direction

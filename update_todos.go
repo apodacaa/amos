@@ -24,19 +24,19 @@ func (m Model) handleTodosListKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 	case "u":
-		// Move todo up (higher priority)
-		cmd := m.moveTodo("up")
-		// Keep selection on the same todo (which will now be one position up)
-		if m.selectedTodo > 0 {
-			m.selectedTodo--
-		}
-		return m, cmd
-	case "i":
 		// Move todo down (lower priority)
 		cmd := m.moveTodo("down")
 		// Keep selection on the same todo (which will now be one position down)
 		if m.selectedTodo < len(m.todos)-1 {
 			m.selectedTodo++
+		}
+		return m, cmd
+	case "i":
+		// Move todo up (higher priority)
+		cmd := m.moveTodo("up")
+		// Keep selection on the same todo (which will now be one position up)
+		if m.selectedTodo > 0 {
+			m.selectedTodo--
 		}
 		return m, cmd
 	case " ":

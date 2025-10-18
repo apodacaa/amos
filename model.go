@@ -114,7 +114,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.statusMsg = "Error loading todos: " + msg.err.Error()
 		} else {
 			m.todos = msg.todos
-			m.selectedTodo = 0
+			// Only reset selection if we don't have a valid selection
+			// (e.g., first load or if selection is out of bounds)
+			if m.selectedTodo >= len(msg.todos) {
+				m.selectedTodo = 0
+			}
 		}
 		return m, nil
 
