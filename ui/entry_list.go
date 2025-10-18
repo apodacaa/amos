@@ -10,7 +10,7 @@ import (
 )
 
 // RenderEntryList renders the entry list view
-func RenderEntryList(width, height int, entries []models.Entry, selectedIdx int) string {
+func RenderEntryList(width, height int, entries []models.Entry, selectedIdx int, statusMsg string) string {
 	container := GetContainerStyle(width, height)
 	title := GetTitleStyle(width).Render("Entries")
 
@@ -62,11 +62,20 @@ func RenderEntryList(width, height int, entries []models.Entry, selectedIdx int)
 
 	list := strings.Join(listItems, "\n")
 
+	// Status message (if present)
+	status := ""
+	if statusMsg != "" {
+		statusStyle := lipgloss.NewStyle().
+			Foreground(mutedColor).
+			Italic(true)
+		status = "\n" + statusStyle.Render(statusMsg) + "\n"
+	}
+
 	// Help text
 	helpStyle := lipgloss.NewStyle().
 		Foreground(mutedColor).
 		Italic(true)
-	help := helpStyle.Render("j/k: navigate • enter: view • esc: back • q: quit")
+	help := helpStyle.Render("j/k: navigate • enter: view • d: delete • esc: back • q: quit")
 
 	// Combine sections
 	content := lipgloss.JoinVertical(
@@ -74,7 +83,7 @@ func RenderEntryList(width, height int, entries []models.Entry, selectedIdx int)
 		title,
 		"",
 		list,
-		"",
+		status,
 		help,
 	)
 

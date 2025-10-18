@@ -14,19 +14,20 @@ import (
 
 // Model holds the application state
 type Model struct {
-	view           string         // Current view: "dashboard", "entry", "entries", or "view_entry"
-	width          int            // Terminal width
-	height         int            // Terminal height
-	textarea       textarea.Model // Textarea for entry input
-	currentEntry   models.Entry   // Entry being edited
-	viewingEntry   models.Entry   // Entry being viewed (read-only)
-	statusMsg      string         // Status message to display
-	statusTime     time.Time      // When status message was set
-	hasUnsaved     bool           // Whether there are unsaved changes
-	savedContent   string         // Last saved content (to detect changes)
-	confirmingExit bool           // Whether showing exit confirmation
-	entries        []models.Entry // All entries (for list view)
-	selectedEntry  int            // Selected entry index in list
+	view             string         // Current view: "dashboard", "entry", "entries", or "view_entry"
+	width            int            // Terminal width
+	height           int            // Terminal height
+	textarea         textarea.Model // Textarea for entry input
+	currentEntry     models.Entry   // Entry being edited
+	viewingEntry     models.Entry   // Entry being viewed (read-only)
+	statusMsg        string         // Status message to display
+	statusTime       time.Time      // When status message was set
+	hasUnsaved       bool           // Whether there are unsaved changes
+	savedContent     string         // Last saved content (to detect changes)
+	confirmingExit   bool           // Whether showing exit confirmation
+	entries          []models.Entry // All entries (for list view)
+	selectedEntry    int            // Selected entry index in list
+	confirmingDelete bool           // Whether showing delete confirmation
 }
 
 // saveCompleteMsg is sent when save operation completes
@@ -38,6 +39,11 @@ type saveCompleteMsg struct {
 type entriesLoadedMsg struct {
 	entries []models.Entry
 	err     error
+}
+
+// entryDeletedMsg is sent when entry is deleted
+type entryDeletedMsg struct {
+	err error
 }
 
 // NewModel creates a new model with default values
@@ -116,6 +122,18 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.entries = msg.entries
 			m.selectedEntry = 0
 		}
+		return m, nil
+
+	case entryDeletedMsg:
+		if msg.err != nil {
+			m.statusMsg = "Error deleting entry: " + msg.err.Error()
+		} else {
+			m.statusMsg = "✓ Entry deleted"
+			m.confirmingDelete = false
+			// Reload entries to update the list
+			return m, m.loadEntries()
+		}
+		m.statusTime = time.Now()
 		return m, nil
 	}
 
@@ -220,18 +238,36 @@ func (m Model) handleEntriesListKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, tea.Quit
 	case "esc":
 		m.view = "dashboard"
+		m.confirmingDelete = false
+		m.statusMsg = ""
 		return m, nil
 	case "j", "down":
-		if m.selectedEntry < len(m.entries)-1 {
+		if !m.confirmingDelete && m.selectedEntry < len(m.entries)-1 {
 			m.selectedEntry++
 		}
 		return m, nil
 	case "k", "up":
-		if m.selectedEntry > 0 {
+		if !m.confirmingDelete && m.selectedEntry > 0 {
 			m.selectedEntry--
 		}
 		return m, nil
+	case "d":
+		if m.confirmingDelete {
+			// User pressed 'd' again - proceed with delete
+			return m, m.deleteEntry()
+		} else {
+			// First 'd' press - show confirmation
+			m.confirmingDelete = true
+			m.statusMsg = "⚠ Delete entry? Press 'd' again to confirm, or any other key to cancel"
+			return m, nil
+		}
 	case "enter":
+		// Cancel delete if confirming, otherwise view entry
+		if m.confirmingDelete {
+			m.confirmingDelete = false
+			m.statusMsg = ""
+			return m, nil
+		}
 		// Open selected entry for read-only viewing
 		if m.selectedEntry >= 0 && m.selectedEntry < len(m.entries) {
 			// Need to get the sorted entry (newest first)
@@ -249,6 +285,13 @@ func (m Model) handleEntriesListKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.view = "view_entry"
 		}
 		return m, nil
+	default:
+		// Any other key cancels delete confirmation
+		if m.confirmingDelete {
+			m.confirmingDelete = false
+			m.statusMsg = ""
+			return m, nil
+		}
 	}
 	return m, nil
 }
@@ -271,6 +314,47 @@ func (m Model) loadEntries() tea.Cmd {
 	return func() tea.Msg {
 		entries, err := storage.LoadEntries()
 		return entriesLoadedMsg{entries: entries, err: err}
+	}
+}
+
+// deleteEntry deletes the currently selected entry
+func (m Model) deleteEntry() tea.Cmd {
+	return func() tea.Msg {
+		// Get the sorted entry to delete
+		sorted := make([]models.Entry, len(m.entries))
+		copy(sorted, m.entries)
+		// Sort by timestamp descending (newest first)
+		for i := 0; i < len(sorted)-1; i++ {
+			for j := i + 1; j < len(sorted); j++ {
+				if sorted[j].Timestamp.After(sorted[i].Timestamp) {
+					sorted[i], sorted[j] = sorted[j], sorted[i]
+				}
+			}
+		}
+
+		if m.selectedEntry < 0 || m.selectedEntry >= len(sorted) {
+			return entryDeletedMsg{err: nil}
+		}
+
+		entryToDelete := sorted[m.selectedEntry]
+
+		// Load all entries
+		entries, err := storage.LoadEntries()
+		if err != nil {
+			return entryDeletedMsg{err: err}
+		}
+
+		// Find and remove the entry
+		newEntries := make([]models.Entry, 0, len(entries)-1)
+		for _, e := range entries {
+			if e.ID != entryToDelete.ID {
+				newEntries = append(newEntries, e)
+			}
+		}
+
+		// Save updated entries
+		err = storage.SaveEntries(newEntries)
+		return entryDeletedMsg{err: err}
 	}
 }
 
@@ -330,7 +414,7 @@ func (m Model) View() string {
 	case "entry":
 		return ui.RenderEntryForm(m.width, m.height, m.textarea, m.statusMsg)
 	case "entries":
-		return ui.RenderEntryList(m.width, m.height, m.entries, m.selectedEntry)
+		return ui.RenderEntryList(m.width, m.height, m.entries, m.selectedEntry, m.statusMsg)
 	case "view_entry":
 		return ui.RenderEntryView(m.width, m.height, m.viewingEntry)
 	default:
