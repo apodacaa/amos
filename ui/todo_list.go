@@ -52,7 +52,7 @@ func RenderTodoList(width, height int, todos []models.Todo, selectedIdx int, sta
 
 		// Render each todo
 		for i, todo := range sorted {
-			// Checkbox
+			// Checkbox (simple - status is always current)
 			checkbox := "[ ]"
 			if todo.Status == "done" {
 				checkbox = "[x]"

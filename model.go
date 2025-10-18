@@ -136,12 +136,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case todoToggledMsg:
 		if msg.err != nil {
-			m.statusMsg = "Error toggling todo: " + msg.err.Error()
-		} else {
-			// Reload todos to update the list
-			return m, m.loadTodos()
+			m.statusMsg = "Error saving todo: " + msg.err.Error()
+			m.statusTime = time.Now()
 		}
-		m.statusTime = time.Now()
+		// Don't reload - status already updated in memory
 		return m, nil
 
 	case todoMovedMsg:

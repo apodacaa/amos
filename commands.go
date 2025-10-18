@@ -26,46 +26,11 @@ func (m Model) loadTodos() tea.Cmd {
 	}
 }
 
-// toggleTodo toggles the status of the currently selected todo
-func (m Model) toggleTodo() tea.Cmd {
+// toggleTodoImmediate saves a todo immediately without reloading
+func (m Model) toggleTodoImmediate(todo models.Todo) tea.Cmd {
 	return func() tea.Msg {
-		// Get the sorted todo to toggle (same sorting as display)
-		sorted := make([]models.Todo, len(m.todos))
-		copy(sorted, m.todos)
-		// Sort: open before done, then by position, then newest first
-		for i := 0; i < len(sorted)-1; i++ {
-			for j := i + 1; j < len(sorted); j++ {
-				if sorted[i].Status == "done" && sorted[j].Status == "open" {
-					sorted[i], sorted[j] = sorted[j], sorted[i]
-				} else if sorted[i].Status == sorted[j].Status {
-					if sorted[i].Position != sorted[j].Position {
-						if sorted[j].Position < sorted[i].Position {
-							sorted[i], sorted[j] = sorted[j], sorted[i]
-						}
-					} else {
-						if sorted[j].CreatedAt.After(sorted[i].CreatedAt) {
-							sorted[i], sorted[j] = sorted[j], sorted[i]
-						}
-					}
-				}
-			}
-		}
-
-		if m.selectedTodo < 0 || m.selectedTodo >= len(sorted) {
-			return todoToggledMsg{err: nil}
-		}
-
-		todoToToggle := sorted[m.selectedTodo]
-
-		// Toggle status
-		if todoToToggle.Status == "open" {
-			todoToToggle.Status = "done"
-		} else {
-			todoToToggle.Status = "open"
-		}
-
-		// Save the updated todo
-		err := storage.SaveTodo(todoToToggle)
+		err := storage.SaveTodo(todo)
+		// Return empty message - we don't reload, just save
 		return todoToggledMsg{err: err}
 	}
 }
@@ -73,10 +38,19 @@ func (m Model) toggleTodo() tea.Cmd {
 // moveTodo moves a todo up or down in priority (changes position)
 func (m Model) moveTodo(direction string) tea.Cmd {
 	return func() tea.Msg {
-		// Get the sorted todos (same sorting as display)
-		sorted := make([]models.Todo, len(m.todos))
-		copy(sorted, m.todos)
-		// Sort: open before done, then by position, then newest first
+		// Load all todos fresh from storage
+		allTodos, err := storage.LoadTodos()
+		if err != nil {
+			return todoMovedMsg{err: err}
+		}
+
+		if len(allTodos) < 2 {
+			return todoMovedMsg{err: nil} // Nothing to move
+		}
+
+		// Sort same way as display: open before done, then by position, then newest first
+		sorted := make([]models.Todo, len(allTodos))
+		copy(sorted, allTodos)
 		for i := 0; i < len(sorted)-1; i++ {
 			for j := i + 1; j < len(sorted); j++ {
 				if sorted[i].Status == "done" && sorted[j].Status == "open" {
@@ -95,58 +69,38 @@ func (m Model) moveTodo(direction string) tea.Cmd {
 			}
 		}
 
+		// Re-number positions based on current sort order (always normalize)
+		for i := range sorted {
+			sorted[i].Position = i
+		}
+
 		if m.selectedTodo < 0 || m.selectedTodo >= len(sorted) {
 			return todoMovedMsg{err: nil}
 		}
 
-		// Initialize positions if they're all zero (for existing todos without positions)
-		needsInit := true
-		for _, t := range sorted {
-			if t.Position != 0 {
-				needsInit = false
-				break
-			}
-		}
-		if needsInit {
-			// Set positions based on current sort order
-			for i := range sorted {
-				sorted[i].Position = i
-			}
-			// Save all todos with their new positions
-			for _, todo := range sorted {
-				if err := storage.SaveTodo(todo); err != nil {
-					return todoMovedMsg{err: err}
-				}
-			}
-		}
-
-		currentTodo := sorted[m.selectedTodo]
-
-		// Determine target position based on direction
-		var targetIdx int
+		// Find target index
+		targetIdx := m.selectedTodo
 		if direction == "up" {
-			targetIdx = m.selectedTodo - 1
+			targetIdx--
 			if targetIdx < 0 {
 				return todoMovedMsg{err: nil} // Already at top
 			}
 		} else { // down
-			targetIdx = m.selectedTodo + 1
+			targetIdx++
 			if targetIdx >= len(sorted) {
 				return todoMovedMsg{err: nil} // Already at bottom
 			}
 		}
 
-		targetTodo := sorted[targetIdx]
-
 		// Swap positions
-		currentTodo.Position, targetTodo.Position = targetTodo.Position, currentTodo.Position
+		sorted[m.selectedTodo].Position, sorted[targetIdx].Position = sorted[targetIdx].Position, sorted[m.selectedTodo].Position
 
 		// Save both todos
-		err := storage.SaveTodo(currentTodo)
+		err = storage.SaveTodo(sorted[m.selectedTodo])
 		if err != nil {
 			return todoMovedMsg{err: err}
 		}
-		err = storage.SaveTodo(targetTodo)
+		err = storage.SaveTodo(sorted[targetIdx])
 		return todoMovedMsg{err: err}
 	}
 }
