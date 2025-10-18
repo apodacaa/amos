@@ -59,6 +59,11 @@ type todoToggledMsg struct {
 	err error
 }
 
+// todoMovedMsg is sent when todo position is changed
+type todoMovedMsg struct {
+	err error
+}
+
 // NewModel creates a new model with default values
 func NewModel() Model {
 	ta := textarea.New()
@@ -168,6 +173,15 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, m.loadTodos()
 		}
 		m.statusTime = time.Now()
+		return m, nil
+
+	case todoMovedMsg:
+		if msg.err != nil {
+			m.statusMsg = "Error moving todo: " + msg.err.Error()
+		} else {
+			// Reload todos to update the list
+			return m, m.loadTodos()
+		}
 		return m, nil
 	}
 
@@ -362,6 +376,22 @@ func (m Model) handleTodosListKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.selectedTodo--
 		}
 		return m, nil
+	case "u":
+		// Move todo up (higher priority)
+		cmd := m.moveTodo("up")
+		// Keep selection on the same todo (which will now be one position up)
+		if m.selectedTodo > 0 {
+			m.selectedTodo--
+		}
+		return m, cmd
+	case "i":
+		// Move todo down (lower priority)
+		cmd := m.moveTodo("down")
+		// Keep selection on the same todo (which will now be one position down)
+		if m.selectedTodo < len(m.todos)-1 {
+			m.selectedTodo++
+		}
+		return m, cmd
 	case " ":
 		// Toggle todo status
 		return m, m.toggleTodo()
@@ -391,14 +421,20 @@ func (m Model) toggleTodo() tea.Cmd {
 		// Get the sorted todo to toggle (same sorting as display)
 		sorted := make([]models.Todo, len(m.todos))
 		copy(sorted, m.todos)
-		// Sort: open before done, then newest first within each group
+		// Sort: open before done, then by position, then newest first
 		for i := 0; i < len(sorted)-1; i++ {
 			for j := i + 1; j < len(sorted); j++ {
 				if sorted[i].Status == "done" && sorted[j].Status == "open" {
 					sorted[i], sorted[j] = sorted[j], sorted[i]
 				} else if sorted[i].Status == sorted[j].Status {
-					if sorted[j].CreatedAt.After(sorted[i].CreatedAt) {
-						sorted[i], sorted[j] = sorted[j], sorted[i]
+					if sorted[i].Position != sorted[j].Position {
+						if sorted[j].Position < sorted[i].Position {
+							sorted[i], sorted[j] = sorted[j], sorted[i]
+						}
+					} else {
+						if sorted[j].CreatedAt.After(sorted[i].CreatedAt) {
+							sorted[i], sorted[j] = sorted[j], sorted[i]
+						}
 					}
 				}
 			}
@@ -420,6 +456,66 @@ func (m Model) toggleTodo() tea.Cmd {
 		// Save the updated todo
 		err := storage.SaveTodo(todoToToggle)
 		return todoToggledMsg{err: err}
+	}
+}
+
+// moveTodo moves a todo up or down in priority (changes position)
+func (m Model) moveTodo(direction string) tea.Cmd {
+	return func() tea.Msg {
+		// Get the sorted todos (same sorting as display)
+		sorted := make([]models.Todo, len(m.todos))
+		copy(sorted, m.todos)
+		// Sort: open before done, then by position, then newest first
+		for i := 0; i < len(sorted)-1; i++ {
+			for j := i + 1; j < len(sorted); j++ {
+				if sorted[i].Status == "done" && sorted[j].Status == "open" {
+					sorted[i], sorted[j] = sorted[j], sorted[i]
+				} else if sorted[i].Status == sorted[j].Status {
+					if sorted[i].Position != sorted[j].Position {
+						if sorted[j].Position < sorted[i].Position {
+							sorted[i], sorted[j] = sorted[j], sorted[i]
+						}
+					} else {
+						if sorted[j].CreatedAt.After(sorted[i].CreatedAt) {
+							sorted[i], sorted[j] = sorted[j], sorted[i]
+						}
+					}
+				}
+			}
+		}
+
+		if m.selectedTodo < 0 || m.selectedTodo >= len(sorted) {
+			return todoMovedMsg{err: nil}
+		}
+
+		currentTodo := sorted[m.selectedTodo]
+
+		// Determine target position based on direction
+		var targetIdx int
+		if direction == "up" {
+			targetIdx = m.selectedTodo - 1
+			if targetIdx < 0 {
+				return todoMovedMsg{err: nil} // Already at top
+			}
+		} else { // down
+			targetIdx = m.selectedTodo + 1
+			if targetIdx >= len(sorted) {
+				return todoMovedMsg{err: nil} // Already at bottom
+			}
+		}
+
+		targetTodo := sorted[targetIdx]
+
+		// Swap positions
+		currentTodo.Position, targetTodo.Position = targetTodo.Position, currentTodo.Position
+
+		// Save both todos
+		err := storage.SaveTodo(currentTodo)
+		if err != nil {
+			return todoMovedMsg{err: err}
+		}
+		err = storage.SaveTodo(targetTodo)
+		return todoMovedMsg{err: err}
 	}
 }
 
@@ -481,15 +577,30 @@ func (m Model) saveEntry() tea.Cmd {
 		// Create todo IDs list
 		todoIDs := make([]string, 0, len(todoTitles))
 
+		// Load existing todos to determine max position
+		existingTodos, err := storage.LoadTodos()
+		if err != nil {
+			return saveCompleteMsg{err: err}
+		}
+
+		// Find max position
+		maxPosition := 0
+		for _, t := range existingTodos {
+			if t.Position > maxPosition {
+				maxPosition = t.Position
+			}
+		}
+
 		// Create and save todos
-		for _, todoTitle := range todoTitles {
+		for idx, todoTitle := range todoTitles {
 			todo := models.Todo{
 				ID:        uuid.New().String(),
 				Title:     todoTitle,
 				Status:    "open",
 				Tags:      helpers.ExtractTags(todoTitle), // Extract tags from todo title
 				CreatedAt: time.Now(),
-				EntryID:   &m.currentEntry.ID, // Link to this entry
+				EntryID:   &m.currentEntry.ID,    // Link to this entry
+				Position:  maxPosition + idx + 1, // Append to end
 			}
 
 			// Save each todo
@@ -508,7 +619,7 @@ func (m Model) saveEntry() tea.Cmd {
 		m.currentEntry.Timestamp = time.Now()
 
 		// Save entry to storage
-		err := storage.SaveEntry(m.currentEntry)
+		err = storage.SaveEntry(m.currentEntry)
 
 		return saveCompleteMsg{err: err}
 	}
