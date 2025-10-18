@@ -200,3 +200,172 @@ func TestEnsureAmosDir(t *testing.T) {
 		t.Error("Created path is not a directory")
 	}
 }
+
+// TestSaveAndLoadTodos tests saving and loading todos
+func TestSaveAndLoadTodos(t *testing.T) {
+	// Use temp directory for testing
+	tempDir := t.TempDir()
+	originalHome := os.Getenv("HOME")
+	os.Setenv("HOME", tempDir)
+	defer os.Setenv("HOME", originalHome)
+
+	entryID := "test-entry-1"
+	testTodos := []models.Todo{
+		{
+			ID:        "todo-1",
+			Title:     "Buy groceries",
+			Status:    "open",
+			Tags:      []string{"personal", "shopping"},
+			CreatedAt: time.Now(),
+			EntryID:   &entryID,
+		},
+		{
+			ID:        "todo-2",
+			Title:     "Write tests",
+			Status:    "done",
+			Tags:      []string{"work"},
+			CreatedAt: time.Now(),
+			EntryID:   nil, // Standalone todo
+		},
+	}
+
+	err := SaveTodos(testTodos)
+	if err != nil {
+		t.Fatalf("SaveTodos() failed: %v", err)
+	}
+
+	// Test loading todos
+	loaded, err := LoadTodos()
+	if err != nil {
+		t.Fatalf("LoadTodos() failed: %v", err)
+	}
+
+	if len(loaded) != len(testTodos) {
+		t.Errorf("LoadTodos() returned %d todos, want %d", len(loaded), len(testTodos))
+	}
+
+	// Verify first todo
+	if loaded[0].ID != testTodos[0].ID {
+		t.Errorf("LoadTodos() ID = %v, want %v", loaded[0].ID, testTodos[0].ID)
+	}
+	if loaded[0].Title != testTodos[0].Title {
+		t.Errorf("LoadTodos() Title = %v, want %v", loaded[0].Title, testTodos[0].Title)
+	}
+	if loaded[0].Status != testTodos[0].Status {
+		t.Errorf("LoadTodos() Status = %v, want %v", loaded[0].Status, testTodos[0].Status)
+	}
+
+	// Verify second todo (standalone - nil EntryID)
+	if loaded[1].EntryID != nil {
+		t.Errorf("LoadTodos() EntryID = %v, want nil", loaded[1].EntryID)
+	}
+}
+
+// TestLoadTodosEmptyFile tests loading when todos.json doesn't exist
+func TestLoadTodosEmptyFile(t *testing.T) {
+	// Use temp directory for testing
+	tempDir := t.TempDir()
+	originalHome := os.Getenv("HOME")
+	os.Setenv("HOME", tempDir)
+	defer os.Setenv("HOME", originalHome)
+
+	// Load todos when file doesn't exist
+	todos, err := LoadTodos()
+	if err != nil {
+		t.Fatalf("LoadTodos() failed: %v", err)
+	}
+
+	if len(todos) != 0 {
+		t.Errorf("LoadTodos() returned %d todos, want 0 for non-existent file", len(todos))
+	}
+}
+
+// TestSaveTodoNew tests saving a new todo
+func TestSaveTodoNew(t *testing.T) {
+	// Use temp directory for testing
+	tempDir := t.TempDir()
+	originalHome := os.Getenv("HOME")
+	os.Setenv("HOME", tempDir)
+	defer os.Setenv("HOME", originalHome)
+
+	newTodo := models.Todo{
+		ID:        "todo-new",
+		Title:     "New task",
+		Status:    "open",
+		Tags:      []string{"test"},
+		CreatedAt: time.Now(),
+		EntryID:   nil,
+	}
+
+	err := SaveTodo(newTodo)
+	if err != nil {
+		t.Fatalf("SaveTodo() failed: %v", err)
+	}
+
+	// Load and verify
+	todos, err := LoadTodos()
+	if err != nil {
+		t.Fatalf("LoadTodos() failed: %v", err)
+	}
+
+	if len(todos) != 1 {
+		t.Fatalf("LoadTodos() returned %d todos, want 1", len(todos))
+	}
+
+	if todos[0].ID != newTodo.ID {
+		t.Errorf("SaveTodo() ID = %v, want %v", todos[0].ID, newTodo.ID)
+	}
+}
+
+// TestSaveTodoUpdate tests updating an existing todo
+func TestSaveTodoUpdate(t *testing.T) {
+	// Use temp directory for testing
+	tempDir := t.TempDir()
+	originalHome := os.Getenv("HOME")
+	os.Setenv("HOME", tempDir)
+	defer os.Setenv("HOME", originalHome)
+
+	// Save initial todo
+	initialTodo := models.Todo{
+		ID:        "todo-update",
+		Title:     "Original title",
+		Status:    "open",
+		Tags:      []string{"tag1"},
+		CreatedAt: time.Now(),
+		EntryID:   nil,
+	}
+
+	err := SaveTodo(initialTodo)
+	if err != nil {
+		t.Fatalf("SaveTodo() initial save failed: %v", err)
+	}
+
+	// Update the todo
+	updatedTodo := initialTodo
+	updatedTodo.Title = "Updated title"
+	updatedTodo.Status = "done"
+	updatedTodo.Tags = []string{"tag1", "tag2"}
+
+	err = SaveTodo(updatedTodo)
+	if err != nil {
+		t.Fatalf("SaveTodo() update failed: %v", err)
+	}
+
+	// Load and verify only one todo exists with updated values
+	todos, err := LoadTodos()
+	if err != nil {
+		t.Fatalf("LoadTodos() failed: %v", err)
+	}
+
+	if len(todos) != 1 {
+		t.Errorf("LoadTodos() returned %d todos, want 1 after update", len(todos))
+	}
+
+	if todos[0].Title != "Updated title" {
+		t.Errorf("SaveTodo() updated Title = %v, want 'Updated title'", todos[0].Title)
+	}
+
+	if todos[0].Status != "done" {
+		t.Errorf("SaveTodo() updated Status = %v, want 'done'", todos[0].Status)
+	}
+}
