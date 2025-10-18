@@ -231,41 +231,6 @@ func (m Model) handleEntriesListKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.selectedEntry--
 		}
 		return m, nil
-	case "e":
-		// Edit selected entry
-		if m.selectedEntry >= 0 && m.selectedEntry < len(m.entries) {
-			// Get the sorted entry (same logic as view)
-			sorted := make([]models.Entry, len(m.entries))
-			copy(sorted, m.entries)
-			// Sort by timestamp descending (newest first)
-			for i := 0; i < len(sorted)-1; i++ {
-				for j := i + 1; j < len(sorted); j++ {
-					if sorted[j].Timestamp.After(sorted[i].Timestamp) {
-						sorted[i], sorted[j] = sorted[j], sorted[i]
-					}
-				}
-			}
-
-			// Load entry into textarea for editing
-			m.currentEntry = sorted[m.selectedEntry]
-			m.view = "entry"
-
-			// Reconstruct content (title + body)
-			content := m.currentEntry.Title
-			if m.currentEntry.Body != "" {
-				content += "\n" + m.currentEntry.Body
-			}
-
-			m.textarea.SetValue(content)
-			m.textarea.Focus()
-			m.savedContent = content
-			m.hasUnsaved = false
-			m.confirmingExit = false
-			m.statusMsg = ""
-
-			return m, textarea.Blink
-		}
-		return m, nil
 	case "enter":
 		// Open selected entry for read-only viewing
 		if m.selectedEntry >= 0 && m.selectedEntry < len(m.entries) {

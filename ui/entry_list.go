@@ -66,7 +66,7 @@ func RenderEntryList(width, height int, entries []models.Entry, selectedIdx int)
 	helpStyle := lipgloss.NewStyle().
 		Foreground(mutedColor).
 		Italic(true)
-	help := helpStyle.Render("j/k: navigate • e: edit • enter: view • esc: back • q: quit")
+	help := helpStyle.Render("j/k: navigate • enter: view • esc: back • q: quit")
 
 	// Combine sections
 	content := lipgloss.JoinVertical(
