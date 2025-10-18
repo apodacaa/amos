@@ -8,6 +8,9 @@ Minimal Bubble Tea (Go) TUI for journal + todo management. Brutalist design, fas
 # Install dependencies
 go mod download
 
+# Install git hooks (recommended)
+./scripts/install-hooks.sh
+
 # Run the app
 make run
 ```
@@ -28,14 +31,26 @@ make run
 |---------|-------------|
 | `make run` | Run the app |
 | `make check` | Format + vet code |
-| `make check-all` | Format + vet + staticcheck |
+| `make ci` | **Full checks + tests (before commit)** |
+| `make ci-cover` | Full checks + tests with coverage |
 | `make build` | Build binary |
 | `make test` | Run tests |
 | `make help` | Show all commands |
 
 ### Before Committing
 ```bash
-make check-all  # Always run this
+make ci  # Run all checks + tests (or install git hooks to auto-run)
+```
+
+### Git Hooks
+The pre-commit hook automatically runs `make ci` before every commit:
+```bash
+./scripts/install-hooks.sh  # Install once after cloning
+```
+
+To bypass the hook (not recommended):
+```bash
+git commit --no-verify
 ```
 
 ### Hot Reload (Optional)
