@@ -14,21 +14,37 @@ Amos is a minimal Bubble Tea (Go) TUI for journal + todo management. Fast iterat
 ### Running the App
 ```bash
 # Development mode
-go run main.go
+make run
+# or
+go run .
 
 # With hot reload (install air first)
+make install-tools
 air
 ```
 
 ### Code Quality
 ```bash
-# Format
+# Quick check (fmt + vet)
+make check
+
+# Full check (fmt + vet + staticcheck)
+make check-all
+
+# Format only
+make fmt
+# or
 go fmt ./...
 
-# Lint
-golangci-lint run
+# Vet only
+make vet
+
+# Staticcheck (linter)
+make staticcheck
 
 # Test
+make test
+# or
 go test ./...
 ```
 
@@ -65,11 +81,20 @@ The app follows Elm architecture:
 
 ## File Structure
 ```
-main.go           # Entry point, Model, Update, View
-helpers/          # Business logic (planned)
-  storage.go      # JSON read/write
-  formatting.go   # Date, text helpers
-views/            # View renderers (planned)
+main.go           # Entry point only (~10 lines)
+model.go          # Model, Init, Update, View (Elm architecture)
+ui/               # View renderers (pure functions)
   dashboard.go
-  entry.go
+  entry_form.go
+internal/         # Business logic (planned)
+  storage/        # JSON read/write
+    storage.go
+  models/         # Data structures
+    entry.go
+    todo.go
+  helpers/        # Utilities
+    tags.go
+    ids.go
 ```
+
+See `ARCHITECTURE.md` for detailed organization guidelines.

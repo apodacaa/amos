@@ -4,81 +4,105 @@ Minimal Bubble Tea (Go) TUI for journal + todo management. Brutalist design, fas
 
 ## Quick Start
 
-### Prerequisites
-- Go 1.24+ (project uses Bubble Tea v1.3.10)
-
-### 1. Install Dependencies
 ```bash
+# Install dependencies
 go mod download
+
+# Run the app
+make run
 ```
 
-### 2. Run the App
-```bash
-go run main.go
-```
-
-**Controls:**
+**Keyboard Shortcuts:**
 - `n` - New Entry
-- `t` - Todos
+- `t` - Todos  
 - `e` - Entries
 - `s` - Search
-- `q` - Quit
+- `esc` - Back to Dashboard
+- `q` or `Ctrl+C` - Quit
 
-## Development Workflow
+## Development
 
-### Run with Auto-Reload
-Use `air` for hot reloading:
+### Common Commands
+
+| Command | Description |
+|---------|-------------|
+| `make run` | Run the app |
+| `make check` | Format + vet code |
+| `make check-all` | Format + vet + staticcheck |
+| `make build` | Build binary |
+| `make test` | Run tests |
+| `make help` | Show all commands |
+
+### Before Committing
 ```bash
-# Install air
-go install github.com/air-verse/air@latest
-
-# Run with hot reload
-air
+make check-all  # Always run this
 ```
 
-### Code Formatting
+### Hot Reload (Optional)
 ```bash
-# Format code
-go fmt ./...
-
-# Run linter
-golangci-lint run
-
-# Run tests
-go test ./...
+make install-air  # Install once
+air               # Run with auto-reload
 ```
 
 ## Project Structure
 
 ```
 .
-├── main.go              # Main entry point
-├── go.mod              # Go module definition
-├── go.sum              # Dependency checksums
+├── main.go              # Entry point (~10 lines)
+├── model.go             # Elm architecture (Model, Init, Update, View)
+├── ui/                  # View components
+│   ├── dashboard.go     # Dashboard view
+│   └── entry_form.go    # Entry form view
+├── Makefile             # Development commands
+├── go.mod               # Go module definition
 └── README.md
 ```
 
 ## Architecture
 
-- **Bubble Tea** - TUI framework (Elm architecture)
-- **Model** - Application state
-- **Update** - Handle messages, update state
-- **View** - Render UI from state
+**Bubble Tea** uses the **Elm Architecture** pattern:
+- `Model` - Application state (in `model.go`)
+- `Init()` - Initialize model, return commands
+- `Update(msg)` - Handle messages, return (model, cmd)
+- `View()` - Render UI from model state
 
-## Critical Patterns
+**File Organization:**
+- `main.go` - Entry point only (~10 lines)
+- `model.go` - All Elm architecture logic
+- `ui/` - Pure view functions, no state
+- `internal/` (future) - Business logic, data models
 
-- **Elm Architecture** - Model, Update, View cycle
-- **Messages** - Commands return tea.Cmd for async operations
-- **No Side Effects in Update** - Return commands, don't execute
-- **Immutable Updates** - Return new model, don't mutate
+**Key Rules:**
+- No side effects in `Update` - return commands instead
+- Views are pure functions - no state mutation
+- Exported names use PascalCase, unexported use camelCase
+
+## Troubleshooting
+
+**"staticcheck: command not found"**
+```bash
+make staticcheck  # Auto-installs
+```
+
+**"air: command not found"**
+```bash
+make install-air
+```
+
+**Build issues**
+```bash
+go mod tidy
+make build
+```
 
 ## Dependencies
 
 - **bubbletea** v1.3.10 - TUI framework
-- **lipgloss** (transitive) - Styling
+- **lipgloss** v1.1.0 - Styling library (transitive)
+- **Go 1.24+** required
 
 ## Notes
 
-- Go 1.24+ required
 - Simple brutalist design (minimal styling)
-- Data stored in `~/.amos/` (JSON)
+- Data stored in `~/.amos/` (JSON) - planned
+
