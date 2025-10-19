@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/apodacaa/amos/internal/helpers"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -30,40 +31,48 @@ func (m Model) handleViewEntryKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.selectedTodo = 0
 		return m, m.loadEntriesAndTodos()
 	case "j", "down":
-		// Navigate to next entry (newer to older)
-		if len(m.entries) > 0 {
-			// Find current entry index
+		// Navigate to next entry (newer to older, same as entry list)
+		// Apply filter and sort (same as entry list view)
+		filtered := helpers.FilterEntriesByTag(m.entries, m.filterTag)
+		sorted := helpers.SortEntriesForDisplay(filtered)
+
+		if len(sorted) > 0 {
+			// Find current entry index in sorted list
 			currentIdx := -1
-			for i, entry := range m.entries {
+			for i, entry := range sorted {
 				if entry.ID == m.viewingEntry.ID {
 					currentIdx = i
 					break
 				}
 			}
 
-			// Move to next entry (wrap around)
-			if currentIdx >= 0 && currentIdx < len(m.entries)-1 {
+			// Move down (to next entry, which is older)
+			if currentIdx >= 0 && currentIdx < len(sorted)-1 {
 				m.selectedEntry = currentIdx + 1
-				m.viewingEntry = m.entries[m.selectedEntry]
+				m.viewingEntry = sorted[m.selectedEntry]
 			}
 		}
 		return m, nil
 	case "k", "up":
-		// Navigate to previous entry (older to newer)
-		if len(m.entries) > 0 {
-			// Find current entry index
+		// Navigate to previous entry (older to newer, same as entry list)
+		// Apply filter and sort (same as entry list view)
+		filtered := helpers.FilterEntriesByTag(m.entries, m.filterTag)
+		sorted := helpers.SortEntriesForDisplay(filtered)
+
+		if len(sorted) > 0 {
+			// Find current entry index in sorted list
 			currentIdx := -1
-			for i, entry := range m.entries {
+			for i, entry := range sorted {
 				if entry.ID == m.viewingEntry.ID {
 					currentIdx = i
 					break
 				}
 			}
 
-			// Move to previous entry (wrap around)
+			// Move up (to previous entry, which is newer)
 			if currentIdx > 0 {
 				m.selectedEntry = currentIdx - 1
-				m.viewingEntry = m.entries[m.selectedEntry]
+				m.viewingEntry = sorted[m.selectedEntry]
 			}
 		}
 		return m, nil
