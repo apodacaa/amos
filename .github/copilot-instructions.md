@@ -124,26 +124,31 @@ internal/                # Business logic
 ## Brutalist Design Philosophy
 
 **Navigation:**
-- Explicit keys work everywhere: `d` (dashboard), `t` (todos), `e` (entries), `n` (new entry), `a` (add todo)
+- Universal back: `esc` returns to dashboard from all views
+- Explicit view switching: `t` (todos), `e` (entries), `n` (new entry), `a` (add todo)
 - No hidden previousView state - user always knows where they are
-- Escape only for forms (cancel action)
+- Escape is the universal cancel/back key
 
 **Visual Hierarchy:**
-- **Dashboard** - Monument aesthetic: massive centered ASCII art, centered stats, centered help
-- **Utility views** - Honest workspaces: left-aligned help, functional UI chrome
-- **Help text** - Reverse color keys (accent bg, subtle fg) with bold styling, no bullet separators
+- **Dashboard** - Monument aesthetic: massive centered ASCII art, centered help
+- **Utility views** - Honest workspaces: left-aligned help anchored to bottom, functional UI chrome
+- **Help text** - Inverted black/white keys for maximum contrast, consistent ordering across views
 - **FormatHelp()** - Centered alignment for dashboard only
-- **FormatHelpLeft()** - Left alignment for all other views
+- **FormatHelpLeft()** - Left alignment for all other views (anchored to bottom)
+- **Monochrome palette** - Pure black/white/gray (no colors)
+- **No decorations** - No italics, no Unicode (► → >, no •), just ASCII
 
 **Data Philosophy:**
 - Append-only journal (no delete feature)
-- Immediate writes (`x` toggles todo AND saves)
-- Full context visible (todos show in entry view, entry titles in todo list)
+- Immediate writes (`space` toggles todo AND saves)
+- Full context visible (todos show in entry view)
 - No hidden pending state
 
 **Key Bindings:**
-- `x` - Toggle todo status (not space)
-- `d` - Dashboard (works from all views)
+- `space` - Toggle todo status (in todo list and entry view)
+- `esc` - Back to dashboard (universal back key)
 - `n` - New entry (works from all read-only views)
 - `a` - Add standalone todo (works from all read-only views)
 - `@` - Filter by tag / clear filter
+- `j/k` - Navigate lists (consistent across entry list, todo list, entry view)
+- `u/i` - Move todo priority (only in todo list)

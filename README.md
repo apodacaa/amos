@@ -18,7 +18,7 @@ make run
 **Keyboard Shortcuts:**
 
 *Dashboard:*
-- Massive ASCII "AMOS" title with vanity metrics (total entries, this week, top tag, open todos)
+- Massive ASCII "AMOS" title
 - `n` - New Entry
 - `a` - Add Standalone Todo
 - `t` - View Todos List
@@ -27,42 +27,42 @@ make run
 
 *Entry Form:*
 - `Ctrl+S` - Save entry
-- `esc` - Cancel (goes to dashboard, with confirmation if unsaved)
+- `esc` - Cancel
 
 *Entry List:*
 - `n` - New Entry
 - `a` - Add Standalone Todo
 - `j/k` or `↑/↓` - Navigate
 - `enter` - View entry detail
-- `t` - Jump to todos
 - `@` - Filter by tag (or clear filter)
-- `d` - Go to dashboard
+- `t` - Jump to todos
+- `esc` - Back to dashboard
 - `q` - Quit
 
 *Entry View (Read-Only):*
 - `n` - New Entry
 - `a` - Add Standalone Todo
+- `j/k` or `↑/↓` - Navigate entries
 - Shows entry with inline todos
-- `x` - Toggle todo status (saves immediately)
-- `t` - Jump to todos
 - `e` - Jump to entries
-- `d` - Go to dashboard
+- `t` - Jump to todos
+- `esc` - Back to dashboard
 - `q` - Quit
 
 *Todo List:*
 - `n` - New Entry
 - `a` - Add Standalone Todo
 - `j/k` or `↑/↓` - Navigate
-- `x` - Toggle todo status (saves immediately)
+- `space` - Toggle todo status (saves immediately)
 - `u/i` - Move todo up/down (manual priority)
 - `e` - Jump to entries
-- `d` - Go to dashboard
+- `esc` - Back to dashboard
 - `q` - Quit
 
 *Add Todo Form:*
 - Type todo title (tags auto-extracted from @mentions)
-- `enter` - Save and go to dashboard
-- `esc` - Cancel and go to dashboard
+- `enter` - Save
+- `esc` - Cancel
 
 ## Development
 
@@ -108,26 +108,29 @@ air               # Run with auto-reload
 - Filter by tag with @ key (brutalist tag picker)
 - View entries chronologically (newest first)
 - **Append-only**: No delete (journal is historical record)
-- See todo counts in entry list: `[3 todos: 1 open]`
-- Cross-navigation: jump to todos with `t` key, create entry/todo with `n`/`a` from any view
+- Cross-navigation: jump between todos/entries with `t`/`e` keys
+- Global create: `n` (new entry) and `a` (add todo) work from any read-only view
 
 ✅ **Todo Management**
 - **Standalone todos**: Create todos independently with `a` key from any view
 - **Entry-linked todos**: Extract from entries with `!todo` syntax
-- Toggle status with `x` (immediate save)
+- Toggle status with `space` (immediate save)
 - Manual priority with u/i keys (move up/down)
 - Sort: open first → position → newest
 - View todos by entry or all together
-- Cross-navigation: jump to entries with `e` key, create entry/todo with `n`/`a` from any view
+- Cross-navigation: jump between todos/entries with `t`/`e` keys
+- Global create: `n` (new entry) and `a` (add todo) work from any read-only view
 
 ✅ **Brutalist Navigation**
-- Explicit navigation: `d` (dashboard), `t` (todos), `e` (entries) work from all views
+- Explicit navigation: `e` (entries), `t` (todos) work from all views
 - Global shortcuts: `n` (new entry) and `a` (add todo) work from any read-only view
-- Escape only for forms: cancel and return to dashboard
+- `esc` to go back to dashboard (universal cancel/back key)
 - Immediate writes (no hidden pending state)
 - Full context visible (todos show in entry view)
 - No unnecessary features or decorations
 - Fast, minimal TUI
+- **Monochrome design**: Pure black/white/gray palette
+- **Anchored help text**: Footer stays at bottom (no bouncing)
 
 ## Project Structure
 
@@ -225,14 +228,18 @@ make build
 ## Design Philosophy
 
 **Brutalist Principles:**
-1. **Immediate writes** - `x` toggles todo AND saves (no deferred state)
-2. **Full context** - Todos visible in entry view, stats in list
+1. **Immediate writes** - `space` toggles todo AND saves (no deferred state)
+2. **Full context** - Todos visible in entry view
 3. **No hidden state** - What you see is what's saved
 4. **Simple is better** - Normalize positions every move vs complex tracking
 5. **One action = one effect** - No multi-step workflows
-6. **Context-aware navigation** - Escape returns to previous view (where you came from)
+6. **Universal back** - `esc` returns to dashboard from all views
 7. **Global actions** - `n` and `a` keys work from any read-only view for fast creation
-8. **Monument aesthetics** - Dashboard hits you with massive centered ASCII art and stats, utility views are honest left-aligned workspaces
+8. **Monument aesthetics** - Dashboard has massive centered ASCII art, utility views are honest left-aligned workspaces
+9. **Monochrome palette** - Pure black/white/gray, no colors
+10. **Anchored UI** - Help text stays at bottom (no bouncing during navigation)
+11. **Consistent ordering** - Keys appear in same logical order across all views
+12. **No decorations** - No italics, no Unicode bullets, just ASCII
 
 **Tag Syntax:**
 - `@work` in entry content → auto-extracted to tags array
