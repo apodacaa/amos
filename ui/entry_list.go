@@ -44,19 +44,9 @@ func RenderEntryList(width, height int, entries []models.Entry, selectedIdx int,
 
 			// Add todo stats if entry has todos
 			if len(entry.TodoIDs) > 0 {
-				// Count open todos for this entry
-				openCount := 0
-				totalCount := 0
-				for _, todo := range todos {
-					if todo.EntryID != nil && *todo.EntryID == entry.ID {
-						totalCount++
-						if todo.Status == "open" {
-							openCount++
-						}
-					}
-				}
-
-				if totalCount > 0 {
+				entryTodos := helpers.FilterTodosByEntry(todos, entry.ID)
+				if len(entryTodos) > 0 {
+					openCount, totalCount := helpers.CountTodoStats(entryTodos)
 					todoStats := lipgloss.NewStyle().
 						Foreground(mutedColor).
 						Render(fmt.Sprintf(" [%d todos: %d open]", totalCount, openCount))

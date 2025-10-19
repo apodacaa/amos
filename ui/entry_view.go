@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/apodacaa/amos/internal/helpers"
 	"github.com/apodacaa/amos/internal/models"
 	"github.com/charmbracelet/lipgloss"
 )
@@ -43,26 +44,16 @@ func RenderEntryView(width, height int, entry models.Entry, allTodos []models.To
 	var todosSection string
 	if len(entry.TodoIDs) > 0 {
 		// Filter todos that belong to this entry
-		var entryTodos []models.Todo
-		for _, todo := range allTodos {
-			if todo.EntryID != nil && *todo.EntryID == entry.ID {
-				entryTodos = append(entryTodos, todo)
-			}
-		}
+		entryTodos := helpers.FilterTodosByEntry(allTodos, entry.ID)
 
 		if len(entryTodos) > 0 {
 			// Count open todos
-			openCount := 0
-			for _, todo := range entryTodos {
-				if todo.Status == "open" {
-					openCount++
-				}
-			}
+			openCount, totalCount := helpers.CountTodoStats(entryTodos)
 
 			todosTitle := lipgloss.NewStyle().
 				Bold(true).
 				Foreground(accentColor).
-				Render(fmt.Sprintf("Todos (%d open, %d total)", openCount, len(entryTodos)))
+				Render(fmt.Sprintf("Todos (%d open, %d total)", openCount, totalCount))
 
 			// Render each todo
 			var todoLines []string
