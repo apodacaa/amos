@@ -15,6 +15,9 @@ func RenderDashboard(width, height int) string {
 		fmt.Sprintf("%s %s", keyStyle.Render("[n]"), menuItemStyle.Render("New Entry")),
 	)
 	menuItems = append(menuItems,
+		fmt.Sprintf("%s %s", keyStyle.Render("[a]"), menuItemStyle.Render("Add Todo")),
+	)
+	menuItems = append(menuItems,
 		fmt.Sprintf("%s %s", keyStyle.Render("[t]"), menuItemStyle.Render("Todos")),
 	)
 	menuItems = append(menuItems,

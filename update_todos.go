@@ -1,8 +1,13 @@
 package main
 
 import (
+	"time"
+
 	"github.com/apodacaa/amos/internal/helpers"
+	"github.com/apodacaa/amos/internal/models"
+	"github.com/charmbracelet/bubbles/textarea"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/google/uuid"
 )
 
 // handleTodosListKeys processes keyboard input (todos list view)
@@ -15,11 +20,37 @@ func (m Model) handleTodosListKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.view = "dashboard"
 		m.statusMsg = ""
 		return m, nil
+	case "n":
+		// Create new entry
+		m.view = "entry"
+		m.currentEntry = models.Entry{
+			ID:        uuid.New().String(),
+			Timestamp: time.Now(),
+		}
+		m.textarea.Reset()
+		m.textarea.Focus()
+		m.hasUnsaved = false
+		m.savedContent = ""
+		m.statusMsg = ""
+		return m, textarea.Blink
 	case "e":
 		// Jump to entry list (load entries and todos for display)
 		m.view = "entries"
 		m.selectedEntry = 0
 		return m, m.loadEntriesAndTodos()
+	case "a":
+		// Add standalone todo
+		m.view = "add_todo"
+		m.currentTodo = models.Todo{
+			ID:        uuid.New().String(),
+			Status:    "open",
+			Position:  0,
+			CreatedAt: time.Now(),
+		}
+		m.todoInput.Reset()
+		m.todoInput.Focus()
+		m.statusMsg = ""
+		return m, textarea.Blink
 	case "j", "down":
 		if m.selectedTodo < len(m.todos)-1 {
 			m.selectedTodo++

@@ -11,11 +11,13 @@ import (
 
 // Model holds the application state
 type Model struct {
-	view             string         // Current view: "dashboard", "entry", "entries", "view_entry", "todos", or "tag_picker"
+	view             string         // Current view: "dashboard", "entry", "entries", "view_entry", "todos", "tag_picker", or "add_todo"
 	width            int            // Terminal width
 	height           int            // Terminal height
 	textarea         textarea.Model // Textarea for entry input
+	todoInput        textarea.Model // Single-line input for standalone todos
 	currentEntry     models.Entry   // Entry being edited
+	currentTodo      models.Todo    // Standalone todo being created
 	viewingEntry     models.Entry   // Entry being viewed (read-only)
 	statusMsg        string         // Status message to display
 	statusTime       time.Time      // When status message was set
@@ -51,11 +53,27 @@ func NewModel() Model {
 	ta.FocusedStyle.Text = ui.GetTextStyle()
 	ta.BlurredStyle.Text = ui.GetTextStyle()
 
+	// Create single-line input for standalone todos
+	todoInput := textarea.New()
+	todoInput.Placeholder = "Todo title..."
+	todoInput.CharLimit = 0
+	todoInput.SetWidth(60)
+	todoInput.SetHeight(1) // Single line
+	todoInput.FocusedStyle.CursorLine = ui.GetTextareaStyle()
+	todoInput.BlurredStyle.CursorLine = ui.GetTextareaStyle()
+	todoInput.FocusedStyle.Placeholder = ui.GetPlaceholderStyle()
+	todoInput.BlurredStyle.Placeholder = ui.GetPlaceholderStyle()
+	todoInput.FocusedStyle.Prompt = ui.GetPromptStyle()
+	todoInput.BlurredStyle.Prompt = ui.GetPromptStyle()
+	todoInput.FocusedStyle.Text = ui.GetTextStyle()
+	todoInput.BlurredStyle.Text = ui.GetTextStyle()
+
 	return Model{
-		view:     "dashboard",
-		width:    80, // Default width
-		height:   24, // Default height
-		textarea: ta,
+		view:      "dashboard",
+		width:     80, // Default width
+		height:    24, // Default height
+		textarea:  ta,
+		todoInput: todoInput,
 	}
 }
 
@@ -81,6 +99,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m.handleTodosListKeys(msg)
 		} else if m.view == "tag_picker" {
 			return m.handleTagPickerKeys(msg)
+		} else if m.view == "add_todo" {
+			return m.handleAddTodoKeys(msg)
 		}
 		return m.handleKeyPress(msg)
 
@@ -98,6 +118,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.statusMsg = "Error saving: " + msg.err.Error()
 		} else {
 			m.statusMsg = "✓ Saved"
+			// If we're in add_todo view, go back to dashboard after saving
+			if m.view == "add_todo" {
+				m.view = "dashboard"
+				m.statusMsg = ""
+				return m, nil
+			}
 			// Mark as saved and store current content
 			m.hasUnsaved = false
 			m.savedContent = m.textarea.Value()
@@ -178,6 +204,8 @@ func (m Model) View() string {
 		return ui.RenderTodoList(m.width, m.height, m.todos, m.selectedTodo, m.statusMsg)
 	case "tag_picker":
 		return ui.RenderTagPicker(m.width, m.height, m.availableTags, m.selectedTag)
+	case "add_todo":
+		return ui.RenderAddTodoForm(m.width, m.height, m.todoInput, m.statusMsg)
 	default:
 		return ui.RenderDashboard(m.width, m.height)
 	}

@@ -184,3 +184,30 @@ func (m Model) saveEntry() tea.Cmd {
 		return saveCompleteMsg{err: err}
 	}
 }
+
+// saveTodo saves a standalone todo and returns to dashboard
+func (m Model) saveTodo() tea.Cmd {
+	return func() tea.Msg {
+		// Load existing todos to determine position
+		existingTodos, err := storage.LoadTodos()
+		if err != nil {
+			return saveCompleteMsg{err: err}
+		}
+
+		// Find max position
+		maxPosition := 0
+		for _, t := range existingTodos {
+			if t.Position > maxPosition {
+				maxPosition = t.Position
+			}
+		}
+
+		// Set position for new todo (at the end)
+		m.currentTodo.Position = maxPosition + 1
+
+		// Save todo
+		err = storage.SaveTodo(m.currentTodo)
+
+		return saveCompleteMsg{err: err}
+	}
+}

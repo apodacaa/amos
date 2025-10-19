@@ -38,6 +38,19 @@ func (m Model) handleKeyPress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.view = "todos"
 		m.selectedTodo = 0
 		return m, m.loadTodos()
+	case "a":
+		// Add standalone todo
+		m.view = "add_todo"
+		m.currentTodo = models.Todo{
+			ID:        uuid.New().String(),
+			Status:    "open",
+			Position:  0,
+			CreatedAt: time.Now(),
+		}
+		m.todoInput.Reset()
+		m.todoInput.Focus()
+		m.statusMsg = ""
+		return m, textarea.Blink
 	case "esc":
 		m.view = "dashboard"
 	}

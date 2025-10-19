@@ -1,8 +1,13 @@
 package main
 
 import (
+	"time"
+
 	"github.com/apodacaa/amos/internal/helpers"
+	"github.com/apodacaa/amos/internal/models"
+	"github.com/charmbracelet/bubbles/textarea"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/google/uuid"
 )
 
 // handleEntriesListKeys processes keyboard input (entries list view)
@@ -28,12 +33,38 @@ func (m Model) handleEntriesListKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "esc":
 		m.view = "dashboard"
 		return m, nil
+	case "n":
+		// Create new entry
+		m.view = "entry"
+		m.currentEntry = models.Entry{
+			ID:        uuid.New().String(),
+			Timestamp: time.Now(),
+		}
+		m.textarea.Reset()
+		m.textarea.Focus()
+		m.hasUnsaved = false
+		m.savedContent = ""
+		m.statusMsg = ""
+		return m, textarea.Blink
 	case "t":
 		// Jump to todo list
 		m.view = "todos"
 		m.selectedTodo = 0
 		// Todos already loaded (we load them when entering entries view)
 		return m, nil
+	case "a":
+		// Add standalone todo
+		m.view = "add_todo"
+		m.currentTodo = models.Todo{
+			ID:        uuid.New().String(),
+			Status:    "open",
+			Position:  0,
+			CreatedAt: time.Now(),
+		}
+		m.todoInput.Reset()
+		m.todoInput.Focus()
+		m.statusMsg = ""
+		return m, textarea.Blink
 	case "@":
 		// Open tag picker (or clear filter if already filtering)
 		if m.filterTag != "" {
