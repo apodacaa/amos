@@ -1,6 +1,8 @@
 package main
 
 import (
+	"time"
+
 	"github.com/apodacaa/amos/internal/helpers"
 	tea "github.com/charmbracelet/bubbletea"
 )
@@ -35,13 +37,15 @@ func (m Model) handleEntriesListKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			// Clear filter
 			m.filterTag = ""
 			m.statusMsg = "✓ Filter cleared"
-			return m, nil
+			m.statusTime = time.Now()
+			return m, clearStatusAfterDelay()
 		}
 		// Extract unique tags from all entries
 		m.availableTags = helpers.ExtractUniqueTags(m.entries)
 		if len(m.availableTags) == 0 {
 			m.statusMsg = "No tags found in entries"
-			return m, nil
+			m.statusTime = time.Now()
+			return m, clearStatusAfterDelay()
 		}
 		m.selectedTag = 0
 		m.view = "tag_picker"

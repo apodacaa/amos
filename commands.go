@@ -10,6 +10,13 @@ import (
 	"github.com/google/uuid"
 )
 
+// clearStatusAfterDelay returns a command that sends a statusTimeoutMsg after 3 seconds
+func clearStatusAfterDelay() tea.Cmd {
+	return tea.Tick(3*time.Second, func(t time.Time) tea.Msg {
+		return statusTimeoutMsg{}
+	})
+}
+
 // loadEntries loads all entries from storage
 func (m Model) loadEntries() tea.Cmd {
 	return func() tea.Msg {

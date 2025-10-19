@@ -129,7 +129,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			// For add_todo, we stay in the form (user can add another or press Esc)
 		}
 		m.statusTime = time.Now()
-		return m, nil
+		return m, clearStatusAfterDelay()
 
 	case entriesLoadedMsg:
 		if msg.err != nil {
@@ -181,12 +181,19 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case todoMovedMsg:
 		if msg.err != nil {
 			m.statusMsg = "Error moving todo: " + msg.err.Error()
-			return m, nil
+			return m, clearStatusAfterDelay()
 		}
 		// Store the ID of the moved todo so we can reselect it after reload
 		m.statusMsg = msg.movedTodoID // Temporarily store ID in statusMsg (will use for reselection)
 		// Reload todos to update the list
 		return m, m.loadTodos()
+
+	case statusTimeoutMsg:
+		// Clear status message after timeout (only if it hasn't been updated recently)
+		if time.Since(m.statusTime) >= 3*time.Second {
+			m.statusMsg = ""
+		}
+		return m, nil
 	}
 
 	// Update textarea if in entry view

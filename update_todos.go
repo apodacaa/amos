@@ -1,6 +1,8 @@
 package main
 
 import (
+	"time"
+
 	"github.com/apodacaa/amos/internal/helpers"
 	tea "github.com/charmbracelet/bubbletea"
 )
@@ -63,6 +65,7 @@ func (m Model) handleTodosListKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 				todo.Status = "done"
 				m.statusMsg = "✓ Done"
 			}
+			m.statusTime = time.Now()
 
 			// Update in m.todos array (find by ID)
 			for i := range m.todos {
@@ -72,8 +75,8 @@ func (m Model) handleTodosListKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 				}
 			}
 
-			// Save immediately (async, don't wait)
-			return m, m.toggleTodoImmediate(todo)
+			// Save immediately and start timer to clear status
+			return m, tea.Batch(m.toggleTodoImmediate(todo), clearStatusAfterDelay())
 		}
 		return m, nil
 	case "s":

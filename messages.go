@@ -29,3 +29,6 @@ type todoMovedMsg struct {
 	movedTodoID string // ID of the todo that was moved (to reselect it after reload)
 	err         error
 }
+
+// statusTimeoutMsg is sent when status message should be cleared
+type statusTimeoutMsg struct{}
