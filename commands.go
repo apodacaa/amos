@@ -75,16 +75,19 @@ func (m Model) moveTodo(direction string) tea.Cmd {
 			}
 		}
 
+		// Remember the ID of the todo we're moving (so we can reselect it after reload)
+		movedTodoID := sorted[m.selectedTodo].ID
+
 		// Swap positions
 		sorted[m.selectedTodo].Position, sorted[targetIdx].Position = sorted[targetIdx].Position, sorted[m.selectedTodo].Position
 
 		// Save both todos
 		err = storage.SaveTodo(sorted[m.selectedTodo])
 		if err != nil {
-			return todoMovedMsg{err: err}
+			return todoMovedMsg{movedTodoID: movedTodoID, err: err}
 		}
 		err = storage.SaveTodo(sorted[targetIdx])
-		return todoMovedMsg{err: err}
+		return todoMovedMsg{movedTodoID: movedTodoID, err: err}
 	}
 }
 

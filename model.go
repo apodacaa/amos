@@ -3,6 +3,7 @@ package main
 import (
 	"time"
 
+	"github.com/apodacaa/amos/internal/helpers"
 	"github.com/apodacaa/amos/internal/models"
 	"github.com/apodacaa/amos/ui"
 	"github.com/charmbracelet/bubbles/textarea"
@@ -146,10 +147,27 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.statusMsg = "Error loading todos: " + msg.err.Error()
 		} else {
 			m.todos = msg.todos
-			// Only reset selection if we don't have a valid selection
-			// (e.g., first load or if selection is out of bounds)
-			if m.selectedTodo >= len(msg.todos) {
-				m.selectedTodo = 0
+
+			// If we just moved a todo, reselect it by ID
+			if m.statusMsg != "" && m.statusMsg != "✓ Saved" && m.statusMsg != "✓ Done" && m.statusMsg != "✓ Reopened" {
+				// statusMsg contains the moved todo ID
+				movedTodoID := m.statusMsg
+				m.statusMsg = "" // Clear it
+
+				// Find the todo in the sorted list and select it
+				sorted := helpers.SortTodosForDisplay(m.todos)
+				for i, todo := range sorted {
+					if todo.ID == movedTodoID {
+						m.selectedTodo = i
+						break
+					}
+				}
+			} else {
+				// Only reset selection if we don't have a valid selection
+				// (e.g., first load or if selection is out of bounds)
+				if m.selectedTodo >= len(msg.todos) {
+					m.selectedTodo = 0
+				}
 			}
 		}
 		return m, nil
@@ -165,11 +183,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case todoMovedMsg:
 		if msg.err != nil {
 			m.statusMsg = "Error moving todo: " + msg.err.Error()
-		} else {
-			// Reload todos to update the list
-			return m, m.loadTodos()
+			return m, nil
 		}
-		return m, nil
+		// Store the ID of the moved todo so we can reselect it after reload
+		m.statusMsg = msg.movedTodoID // Temporarily store ID in statusMsg (will use for reselection)
+		// Reload todos to update the list
+		return m, m.loadTodos()
 	}
 
 	// Update textarea if in entry view

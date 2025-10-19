@@ -26,5 +26,6 @@ type todoToggledMsg struct {
 
 // todoMovedMsg is sent when todo position is changed
 type todoMovedMsg struct {
-	err error
+	movedTodoID string // ID of the todo that was moved (to reselect it after reload)
+	err         error
 }
