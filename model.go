@@ -120,15 +120,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.statusMsg = "Error saving: " + msg.err.Error()
 		} else {
 			m.statusMsg = "✓ Saved"
-			// If we're in add_todo view, go back to dashboard after saving
-			if m.view == "add_todo" {
-				m.view = "dashboard"
-				m.statusMsg = ""
-				return m, nil
-			}
-			// Mark as saved and store current content
+			// Mark as saved
 			m.hasUnsaved = false
-			m.savedContent = m.textarea.Value()
+			if m.view == "entry" {
+				// For entries, store current content
+				m.savedContent = m.textarea.Value()
+			}
+			// For add_todo, we stay in the form (user can add another or press Esc)
 		}
 		m.statusTime = time.Now()
 		return m, nil
@@ -245,6 +243,7 @@ func (m Model) handleAddTodo() (Model, tea.Cmd) {
 	}
 	m.todoInput.Reset()
 	m.todoInput.Focus()
+	m.hasUnsaved = false
 	m.statusMsg = ""
 	return m, textarea.Blink
 }
