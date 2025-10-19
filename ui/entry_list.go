@@ -10,7 +10,7 @@ import (
 )
 
 // RenderEntryList renders the entry list view
-func RenderEntryList(width, height int, entries []models.Entry, selectedIdx int, statusMsg string) string {
+func RenderEntryList(width, height int, entries []models.Entry, selectedIdx int, statusMsg string, todos []models.Todo) string {
 	container := GetContainerStyle(width, height)
 	title := GetTitleStyle(width).Render("Entries")
 
@@ -36,6 +36,28 @@ func RenderEntryList(width, height int, entries []models.Entry, selectedIdx int,
 			// Format: 2025-10-18 14:32 | Meeting with team
 			timestamp := entry.Timestamp.Format("2006-01-02 15:04")
 			line := fmt.Sprintf("%s | %s", timestamp, entry.Title)
+
+			// Add todo stats if entry has todos
+			if len(entry.TodoIDs) > 0 {
+				// Count open todos for this entry
+				openCount := 0
+				totalCount := 0
+				for _, todo := range todos {
+					if todo.EntryID != nil && *todo.EntryID == entry.ID {
+						totalCount++
+						if todo.Status == "open" {
+							openCount++
+						}
+					}
+				}
+
+				if totalCount > 0 {
+					todoStats := lipgloss.NewStyle().
+						Foreground(mutedColor).
+						Render(fmt.Sprintf(" [%d todos: %d open]", totalCount, openCount))
+					line += todoStats
+				}
+			}
 
 			// Truncate if too long
 			maxLen := width - 6

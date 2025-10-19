@@ -9,7 +9,7 @@ import (
 )
 
 // RenderEntryView renders a read-only view of an entry
-func RenderEntryView(width, height int, entry models.Entry) string {
+func RenderEntryView(width, height int, entry models.Entry, allTodos []models.Todo) string {
 	container := GetContainerStyle(width, height)
 
 	// Title
@@ -42,17 +42,66 @@ func RenderEntryView(width, height int, entry models.Entry) string {
 	// Todos section (if any)
 	var todosSection string
 	if len(entry.TodoIDs) > 0 {
-		todosTitle := lipgloss.NewStyle().
-			Bold(true).
-			Foreground(accentColor).
-			Render(fmt.Sprintf("Todos (%d)", len(entry.TodoIDs)))
+		// Filter todos that belong to this entry
+		var entryTodos []models.Todo
+		for _, todo := range allTodos {
+			if todo.EntryID != nil && *todo.EntryID == entry.ID {
+				entryTodos = append(entryTodos, todo)
+			}
+		}
 
-		todosInfo := lipgloss.NewStyle().
-			Foreground(mutedColor).
-			Italic(true).
-			Render("(Linked todos - view in todo list)")
+		if len(entryTodos) > 0 {
+			// Count open todos
+			openCount := 0
+			for _, todo := range entryTodos {
+				if todo.Status == "open" {
+					openCount++
+				}
+			}
 
-		todosSection = "\n\n" + todosTitle + "\n" + todosInfo
+			todosTitle := lipgloss.NewStyle().
+				Bold(true).
+				Foreground(accentColor).
+				Render(fmt.Sprintf("Todos (%d open, %d total)", openCount, len(entryTodos)))
+
+			// Render each todo
+			var todoLines []string
+			for _, todo := range entryTodos {
+				checkbox := "[ ]"
+				if todo.Status == "done" {
+					checkbox = "[x]"
+				}
+
+				todoLine := fmt.Sprintf("%s %s", checkbox, todo.Title)
+
+				// Add tags if present
+				if len(todo.Tags) > 0 {
+					tagStr := ""
+					for _, tag := range todo.Tags {
+						tagStr += " @" + tag
+					}
+					todoLine += lipgloss.NewStyle().
+						Foreground(mutedColor).
+						Render(tagStr)
+				}
+
+				// Dim completed todos
+				if todo.Status == "done" {
+					todoLine = lipgloss.NewStyle().
+						Foreground(mutedColor).
+						Render(todoLine)
+				} else {
+					todoLine = lipgloss.NewStyle().
+						Foreground(subtleColor).
+						Render(todoLine)
+				}
+
+				todoLines = append(todoLines, "  "+todoLine)
+			}
+
+			todosContent := strings.Join(todoLines, "\n")
+			todosSection = "\n\n" + todosTitle + "\n" + todosContent
+		}
 	}
 
 	// Help text

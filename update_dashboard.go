@@ -29,10 +29,10 @@ func (m Model) handleKeyPress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.confirmingExit = false
 		return m, textarea.Blink
 	case "e":
-		// View entries list
+		// View entries list (load both entries and todos for stats)
 		m.view = "entries"
 		m.selectedEntry = 0
-		return m, m.loadEntries()
+		return m, m.loadEntriesAndTodos()
 	case "t":
 		// View todos list
 		m.view = "todos"

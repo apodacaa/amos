@@ -26,6 +26,11 @@ func (m Model) loadTodos() tea.Cmd {
 	}
 }
 
+// loadEntriesAndTodos loads both entries and todos (for entry list view with todo stats)
+func (m Model) loadEntriesAndTodos() tea.Cmd {
+	return tea.Batch(m.loadEntries(), m.loadTodos())
+}
+
 // toggleTodoImmediate saves a todo immediately without reloading
 func (m Model) toggleTodoImmediate(todo models.Todo) tea.Cmd {
 	return func() tea.Msg {

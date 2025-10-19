@@ -32,7 +32,7 @@ type Model struct {
 // NewModel creates a new model with default values
 func NewModel() Model {
 	ta := textarea.New()
-	ta.Placeholder = "First line is the title...\n\nStart typing your entry here.\n\nUse @tags for organization."
+	ta.Placeholder = "First line is the title...\n\nStart typing your entry here.\n\nUse @tags for organization.\n\nUse !todos for tasks."
 	ta.Focus()
 	ta.CharLimit = 0 // No limit
 	ta.SetWidth(60)
@@ -166,9 +166,9 @@ func (m Model) View() string {
 	case "entry":
 		return ui.RenderEntryForm(m.width, m.height, m.textarea, m.statusMsg)
 	case "entries":
-		return ui.RenderEntryList(m.width, m.height, m.entries, m.selectedEntry, m.statusMsg)
+		return ui.RenderEntryList(m.width, m.height, m.entries, m.selectedEntry, m.statusMsg, m.todos)
 	case "view_entry":
-		return ui.RenderEntryView(m.width, m.height, m.viewingEntry)
+		return ui.RenderEntryView(m.width, m.height, m.viewingEntry, m.todos)
 	case "todos":
 		return ui.RenderTodoList(m.width, m.height, m.todos, m.selectedTodo, m.statusMsg)
 	default:

@@ -59,6 +59,8 @@ func (m Model) handleEntriesListKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			}
 			m.viewingEntry = sorted[m.selectedEntry]
 			m.view = "view_entry"
+			// Load todos so we can display them in the entry view
+			return m, m.loadTodos()
 		}
 		return m, nil
 	}
