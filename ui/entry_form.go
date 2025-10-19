@@ -12,7 +12,7 @@ func RenderEntryForm(width, height int, ta textarea.Model, statusMsg string) str
 
 	title := titleStyle.Render("NEW ENTRY")
 
-	help := FormatHelpLeft(width, "ctrl+s", "save", "esc", "exit")
+	help := FormatHelpLeft(width, "ctrl+s", "save", "esc", "cancel")
 
 	// Add status message if present
 	status := ""
