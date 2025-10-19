@@ -1,6 +1,9 @@
 package ui
 
-import "github.com/charmbracelet/bubbles/textarea"
+import (
+	"github.com/charmbracelet/bubbles/textarea"
+	"github.com/charmbracelet/lipgloss"
+)
 
 // RenderEntryForm renders the entry editing form
 func RenderEntryForm(width, height int, ta textarea.Model, statusMsg string) string {
@@ -14,7 +17,8 @@ func RenderEntryForm(width, height int, ta textarea.Model, statusMsg string) str
 	// Add status message if present
 	status := ""
 	if statusMsg != "" {
-		status = "\n" + helpStyle.Render(statusMsg)
+		statusStyle := lipgloss.NewStyle().Foreground(mutedColor)
+		status = "\n" + statusStyle.Render(statusMsg)
 	}
 
 	content := title + "\n\n" +
