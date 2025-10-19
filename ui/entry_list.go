@@ -11,7 +11,7 @@ import (
 
 // RenderEntryList renders the entry list view
 func RenderEntryList(width, height int, entries []models.Entry, selectedIdx int, statusMsg string, todos []models.Todo, filterTag string) string {
-	container := GetContainerStyle(width, height)
+	container := GetFullScreenBox(width, height)
 
 	// Update title to show filter if active
 	titleText := "Entries"

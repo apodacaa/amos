@@ -79,7 +79,8 @@ func NewModel() Model {
 
 // Init initializes the model (Elm architecture)
 func (m Model) Init() tea.Cmd {
-	return textarea.Blink
+	// Load entries and todos on startup for dashboard stats
+	return tea.Batch(textarea.Blink, m.loadEntriesAndTodos())
 }
 
 // Update handles messages (Elm architecture)
@@ -195,7 +196,7 @@ func (m Model) View() string {
 	case "add_todo":
 		return ui.RenderAddTodoForm(m.width, m.height, m.todoInput, m.statusMsg)
 	default:
-		return ui.RenderDashboard(m.width, m.height)
+		return ui.RenderDashboard(m.width, m.height, m.entries, m.todos)
 	}
 }
 

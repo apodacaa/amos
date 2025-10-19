@@ -2,9 +2,9 @@ package ui
 
 import "github.com/charmbracelet/bubbles/textarea"
 
-// RenderEntryForm renders the entry form view
+// RenderEntryForm renders the entry editing form
 func RenderEntryForm(width, height int, ta textarea.Model, statusMsg string) string {
-	containerStyle := GetContainerStyle(width, height)
+	containerStyle := GetFullScreenBox(width, height)
 	titleStyle := GetTitleStyle(width)
 
 	title := titleStyle.Render("NEW ENTRY")

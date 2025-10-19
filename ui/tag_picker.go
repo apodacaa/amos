@@ -8,7 +8,7 @@ import (
 
 // RenderTagPicker renders the tag selection view
 func RenderTagPicker(width, height int, tags []string, selectedIdx int) string {
-	container := GetContainerStyle(width, height)
+	container := GetFullScreenBox(width, height)
 	title := GetTitleStyle(width).Render("Filter by Tag")
 
 	// Build tag list

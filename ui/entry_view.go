@@ -11,7 +11,7 @@ import (
 
 // RenderEntryView renders a read-only view of an entry
 func RenderEntryView(width, height int, entry models.Entry, allTodos []models.Todo) string {
-	container := GetContainerStyle(width, height)
+	container := GetFullScreenBox(width, height)
 
 	// Title
 	titleStyle := lipgloss.NewStyle().

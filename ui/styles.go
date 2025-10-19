@@ -17,6 +17,7 @@ var (
 )
 
 // GetContainerStyle returns a container style sized to terminal dimensions
+// DEPRECATED: Use GetFullScreenBox instead for consistent brutalist layout
 func GetContainerStyle(width, height int) lipgloss.Style {
 	return lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
@@ -24,6 +25,16 @@ func GetContainerStyle(width, height int) lipgloss.Style {
 		Padding(1, 2).
 		Width(width - 2).  // Account for border
 		Height(height - 2) // Account for border
+}
+
+// GetFullScreenBox returns a box that fills most of the terminal with consistent styling
+func GetFullScreenBox(width, height int) lipgloss.Style {
+	return lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(accentColor).
+		Padding(1, 2).
+		Width(width - 2).  // Minimal margin for border
+		Height(height - 2) // Minimal margin for border
 }
 
 // GetTitleStyle returns a title style sized to container width
@@ -35,22 +46,11 @@ func GetTitleStyle(width int) lipgloss.Style {
 		Width(width - 8) // Account for container padding + border
 }
 
-// Text styles
-var (
-	menuItemStyle = lipgloss.NewStyle().
-			Foreground(subtleColor).
-			MarginTop(0).
-			MarginBottom(0)
-
-	keyStyle = lipgloss.NewStyle().
-			Foreground(accentColor).
-			Bold(true)
-
-	helpStyle = lipgloss.NewStyle().
-			Foreground(mutedColor).
-			Italic(true).
-			MarginTop(1)
-)
+// helpStyle for help text
+var helpStyle = lipgloss.NewStyle().
+	Foreground(mutedColor).
+	Italic(true).
+	MarginTop(1)
 
 // Textarea style helpers
 func GetTextareaStyle() lipgloss.Style {

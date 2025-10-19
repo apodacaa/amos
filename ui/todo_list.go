@@ -11,7 +11,7 @@ import (
 
 // RenderTodoList renders the todo list view
 func RenderTodoList(width, height int, todos []models.Todo, entries []models.Entry, selectedIdx int, statusMsg string) string {
-	container := GetContainerStyle(width, height)
+	container := GetFullScreenBox(width, height)
 	title := GetTitleStyle(width).Render("Todos")
 
 	// Build todo list

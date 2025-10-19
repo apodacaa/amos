@@ -7,7 +7,7 @@ import (
 
 // RenderAddTodoForm renders the standalone todo creation form
 func RenderAddTodoForm(width, height int, todoInput textarea.Model, statusMsg string) string {
-	container := GetContainerStyle(width, height)
+	container := GetFullScreenBox(width, height)
 	title := GetTitleStyle(width).Render("Add Todo")
 
 	// Help text
