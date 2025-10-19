@@ -11,7 +11,7 @@ import (
 
 // Model holds the application state
 type Model struct {
-	view             string         // Current view: "dashboard", "entry", "entries", "view_entry", or "todos"
+	view             string         // Current view: "dashboard", "entry", "entries", "view_entry", "todos", or "tag_picker"
 	width            int            // Terminal width
 	height           int            // Terminal height
 	textarea         textarea.Model // Textarea for entry input
@@ -27,6 +27,9 @@ type Model struct {
 	confirmingDelete bool           // Whether showing delete confirmation
 	todos            []models.Todo  // All todos (for todo list view)
 	selectedTodo     int            // Selected todo index in list
+	filterTag        string         // Current tag filter (empty = no filter)
+	availableTags    []string       // All unique tags across entries
+	selectedTag      int            // Selected tag index in tag picker
 }
 
 // NewModel creates a new model with default values
@@ -76,6 +79,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m.handleViewEntryKeys(msg)
 		} else if m.view == "todos" {
 			return m.handleTodosListKeys(msg)
+		} else if m.view == "tag_picker" {
+			return m.handleTagPickerKeys(msg)
 		}
 		return m.handleKeyPress(msg)
 
@@ -166,11 +171,13 @@ func (m Model) View() string {
 	case "entry":
 		return ui.RenderEntryForm(m.width, m.height, m.textarea, m.statusMsg)
 	case "entries":
-		return ui.RenderEntryList(m.width, m.height, m.entries, m.selectedEntry, m.statusMsg, m.todos)
+		return ui.RenderEntryList(m.width, m.height, m.entries, m.selectedEntry, m.statusMsg, m.todos, m.filterTag)
 	case "view_entry":
 		return ui.RenderEntryView(m.width, m.height, m.viewingEntry, m.todos)
 	case "todos":
 		return ui.RenderTodoList(m.width, m.height, m.todos, m.selectedTodo, m.statusMsg)
+	case "tag_picker":
+		return ui.RenderTagPicker(m.width, m.height, m.availableTags, m.selectedTag)
 	default:
 		return ui.RenderDashboard(m.width, m.height)
 	}

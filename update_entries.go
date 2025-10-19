@@ -34,6 +34,23 @@ func (m Model) handleEntriesListKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.selectedTodo = 0
 		// Todos already loaded (we load them when entering entries view)
 		return m, nil
+	case "@":
+		// Open tag picker (or clear filter if already filtering)
+		if m.filterTag != "" {
+			// Clear filter
+			m.filterTag = ""
+			m.statusMsg = "✓ Filter cleared"
+			return m, nil
+		}
+		// Extract unique tags from all entries
+		m.availableTags = helpers.ExtractUniqueTags(m.entries)
+		if len(m.availableTags) == 0 {
+			m.statusMsg = "No tags found in entries"
+			return m, nil
+		}
+		m.selectedTag = 0
+		m.view = "tag_picker"
+		return m, nil
 	case "j", "down":
 		if m.selectedEntry < len(m.entries)-1 {
 			m.selectedEntry++
@@ -51,9 +68,12 @@ func (m Model) handleEntriesListKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 	case "enter":
 		// Open selected entry for read-only viewing
-		if m.selectedEntry >= 0 && m.selectedEntry < len(m.entries) {
+		// Apply filter if active (same logic as UI)
+		filtered := helpers.FilterEntriesByTag(m.entries, m.filterTag)
+
+		if m.selectedEntry >= 0 && m.selectedEntry < len(filtered) {
 			// Need to get the sorted entry (newest first)
-			sorted := helpers.SortEntriesForDisplay(m.entries)
+			sorted := helpers.SortEntriesForDisplay(filtered)
 			m.viewingEntry = sorted[m.selectedEntry]
 			m.view = "view_entry"
 			// Load todos so we can display them in the entry view

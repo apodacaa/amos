@@ -10,12 +10,21 @@ import (
 )
 
 // RenderEntryList renders the entry list view
-func RenderEntryList(width, height int, entries []models.Entry, selectedIdx int, statusMsg string, todos []models.Todo) string {
+func RenderEntryList(width, height int, entries []models.Entry, selectedIdx int, statusMsg string, todos []models.Todo, filterTag string) string {
 	container := GetContainerStyle(width, height)
-	title := GetTitleStyle(width).Render("Entries")
+
+	// Update title to show filter if active
+	titleText := "Entries"
+	if filterTag != "" {
+		titleText = fmt.Sprintf("Entries (filtered: %s)", filterTag)
+	}
+	title := GetTitleStyle(width).Render(titleText)
+
+	// Filter entries by tag if filter is active
+	filtered := helpers.FilterEntriesByTag(entries, filterTag)
 
 	// Sort entries by timestamp (newest first)
-	sorted := helpers.SortEntriesForDisplay(entries)
+	sorted := helpers.SortEntriesForDisplay(filtered)
 
 	// Build entry list
 	var listItems []string
@@ -89,11 +98,15 @@ func RenderEntryList(width, height int, entries []models.Entry, selectedIdx int,
 		status = "\n" + statusStyle.Render(statusMsg) + "\n"
 	}
 
-	// Help text
+	// Help text (changes based on filter state)
 	helpStyle := lipgloss.NewStyle().
 		Foreground(mutedColor).
 		Italic(true)
-	help := helpStyle.Render("j/k: navigate • enter: view • t: todos • d: delete • esc: back • q: quit")
+	helpText := "j/k: navigate • enter: view • t: todos • @: filter • d: delete • esc: back • q: quit"
+	if filterTag != "" {
+		helpText = "j/k: navigate • enter: view • t: todos • @: clear filter • d: delete • esc: back • q: quit"
+	}
+	help := helpStyle.Render(helpText)
 
 	// Combine sections
 	content := lipgloss.JoinVertical(

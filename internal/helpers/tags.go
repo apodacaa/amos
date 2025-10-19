@@ -2,7 +2,10 @@ package helpers
 
 import (
 	"regexp"
+	"sort"
 	"strings"
+
+	"github.com/apodacaa/amos/internal/models"
 )
 
 // ParseEntryContent splits entry content into title and body
@@ -42,4 +45,50 @@ func ExtractTags(text string) []string {
 	}
 
 	return tags
+}
+
+// ExtractUniqueTags collects all unique tags from a list of entries
+// Returns tags sorted alphabetically with @ prefix
+func ExtractUniqueTags(entries []models.Entry) []string {
+	tagMap := make(map[string]int) // tag -> count
+
+	for _, entry := range entries {
+		for _, tag := range entry.Tags {
+			tagMap[tag]++
+		}
+	}
+
+	// Convert to slice with @ prefix and sort
+	tags := make([]string, 0, len(tagMap))
+	for tag := range tagMap {
+		tags = append(tags, "@"+tag)
+	}
+
+	// Sort alphabetically
+	sort.Strings(tags)
+
+	return tags
+}
+
+// FilterEntriesByTag filters entries to only those containing the specified tag
+// Tag should be provided with @ prefix (e.g., "@client")
+// Returns filtered list or original list if filterTag is empty
+func FilterEntriesByTag(entries []models.Entry, filterTag string) []models.Entry {
+	if filterTag == "" {
+		return entries
+	}
+
+	filtered := []models.Entry{}
+	tagWithoutAt := strings.TrimPrefix(filterTag, "@")
+
+	for _, entry := range entries {
+		for _, entryTag := range entry.Tags {
+			if entryTag == tagWithoutAt {
+				filtered = append(filtered, entry)
+				break
+			}
+		}
+	}
+
+	return filtered
 }
