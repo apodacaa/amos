@@ -2,8 +2,10 @@ package main
 
 import (
 	"strings"
+	"time"
 
 	"github.com/apodacaa/amos/internal/helpers"
+	"github.com/apodacaa/amos/internal/models"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -39,8 +41,8 @@ func (m Model) handleAddTodoKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.confirmingExit = false
 		return m, nil
 
-	case "ctrl+s", "enter":
-		// Save standalone todo (Enter for quick save, Ctrl+S for consistency with entry form)
+	case "ctrl+s":
+		// Save todo and stay in form
 		m.confirmingExit = false // Clear confirmation if showing
 		title := strings.TrimSpace(m.todoInput.Value())
 		if title == "" {
@@ -53,8 +55,37 @@ func (m Model) handleAddTodoKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.currentTodo.Tags = helpers.ExtractTags(title)
 		m.currentTodo.EntryID = nil // Standalone todo (no entry link)
 
-		// Save and return to dashboard
+		// Save (will show "✓ Saved" and stay in form)
 		return m, m.saveTodo()
+
+	case "enter":
+		// Save todo and start a new one (rapid entry workflow)
+		m.confirmingExit = false // Clear confirmation if showing
+		title := strings.TrimSpace(m.todoInput.Value())
+		if title == "" {
+			m.statusMsg = "⚠ Todo title cannot be empty"
+			return m, nil
+		}
+
+		// Set title and extract tags
+		m.currentTodo.Title = title
+		m.currentTodo.Tags = helpers.ExtractTags(title)
+		m.currentTodo.EntryID = nil // Standalone todo (no entry link)
+
+		// Save current todo
+		cmd := m.saveTodo()
+
+		// Reset for next todo (rapid entry mode)
+		m.currentTodo = models.Todo{
+			ID:        m.generateID(),
+			Status:    "open",
+			Position:  0,
+			CreatedAt: time.Now(),
+		}
+		m.todoInput.Reset()
+		m.hasUnsaved = false
+
+		return m, cmd
 	default:
 		// If confirming exit and user starts typing, cancel confirmation
 		if m.confirmingExit {
