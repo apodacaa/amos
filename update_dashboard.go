@@ -1,12 +1,7 @@
 package main
 
 import (
-	"time"
-
-	"github.com/apodacaa/amos/internal/models"
-	"github.com/charmbracelet/bubbles/textarea"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/google/uuid"
 )
 
 // handleKeyPress processes keyboard input (dashboard view)
@@ -15,19 +10,8 @@ func (m Model) handleKeyPress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "q", "ctrl+c":
 		return m, tea.Quit
 	case "n":
-		// Create new entry
-		m.view = "entry"
-		m.currentEntry = models.Entry{
-			ID:        uuid.New().String(),
-			Timestamp: time.Now(),
-		}
-		m.textarea.Reset()
-		m.textarea.Focus()
-		m.statusMsg = ""
-		m.hasUnsaved = false
-		m.savedContent = ""
-		m.confirmingExit = false
-		return m, textarea.Blink
+		// Create new entry (using shared helper)
+		return m.handleNewEntry()
 	case "e":
 		// View entries list (load both entries and todos for stats)
 		m.view = "entries"
@@ -39,18 +23,8 @@ func (m Model) handleKeyPress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.selectedTodo = 0
 		return m, m.loadTodos()
 	case "a":
-		// Add standalone todo
-		m.view = "add_todo"
-		m.currentTodo = models.Todo{
-			ID:        uuid.New().String(),
-			Status:    "open",
-			Position:  0,
-			CreatedAt: time.Now(),
-		}
-		m.todoInput.Reset()
-		m.todoInput.Focus()
-		m.statusMsg = ""
-		return m, textarea.Blink
+		// Add standalone todo (using shared helper)
+		return m.handleAddTodo()
 	case "esc":
 		m.view = "dashboard"
 	}

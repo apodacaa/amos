@@ -64,20 +64,23 @@ func RenderTodoList(width, height int, todos []models.Todo, selectedIdx int, sta
 			// Apply selection and completion styling
 			var styled string
 			if i == selectedIdx {
-				selectedStyle := lipgloss.NewStyle().
-					Foreground(accentColor).
-					Bold(true)
+				// Selected item - use accent color (but dimmer if done)
+				selectedStyle := lipgloss.NewStyle().Bold(true)
+				if todo.Status == "done" {
+					selectedStyle = selectedStyle.Foreground(mutedColor)
+				} else {
+					selectedStyle = selectedStyle.Foreground(accentColor)
+				}
 				styled = selectedStyle.Render("► " + line)
 			} else {
-				normalStyle := lipgloss.NewStyle().
-					Foreground(subtleColor)
+				// Not selected - use subtle or muted based on status
+				normalStyle := lipgloss.NewStyle()
+				if todo.Status == "done" {
+					normalStyle = normalStyle.Foreground(mutedColor)
+				} else {
+					normalStyle = normalStyle.Foreground(subtleColor)
+				}
 				styled = normalStyle.Render("  " + line)
-			}
-
-			// Dim completed todos
-			if todo.Status == "done" {
-				dimStyle := lipgloss.NewStyle().Foreground(mutedColor)
-				styled = dimStyle.Render(styled)
 			}
 
 			listItems = append(listItems, styled)

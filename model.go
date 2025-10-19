@@ -7,11 +7,13 @@ import (
 	"github.com/apodacaa/amos/ui"
 	"github.com/charmbracelet/bubbles/textarea"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/google/uuid"
 )
 
 // Model holds the application state
 type Model struct {
 	view             string         // Current view: "dashboard", "entry", "entries", "view_entry", "todos", "tag_picker", or "add_todo"
+	previousView     string         // Previous view (for context-aware escape)
 	width            int            // Terminal width
 	height           int            // Terminal height
 	textarea         textarea.Model // Textarea for entry input
@@ -209,4 +211,41 @@ func (m Model) View() string {
 	default:
 		return ui.RenderDashboard(m.width, m.height)
 	}
+}
+
+// handleNewEntry is a shared handler for creating a new entry (from any view)
+func (m Model) handleNewEntry() (Model, tea.Cmd) {
+	m.previousView = m.view
+	m.view = "entry"
+	m.currentEntry = models.Entry{
+		ID:        m.generateID(),
+		Timestamp: time.Now(),
+	}
+	m.textarea.Reset()
+	m.textarea.Focus()
+	m.hasUnsaved = false
+	m.savedContent = ""
+	m.statusMsg = ""
+	return m, textarea.Blink
+}
+
+// handleAddTodo is a shared handler for creating a standalone todo (from any view)
+func (m Model) handleAddTodo() (Model, tea.Cmd) {
+	m.previousView = m.view
+	m.view = "add_todo"
+	m.currentTodo = models.Todo{
+		ID:        m.generateID(),
+		Status:    "open",
+		Position:  0,
+		CreatedAt: time.Now(),
+	}
+	m.todoInput.Reset()
+	m.todoInput.Focus()
+	m.statusMsg = ""
+	return m, textarea.Blink
+}
+
+// generateID generates a new UUID string
+func (m Model) generateID() string {
+	return uuid.New().String()
 }

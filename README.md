@@ -19,16 +19,18 @@ make run
 
 *Dashboard:*
 - `n` - New Entry
-- `e` - View Entries List
+- `a` - Add Standalone Todo
 - `t` - View Todos List
-- `s` - Search (coming soon)
+- `e` - View Entries List
 - `q` or `Ctrl+C` - Quit
 
 *Entry Form:*
 - `Ctrl+S` - Save entry
-- `esc` - Exit (with confirmation if unsaved)
+- `esc` - Exit (returns to previous view, with confirmation if unsaved)
 
 *Entry List:*
+- `n` - New Entry
+- `a` - Add Standalone Todo
 - `j/k` or `↑/↓` - Navigate
 - `enter` - View entry detail
 - `t` - Jump to todos
@@ -36,17 +38,26 @@ make run
 - `d` (double tap) - Delete entry
 - `esc` - Back to dashboard
 
-*Entry View:*
+*Entry View (Read-Only):*
+- `n` - New Entry
+- `a` - Add Standalone Todo
 - Shows entry with inline todos
 - `t` - Jump to todos
 - `esc` - Back to entry list
 
 *Todo List:*
+- `n` - New Entry
+- `a` - Add Standalone Todo
 - `j/k` or `↑/↓` - Navigate
 - `space` - Toggle todo status (saves immediately)
 - `u/i` - Move todo up/down (manual priority)
 - `e` - Jump to entries
 - `esc` - Back to dashboard
+
+*Add Todo Form:*
+- Type todo title (tags auto-extracted from @mentions)
+- `enter` - Save and return to previous view
+- `esc` - Cancel and return to previous view
 
 ## Development
 
@@ -93,17 +104,20 @@ air               # Run with auto-reload
 - View entries chronologically (newest first)
 - Delete entries with double-tap confirmation
 - See todo counts in entry list: `[3 todos: 1 open]`
-- Cross-navigation: jump to todos with `t` key
+- Cross-navigation: jump to todos with `t` key, create entry/todo with `n`/`a` from any view
 
 ✅ **Todo Management**
-- Extract todos from entries with `!todo` syntax
+- **Standalone todos**: Create todos independently with `a` key from any view
+- **Entry-linked todos**: Extract from entries with `!todo` syntax
 - Toggle status with space (immediate save)
 - Manual priority with u/i keys (move up/down)
 - Sort: open first → position → newest
 - View todos by entry or all together
-- Cross-navigation: jump to entries with `e` key
+- Cross-navigation: jump to entries with `e` key, create entry/todo with `n`/`a` from any view
 
-✅ **Brutalist Design**
+✅ **Brutalist Navigation**
+- Context-aware `esc` key: returns to previous view (not always dashboard)
+- Global shortcuts: `n` (new entry) and `a` (add todo) work from any read-only view
 - Immediate writes (no hidden pending state)
 - Full context visible (todos show in entry view)
 - No unnecessary features or decorations
@@ -123,7 +137,8 @@ air               # Run with auto-reload
 │   ├── update_entries.go
 │   ├── update_entry_view.go
 │   ├── update_tag_picker.go
-│   └── update_todos.go
+│   ├── update_todos.go
+│   └── update_add_todo.go
 ├── ui/                     # View renderers (pure functions)
 │   ├── dashboard.go
 │   ├── entry_form.go
@@ -131,6 +146,7 @@ air               # Run with auto-reload
 │   ├── entry_view.go
 │   ├── tag_picker.go
 │   ├── todo_list.go
+│   ├── add_todo_form.go
 │   └── styles.go
 ├── internal/               # Business logic
 │   ├── models/            # Data structures
@@ -208,6 +224,8 @@ make build
 3. **No hidden state** - What you see is what's saved
 4. **Simple is better** - Normalize positions every move vs complex tracking
 5. **One action = one effect** - No multi-step workflows
+6. **Context-aware navigation** - Escape returns to previous view (where you came from)
+7. **Global actions** - `n` and `a` keys work from any read-only view for fast creation
 
 **Tag Syntax:**
 - `@work` in entry content → auto-extracted to tags array

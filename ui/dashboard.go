@@ -23,9 +23,6 @@ func RenderDashboard(width, height int) string {
 	menuItems = append(menuItems,
 		fmt.Sprintf("%s %s", keyStyle.Render("[e]"), menuItemStyle.Render("Entries")),
 	)
-	menuItems = append(menuItems,
-		fmt.Sprintf("%s %s", keyStyle.Render("[s]"), menuItemStyle.Render("Search")),
-	)
 
 	menu := strings.Join(menuItems, "\n")
 	help := helpStyle.Render("Press q to quit")

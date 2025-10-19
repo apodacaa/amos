@@ -91,6 +91,7 @@ update_entries.go        # Entry list key handler
 update_entry_view.go     # Entry view key handler
 update_tag_picker.go     # Tag picker key handler
 update_todos.go          # Todo list key handler
+update_add_todo.go       # Add standalone todo key handler
 ui/                      # View renderers (pure functions)
   dashboard.go
   entry_form.go
@@ -98,6 +99,7 @@ ui/                      # View renderers (pure functions)
   entry_view.go
   tag_picker.go
   todo_list.go
+  add_todo_form.go
   styles.go
 internal/                # Business logic
   storage/               # JSON persistence (~/.amos/)

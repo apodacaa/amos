@@ -132,6 +132,7 @@ update_*.go             # Key handlers per view (domain separation)
   update_entry_view.go
   update_tag_picker.go
   update_todos.go
+  update_add_todo.go
 ui/                     # View renderers (pure functions)
   dashboard.go
   entry_form.go
@@ -139,6 +140,7 @@ ui/                     # View renderers (pure functions)
   entry_view.go
   tag_picker.go
   todo_list.go
+  add_todo_form.go
   styles.go
 internal/               # Business logic
   storage/              # JSON persistence
@@ -196,11 +198,14 @@ func (m model) View() string {
 - Journal entries with @tags (auto-extracted)
 - Tag filtering with @ key (brutalist picker: visible state, toggle on/off)
 - Cross-navigation (t/e keys to jump between entries and todos)
-- Todos with `!todo` syntax (linked to entries)
+- Standalone todos (a key from any view, not linked to entries)
+- Entry-linked todos with `!todo` syntax (extracted from entry content)
 - Todo toggle with immediate save (space key)
 - Manual priority with u/i keys (position field)
 - Todo stats in entry list: `[3 todos: 1 open]`
 - Full todo display in entry view (no hidden info)
+- Global shortcuts: n (new entry) and a (add todo) from any read-only view
+- Context-aware escape: returns to previous view (previousView field tracks origin)
 
 **Core philosophy:**
 - Immediate writes (no deferred/pending state)
@@ -209,6 +214,8 @@ func (m model) View() string {
 - One action = one effect
 - Normalize over preserve (simpler logic)
 - DRY principle (extract duplicates to helpers)
+- Context-aware navigation (escape goes back to where you came from)
+- Global action shortcuts (n/a work from anywhere for fast creation)
 - No feature creep without explicit user request
 
 ---
