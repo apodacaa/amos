@@ -69,6 +69,7 @@ func (m Model) handleEntriesListKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			// Need to get the sorted entry (newest first)
 			sorted := helpers.SortEntriesForDisplay(filtered)
 			m.viewingEntry = sorted[m.selectedEntry]
+			m.scrollOffset = 0 // Reset scroll when opening entry
 			m.view = "view_entry"
 			// Load todos so we can display them in the entry view
 			return m, m.loadTodos()

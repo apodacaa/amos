@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/apodacaa/amos/internal/helpers"
@@ -8,6 +9,7 @@ import (
 	"github.com/apodacaa/amos/ui"
 	"github.com/charmbracelet/bubbles/textarea"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/google/uuid"
 )
 
@@ -21,6 +23,7 @@ type Model struct {
 	currentEntry   models.Entry   // Entry being edited
 	currentTodo    models.Todo    // Standalone todo being created
 	viewingEntry   models.Entry   // Entry being viewed (read-only)
+	scrollOffset   int            // Scroll offset for long entry view
 	statusMsg      string         // Status message to display
 	statusTime     time.Time      // When status message was set
 	hasUnsaved     bool           // Whether there are unsaved changes
@@ -112,9 +115,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// Update terminal dimensions
 		m.width = msg.Width
 		m.height = msg.Height
-		// Update textarea size
-		m.textarea.SetWidth(msg.Width - 10)
-		m.textarea.SetHeight(msg.Height - 12)
+		// Update textarea size (if terminal is large enough)
+		if msg.Width > 10 && msg.Height > 12 {
+			m.textarea.SetWidth(msg.Width - 10)
+			m.textarea.SetHeight(msg.Height - 12)
+		}
 		return m, nil
 
 	case saveCompleteMsg:
@@ -208,13 +213,27 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 // View renders the UI (Elm architecture)
 func (m Model) View() string {
+	// Minimum terminal size check (brutalist: be honest about limitations)
+	const minWidth = 80
+	const minHeight = 24
+
+	if m.width < minWidth || m.height < minHeight {
+		msg := fmt.Sprintf("Terminal too small\n\nMinimum size: %dx%d\nCurrent size: %dx%d\n\nResize your terminal",
+			minWidth, minHeight, m.width, m.height)
+		return lipgloss.NewStyle().
+			Width(m.width).
+			Height(m.height).
+			Align(lipgloss.Center, lipgloss.Center).
+			Render(msg)
+	}
+
 	switch m.view {
 	case "entry":
 		return ui.RenderEntryForm(m.width, m.height, m.textarea, m.statusMsg)
 	case "entries":
 		return ui.RenderEntryList(m.width, m.height, m.entries, m.selectedEntry, m.statusMsg, m.todos, m.filterTag)
 	case "view_entry":
-		return ui.RenderEntryView(m.width, m.height, m.viewingEntry, m.todos)
+		return ui.RenderEntryView(m.width, m.height, m.viewingEntry, m.todos, m.scrollOffset)
 	case "todos":
 		return ui.RenderTodoList(m.width, m.height, m.todos, m.entries, m.selectedTodo, m.statusMsg)
 	case "tag_picker":

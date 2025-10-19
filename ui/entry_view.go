@@ -10,7 +10,7 @@ import (
 )
 
 // RenderEntryView renders a read-only view of an entry
-func RenderEntryView(width, height int, entry models.Entry, allTodos []models.Todo) string {
+func RenderEntryView(width, height int, entry models.Entry, allTodos []models.Todo, scrollOffset int) string {
 	container := GetFullScreenBox(width, height)
 
 	// Title
@@ -37,10 +37,10 @@ func RenderEntryView(width, height int, entry models.Entry, allTodos []models.To
 	bodyStyle := lipgloss.NewStyle().
 		Foreground(subtleColor).
 		Width(width - 8)
-	body := bodyStyle.Render(entry.Body)
 
 	// Todos section (if any)
 	var todosSection string
+	var todoLineCount int
 	if len(entry.TodoIDs) > 0 {
 		// Filter todos that belong to this entry
 		entryTodos := helpers.FilterTodosByEntry(allTodos, entry.ID)
@@ -91,36 +91,91 @@ func RenderEntryView(width, height int, entry models.Entry, allTodos []models.To
 
 			todosContent := strings.Join(todoLines, "\n")
 			todosSection = "\n\n" + todosTitle + "\n" + todosContent
+			todoLineCount = 2 + len(todoLines) // Title + blank + todo lines
 		}
 	}
 
-	// Help text at bottom
+	// Calculate available height for content
+	// Reserve space for: title (1) + metadata (1) + blank (1) + help (2) + margins (4)
+	availableHeight := height - 9 - todoLineCount
+	if availableHeight < 5 {
+		availableHeight = 5
+	}
+
+	// Split body into lines
+	bodyLines := strings.Split(entry.Body, "\n")
+	totalLines := len(bodyLines)
+
+	// Apply scroll offset
+	var body string
+	var scrollIndicator string
+
+	if totalLines > availableHeight {
+		// Clamp scrollOffset to valid range
+		maxOffset := totalLines - availableHeight
+		if scrollOffset > maxOffset {
+			scrollOffset = maxOffset
+		}
+		if scrollOffset < 0 {
+			scrollOffset = 0
+		}
+
+		// Show windowed content
+		start := scrollOffset
+		end := scrollOffset + availableHeight
+		if end > totalLines {
+			end = totalLines
+		}
+
+		visibleLines := bodyLines[start:end]
+		body = bodyStyle.Render(strings.Join(visibleLines, "\n"))
+
+		// Add scroll indicator
+		continuationStyle := lipgloss.NewStyle().Foreground(mutedColor)
+		scrollIndicator = "\n" + continuationStyle.Render(fmt.Sprintf("(showing lines %d-%d of %d)", start+1, end, totalLines))
+	} else {
+		body = bodyStyle.Render(entry.Body)
+	}
+
+	// Help text at bottom - always show scroll controls for consistency
 	help := FormatHelpLeft(width,
 		"n", "new entry",
 		"a", "add todo",
 		"j/k", "navigate",
+		"u/i", "scroll",
 		"e", "entries",
 		"t", "todos",
 		"esc", "cancel",
 		"q", "quit",
 	)
 
-	// Combine main content - help anchored to bottom
+	// Build main content (everything except help)
 	mainContent := lipgloss.JoinVertical(
 		lipgloss.Left,
 		title,
 		metadata,
 		"",
 		body,
+		scrollIndicator,
 		todosSection,
 	)
 
-	// Place content with help anchored to bottom
-	fullContent := lipgloss.Place(
-		width-4, height-4,
-		lipgloss.Left, lipgloss.Top,
-		mainContent,
-	) + "\n" + help
+	// Calculate how much vertical space to add to push help to bottom
+	// Count lines in main content
+	mainLines := strings.Count(mainContent, "\n") + 1
+	helpLines := 1               // Help is single line
+	availableSpace := height - 4 // Account for container margins
+	padding := availableSpace - mainLines - helpLines
+	if padding < 0 {
+		padding = 0
+	}
 
-	return container.Render(fullContent)
+	// Add padding and help
+	content := mainContent
+	if padding > 0 {
+		content += strings.Repeat("\n", padding)
+	}
+	content += "\n" + help
+
+	return container.Render(content)
 }

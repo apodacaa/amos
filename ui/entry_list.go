@@ -36,8 +36,43 @@ func RenderEntryList(width, height int, entries []models.Entry, selectedIdx int,
 			Align(lipgloss.Center)
 		listItems = append(listItems, emptyStyle.Render("No entries yet"))
 	} else {
-		for i, entry := range sorted {
-			// Format: 2025-10-18 14:32 | Meeting with team
+		// Calculate viewport (visible window of items)
+		// Reserve space: title (1) + blank (1) + status (1) + blank (1) + help (1) = 5 lines minimum
+		availableHeight := height - 10 // Conservative estimate for chrome
+		if availableHeight < 5 {
+			availableHeight = 5
+		}
+
+		// Calculate window start and end to keep selected item visible
+		start := 0
+		end := len(sorted)
+
+		if len(sorted) > availableHeight {
+			// Center selected item in viewport
+			half := availableHeight / 2
+			start = selectedIdx - half
+			end = selectedIdx + half + 1
+
+			// Adjust if near beginning
+			if start < 0 {
+				start = 0
+				end = availableHeight
+			}
+
+			// Adjust if near end
+			if end > len(sorted) {
+				end = len(sorted)
+				start = end - availableHeight
+				if start < 0 {
+					start = 0
+				}
+			}
+		}
+
+		// Render visible items
+		for i := start; i < end; i++ {
+			entry := sorted[i]
+			// Format: 2006-01-02 15:04 | Meeting with team
 			timestamp := entry.Timestamp.Format("2006-01-02 15:04")
 			line := fmt.Sprintf("%s | %s", timestamp, entry.Title)
 
@@ -58,6 +93,13 @@ func RenderEntryList(width, height int, entries []models.Entry, selectedIdx int,
 			}
 
 			listItems = append(listItems, styled)
+		}
+
+		// Add scroll indicator if needed
+		if len(sorted) > availableHeight {
+			scrollInfo := fmt.Sprintf("(%d-%d of %d)", start+1, end, len(sorted))
+			scrollStyle := lipgloss.NewStyle().Foreground(mutedColor)
+			listItems = append(listItems, scrollStyle.Render(scrollInfo))
 		}
 	}
 
@@ -97,7 +139,7 @@ func RenderEntryList(width, height int, entries []models.Entry, selectedIdx int,
 		)
 	}
 
-	// Combine sections - help anchored to bottom
+	// Build main content (everything except help)
 	mainContent := lipgloss.JoinVertical(
 		lipgloss.Left,
 		title,
@@ -106,12 +148,21 @@ func RenderEntryList(width, height int, entries []models.Entry, selectedIdx int,
 		status,
 	)
 
-	// Place content with help anchored to bottom
-	fullContent := lipgloss.Place(
-		width-4, height-4,
-		lipgloss.Left, lipgloss.Top,
-		mainContent,
-	) + "\n" + help
+	// Calculate how much vertical space to add to push help to bottom
+	mainLines := strings.Count(mainContent, "\n") + 1
+	helpLines := 1
+	availableSpace := height - 4
+	padding := availableSpace - mainLines - helpLines
+	if padding < 0 {
+		padding = 0
+	}
 
-	return container.Render(fullContent)
+	// Add padding and help
+	content := mainContent
+	if padding > 0 {
+		content += strings.Repeat("\n", padding)
+	}
+	content += "\n" + help
+
+	return container.Render(content)
 }

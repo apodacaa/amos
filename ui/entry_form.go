@@ -21,7 +21,7 @@ func RenderEntryForm(width, height int, ta textarea.Model, statusMsg string) str
 		status = statusStyle.Render(statusMsg)
 	}
 
-	// Build main content - help anchored to bottom
+	// Build main content (everything except help)
 	mainContent := lipgloss.JoinVertical(
 		lipgloss.Left,
 		title,
@@ -32,12 +32,21 @@ func RenderEntryForm(width, height int, ta textarea.Model, statusMsg string) str
 		mainContent = lipgloss.JoinVertical(lipgloss.Left, mainContent, "", status)
 	}
 
-	// Place content with help anchored to bottom
-	fullContent := lipgloss.Place(
-		width-4, height-4,
-		lipgloss.Left, lipgloss.Top,
-		mainContent,
-	) + "\n" + help
+	// Calculate how much vertical space to add to push help to bottom
+	mainLines := lipgloss.Height(mainContent)
+	helpLines := 1
+	availableSpace := height - 4
+	padding := availableSpace - mainLines - helpLines
+	if padding < 0 {
+		padding = 0
+	}
 
-	return containerStyle.Render(fullContent)
+	// Add padding and help
+	content := mainContent
+	if padding > 0 {
+		content += "\n" + lipgloss.NewStyle().Height(padding).Render("")
+	}
+	content += "\n" + help
+
+	return containerStyle.Render(content)
 }

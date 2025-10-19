@@ -53,6 +53,7 @@ func (m Model) handleViewEntryKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			if currentIdx >= 0 && currentIdx < len(sorted)-1 {
 				m.selectedEntry = currentIdx + 1
 				m.viewingEntry = sorted[m.selectedEntry]
+				m.scrollOffset = 0 // Reset scroll when switching entries
 			}
 		}
 		return m, nil
@@ -76,7 +77,18 @@ func (m Model) handleViewEntryKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			if currentIdx > 0 {
 				m.selectedEntry = currentIdx - 1
 				m.viewingEntry = sorted[m.selectedEntry]
+				m.scrollOffset = 0 // Reset scroll when switching entries
 			}
+		}
+		return m, nil
+	case "u":
+		// Scroll down in current entry (u is above j, j goes down)
+		m.scrollOffset++
+		return m, nil
+	case "i":
+		// Scroll up in current entry (i is above k, k goes up)
+		if m.scrollOffset > 0 {
+			m.scrollOffset--
 		}
 		return m, nil
 	}
