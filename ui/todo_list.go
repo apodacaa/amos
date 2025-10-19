@@ -96,7 +96,7 @@ func RenderTodoList(width, height int, todos []models.Todo, entries []models.Ent
 		"a", "add todo",
 		"j/k", "navigate",
 		"u/i", "move",
-		"x", "toggle",
+		"space", "toggle",
 		"e", "entries",
 		"d", "dashboard",
 		"q", "quit",
