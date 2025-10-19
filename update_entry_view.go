@@ -29,6 +29,44 @@ func (m Model) handleViewEntryKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.view = "todos"
 		m.selectedTodo = 0
 		return m, m.loadEntriesAndTodos()
+	case "j", "down":
+		// Navigate to next entry (newer to older)
+		if len(m.entries) > 0 {
+			// Find current entry index
+			currentIdx := -1
+			for i, entry := range m.entries {
+				if entry.ID == m.viewingEntry.ID {
+					currentIdx = i
+					break
+				}
+			}
+
+			// Move to next entry (wrap around)
+			if currentIdx >= 0 && currentIdx < len(m.entries)-1 {
+				m.selectedEntry = currentIdx + 1
+				m.viewingEntry = m.entries[m.selectedEntry]
+			}
+		}
+		return m, nil
+	case "k", "up":
+		// Navigate to previous entry (older to newer)
+		if len(m.entries) > 0 {
+			// Find current entry index
+			currentIdx := -1
+			for i, entry := range m.entries {
+				if entry.ID == m.viewingEntry.ID {
+					currentIdx = i
+					break
+				}
+			}
+
+			// Move to previous entry (wrap around)
+			if currentIdx > 0 {
+				m.selectedEntry = currentIdx - 1
+				m.viewingEntry = m.entries[m.selectedEntry]
+			}
+		}
+		return m, nil
 	}
 	return m, nil
 }

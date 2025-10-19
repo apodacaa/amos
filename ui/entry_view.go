@@ -98,6 +98,7 @@ func RenderEntryView(width, height int, entry models.Entry, allTodos []models.To
 	help := FormatHelpLeft(width,
 		"n", "new entry",
 		"a", "add todo",
+		"j/k", "navigate",
 		"t", "todos",
 		"e", "entries",
 		"d", "dashboard",
