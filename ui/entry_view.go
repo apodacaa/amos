@@ -99,7 +99,7 @@ func RenderEntryView(width, height int, entry models.Entry, allTodos []models.To
 	helpStyle := lipgloss.NewStyle().
 		Foreground(mutedColor).
 		Italic(true)
-	help := helpStyle.Render("n: new entry • a: add todo • t: todos • esc: back • q: quit")
+	help := helpStyle.Render("n: new entry • a: add todo • t: todos • e: entries • d: dashboard • q: quit")
 
 	// Combine all sections
 	content := lipgloss.JoinVertical(

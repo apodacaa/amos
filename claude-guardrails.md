@@ -197,7 +197,7 @@ func (m model) View() string {
 **Current features (keep minimal):**
 - Journal entries with @tags (auto-extracted)
 - Tag filtering with @ key (brutalist picker: visible state, toggle on/off)
-- Cross-navigation (t/e keys to jump between entries and todos)
+- Cross-navigation (t/e/d keys to jump between todos, entries, and dashboard)
 - Standalone todos (a key from any view, not linked to entries)
 - Entry-linked todos with `!todo` syntax (extracted from entry content)
 - Todo toggle with immediate save (space key)
@@ -205,7 +205,9 @@ func (m model) View() string {
 - Todo stats in entry list: `[3 todos: 1 open]`
 - Full todo display in entry view (no hidden info)
 - Global shortcuts: n (new entry) and a (add todo) from any read-only view
-- Context-aware escape: returns to previous view (previousView field tracks origin)
+- Explicit navigation: d (dashboard), t (todos), e (entries) work from all views
+- Escape only for forms: cancel and return to dashboard
+- **Append-only journal**: No delete for entries (historical record, immutable)
 
 **Core philosophy:**
 - Immediate writes (no deferred/pending state)
@@ -214,8 +216,10 @@ func (m model) View() string {
 - One action = one effect
 - Normalize over preserve (simpler logic)
 - DRY principle (extract duplicates to helpers)
-- Context-aware navigation (escape goes back to where you came from)
+- Explicit navigation: one key = one destination (always)
+- No hidden state tracking (no previousView field)
 - Global action shortcuts (n/a work from anywhere for fast creation)
+- Immutability: journal is append-only (no delete)
 - No feature creep without explicit user request
 
 ---

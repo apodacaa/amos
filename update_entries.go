@@ -7,36 +7,23 @@ import (
 
 // handleEntriesListKeys processes keyboard input (entries list view)
 func (m Model) handleEntriesListKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
-	// If confirming delete, only allow 'd' to proceed or anything else to cancel
-	if m.confirmingDelete {
-		switch msg.String() {
-		case "d":
-			// User pressed 'd' again - proceed with delete
-			return m, m.deleteEntry()
-		default:
-			// Any other key cancels delete confirmation
-			m.confirmingDelete = false
-			m.statusMsg = ""
-			return m, nil
-		}
-	}
-
-	// Normal navigation (not confirming delete)
 	switch msg.String() {
 	case "q", "ctrl+c":
 		return m, tea.Quit
-	case "esc":
+	case "d":
+		// Go to dashboard (explicit navigation)
 		m.view = "dashboard"
 		return m, nil
 	case "n":
 		// Create new entry (using shared helper)
 		return m.handleNewEntry()
 	case "t":
-		// Jump to todo list
+		// Jump to todo list (explicit navigation)
 		m.view = "todos"
 		m.selectedTodo = 0
-		// Todos already loaded (we load them when entering entries view)
-		return m, nil
+		// Entries already loaded, just need to ensure todos are loaded
+		// (but loadEntriesAndTodos is safe to call again)
+		return m, m.loadEntriesAndTodos()
 	case "a":
 		// Add standalone todo (using shared helper)
 		return m.handleAddTodo()
@@ -66,11 +53,6 @@ func (m Model) handleEntriesListKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		if m.selectedEntry > 0 {
 			m.selectedEntry--
 		}
-		return m, nil
-	case "d":
-		// First 'd' press - show confirmation
-		m.confirmingDelete = true
-		m.statusMsg = "⚠ Delete entry? Press 'd' again to confirm, or any other key to cancel"
 		return m, nil
 	case "enter":
 		// Open selected entry for read-only viewing

@@ -88,38 +88,6 @@ func (m Model) moveTodo(direction string) tea.Cmd {
 	}
 }
 
-// deleteEntry deletes the currently selected entry
-func (m Model) deleteEntry() tea.Cmd {
-	return func() tea.Msg {
-		// Get the sorted entry to delete
-		sorted := helpers.SortEntriesForDisplay(m.entries)
-
-		if m.selectedEntry < 0 || m.selectedEntry >= len(sorted) {
-			return entryDeletedMsg{err: nil}
-		}
-
-		entryToDelete := sorted[m.selectedEntry]
-
-		// Load all entries
-		entries, err := storage.LoadEntries()
-		if err != nil {
-			return entryDeletedMsg{err: err}
-		}
-
-		// Find and remove the entry
-		newEntries := make([]models.Entry, 0, len(entries)-1)
-		for _, e := range entries {
-			if e.ID != entryToDelete.ID {
-				newEntries = append(newEntries, e)
-			}
-		}
-
-		// Save updated entries
-		err = storage.SaveEntries(newEntries)
-		return entryDeletedMsg{err: err}
-	}
-}
-
 // saveEntry saves the current entry and extracts todos
 func (m Model) saveEntry() tea.Cmd {
 	return func() tea.Msg {

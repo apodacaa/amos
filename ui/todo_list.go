@@ -10,7 +10,7 @@ import (
 )
 
 // RenderTodoList renders the todo list view
-func RenderTodoList(width, height int, todos []models.Todo, selectedIdx int, statusMsg string) string {
+func RenderTodoList(width, height int, todos []models.Todo, entries []models.Entry, selectedIdx int, statusMsg string) string {
 	container := GetContainerStyle(width, height)
 	title := GetTitleStyle(width).Render("Todos")
 
@@ -49,8 +49,16 @@ func RenderTodoList(width, height int, todos []models.Todo, selectedIdx int, sta
 
 			// Entry link indicator
 			if todo.EntryID != nil {
+				// Find entry title
+				entryTitle := "unknown entry"
+				for _, entry := range entries {
+					if entry.ID == *todo.EntryID {
+						entryTitle = entry.Title
+						break
+					}
+				}
 				linkStyle := lipgloss.NewStyle().Foreground(mutedColor)
-				titleText += linkStyle.Render(" (from entry)")
+				titleText += linkStyle.Render(fmt.Sprintf(" (%s)", entryTitle))
 			}
 
 			line := fmt.Sprintf("%s %s", checkbox, titleText)
@@ -102,7 +110,7 @@ func RenderTodoList(width, height int, todos []models.Todo, selectedIdx int, sta
 	helpStyle := lipgloss.NewStyle().
 		Foreground(mutedColor).
 		Italic(true)
-	help := helpStyle.Render("n: new entry • a: add todo • j/k: navigate • u/i: move • space: toggle • e: entries • esc: back • q: quit")
+	help := helpStyle.Render("n: new entry • a: add todo • j/k: navigate • u/i: move • space: toggle • e: entries • d: dashboard • q: quit")
 
 	// Combine sections
 	content := lipgloss.JoinVertical(

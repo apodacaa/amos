@@ -92,9 +92,9 @@ func RenderEntryList(width, height int, entries []models.Entry, selectedIdx int,
 	helpStyle := lipgloss.NewStyle().
 		Foreground(mutedColor).
 		Italic(true)
-	helpText := "n: new entry • a: add todo • j/k: navigate • enter: view • t: todos • @: filter • d: delete • esc: back • q: quit"
+	helpText := "n: new entry • a: add todo • j/k: navigate • enter: view • t: todos • @: filter • d: dashboard • q: quit"
 	if filterTag != "" {
-		helpText = "n: new entry • a: add todo • j/k: navigate • enter: view • t: todos • @: clear filter • d: delete • esc: back • q: quit"
+		helpText = "n: new entry • a: add todo • j/k: navigate • enter: view • t: todos • @: clear filter • d: dashboard • q: quit"
 	}
 	help := helpStyle.Render(helpText)
 

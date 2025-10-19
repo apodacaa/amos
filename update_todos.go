@@ -10,16 +10,15 @@ func (m Model) handleTodosListKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch msg.String() {
 	case "q", "ctrl+c":
 		return m, tea.Quit
-	case "esc":
-		// No need to save - already saved immediately
+	case "d":
+		// Go to dashboard (explicit navigation)
 		m.view = "dashboard"
-		m.statusMsg = ""
 		return m, nil
 	case "n":
 		// Create new entry (using shared helper)
 		return m.handleNewEntry()
 	case "e":
-		// Jump to entry list (load entries and todos for display)
+		// Jump to entry list (explicit navigation)
 		m.view = "entries"
 		m.selectedEntry = 0
 		return m, m.loadEntriesAndTodos()

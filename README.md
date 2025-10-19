@@ -26,7 +26,7 @@ make run
 
 *Entry Form:*
 - `Ctrl+S` - Save entry
-- `esc` - Exit (returns to previous view, with confirmation if unsaved)
+- `esc` - Cancel (goes to dashboard, with confirmation if unsaved)
 
 *Entry List:*
 - `n` - New Entry
@@ -35,15 +35,17 @@ make run
 - `enter` - View entry detail
 - `t` - Jump to todos
 - `@` - Filter by tag (or clear filter)
-- `d` (double tap) - Delete entry
-- `esc` - Back to dashboard
+- `d` - Go to dashboard
+- `q` - Quit
 
 *Entry View (Read-Only):*
 - `n` - New Entry
 - `a` - Add Standalone Todo
 - Shows entry with inline todos
 - `t` - Jump to todos
-- `esc` - Back to entry list
+- `e` - Jump to entries
+- `d` - Go to dashboard
+- `q` - Quit
 
 *Todo List:*
 - `n` - New Entry
@@ -52,12 +54,13 @@ make run
 - `space` - Toggle todo status (saves immediately)
 - `u/i` - Move todo up/down (manual priority)
 - `e` - Jump to entries
-- `esc` - Back to dashboard
+- `d` - Go to dashboard
+- `q` - Quit
 
 *Add Todo Form:*
 - Type todo title (tags auto-extracted from @mentions)
-- `enter` - Save and return to previous view
-- `esc` - Cancel and return to previous view
+- `enter` - Save and go to dashboard
+- `esc` - Cancel and go to dashboard
 
 ## Development
 
@@ -102,7 +105,7 @@ air               # Run with auto-reload
 - Auto-extract @tags from content
 - Filter by tag with @ key (brutalist tag picker)
 - View entries chronologically (newest first)
-- Delete entries with double-tap confirmation
+- **Append-only**: No delete (journal is historical record)
 - See todo counts in entry list: `[3 todos: 1 open]`
 - Cross-navigation: jump to todos with `t` key, create entry/todo with `n`/`a` from any view
 
@@ -116,8 +119,9 @@ air               # Run with auto-reload
 - Cross-navigation: jump to entries with `e` key, create entry/todo with `n`/`a` from any view
 
 ✅ **Brutalist Navigation**
-- Context-aware `esc` key: returns to previous view (not always dashboard)
+- Explicit navigation: `d` (dashboard), `t` (todos), `e` (entries) work from all views
 - Global shortcuts: `n` (new entry) and `a` (add todo) work from any read-only view
+- Escape only for forms: cancel and return to dashboard
 - Immediate writes (no hidden pending state)
 - Full context visible (todos show in entry view)
 - No unnecessary features or decorations

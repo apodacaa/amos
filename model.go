@@ -12,28 +12,26 @@ import (
 
 // Model holds the application state
 type Model struct {
-	view             string         // Current view: "dashboard", "entry", "entries", "view_entry", "todos", "tag_picker", or "add_todo"
-	previousView     string         // Previous view (for context-aware escape)
-	width            int            // Terminal width
-	height           int            // Terminal height
-	textarea         textarea.Model // Textarea for entry input
-	todoInput        textarea.Model // Single-line input for standalone todos
-	currentEntry     models.Entry   // Entry being edited
-	currentTodo      models.Todo    // Standalone todo being created
-	viewingEntry     models.Entry   // Entry being viewed (read-only)
-	statusMsg        string         // Status message to display
-	statusTime       time.Time      // When status message was set
-	hasUnsaved       bool           // Whether there are unsaved changes
-	savedContent     string         // Last saved content (to detect changes)
-	confirmingExit   bool           // Whether showing exit confirmation
-	entries          []models.Entry // All entries (for list view)
-	selectedEntry    int            // Selected entry index in list
-	confirmingDelete bool           // Whether showing delete confirmation
-	todos            []models.Todo  // All todos (for todo list view)
-	selectedTodo     int            // Selected todo index in list
-	filterTag        string         // Current tag filter (empty = no filter)
-	availableTags    []string       // All unique tags across entries
-	selectedTag      int            // Selected tag index in tag picker
+	view           string         // Current view: "dashboard", "entry", "entries", "view_entry", "todos", "tag_picker", or "add_todo"
+	width          int            // Terminal width
+	height         int            // Terminal height
+	textarea       textarea.Model // Textarea for entry input
+	todoInput      textarea.Model // Single-line input for standalone todos
+	currentEntry   models.Entry   // Entry being edited
+	currentTodo    models.Todo    // Standalone todo being created
+	viewingEntry   models.Entry   // Entry being viewed (read-only)
+	statusMsg      string         // Status message to display
+	statusTime     time.Time      // When status message was set
+	hasUnsaved     bool           // Whether there are unsaved changes
+	savedContent   string         // Last saved content (to detect changes)
+	confirmingExit bool           // Whether showing exit confirmation
+	entries        []models.Entry // All entries (for list view)
+	selectedEntry  int            // Selected entry index in list
+	todos          []models.Todo  // All todos (for todo list view)
+	selectedTodo   int            // Selected todo index in list
+	filterTag      string         // Current tag filter (empty = no filter)
+	availableTags  []string       // All unique tags across entries
+	selectedTag    int            // Selected tag index in tag picker
 }
 
 // NewModel creates a new model with default values
@@ -155,18 +153,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 
-	case entryDeletedMsg:
-		if msg.err != nil {
-			m.statusMsg = "Error deleting entry: " + msg.err.Error()
-		} else {
-			m.statusMsg = "✓ Entry deleted"
-			m.confirmingDelete = false
-			// Reload entries to update the list
-			return m, m.loadEntries()
-		}
-		m.statusTime = time.Now()
-		return m, nil
-
 	case todoToggledMsg:
 		if msg.err != nil {
 			m.statusMsg = "Error saving todo: " + msg.err.Error()
@@ -203,7 +189,7 @@ func (m Model) View() string {
 	case "view_entry":
 		return ui.RenderEntryView(m.width, m.height, m.viewingEntry, m.todos)
 	case "todos":
-		return ui.RenderTodoList(m.width, m.height, m.todos, m.selectedTodo, m.statusMsg)
+		return ui.RenderTodoList(m.width, m.height, m.todos, m.entries, m.selectedTodo, m.statusMsg)
 	case "tag_picker":
 		return ui.RenderTagPicker(m.width, m.height, m.availableTags, m.selectedTag)
 	case "add_todo":
@@ -215,7 +201,6 @@ func (m Model) View() string {
 
 // handleNewEntry is a shared handler for creating a new entry (from any view)
 func (m Model) handleNewEntry() (Model, tea.Cmd) {
-	m.previousView = m.view
 	m.view = "entry"
 	m.currentEntry = models.Entry{
 		ID:        m.generateID(),
@@ -231,7 +216,6 @@ func (m Model) handleNewEntry() (Model, tea.Cmd) {
 
 // handleAddTodo is a shared handler for creating a standalone todo (from any view)
 func (m Model) handleAddTodo() (Model, tea.Cmd) {
-	m.previousView = m.view
 	m.view = "add_todo"
 	m.currentTodo = models.Todo{
 		ID:        m.generateID(),

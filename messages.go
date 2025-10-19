@@ -13,11 +13,6 @@ type entriesLoadedMsg struct {
 	err     error
 }
 
-// entryDeletedMsg is sent when entry is deleted
-type entryDeletedMsg struct {
-	err error
-}
-
 // todosLoadedMsg is sent when todos are loaded
 type todosLoadedMsg struct {
 	todos []models.Todo

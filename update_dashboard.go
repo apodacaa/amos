@@ -18,10 +18,10 @@ func (m Model) handleKeyPress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.selectedEntry = 0
 		return m, m.loadEntriesAndTodos()
 	case "t":
-		// View todos list
+		// View todos list (load both todos and entries to show entry titles)
 		m.view = "todos"
 		m.selectedTodo = 0
-		return m, m.loadTodos()
+		return m, m.loadEntriesAndTodos()
 	case "a":
 		// Add standalone todo (using shared helper)
 		return m.handleAddTodo()

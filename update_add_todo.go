@@ -13,12 +13,8 @@ func (m Model) handleAddTodoKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "ctrl+c":
 		return m, tea.Quit
 	case "esc":
-		// Cancel and go back to previous view (context-aware)
-		if m.previousView != "" {
-			m.view = m.previousView
-		} else {
-			m.view = "dashboard"
-		}
+		// Cancel and go to dashboard
+		m.view = "dashboard"
 		m.statusMsg = ""
 		return m, nil
 	case "ctrl+s", "enter":

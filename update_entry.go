@@ -13,12 +13,8 @@ func (m Model) handleEntryKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "esc":
 		// Check if showing confirmation
 		if m.confirmingExit {
-			// User pressed Esc again - discard changes and exit to previous view
-			if m.previousView != "" {
-				m.view = m.previousView
-			} else {
-				m.view = "dashboard"
-			}
+			// User pressed Esc again - discard changes and exit to dashboard
+			m.view = "dashboard"
 			m.textarea.Blur()
 			m.confirmingExit = false
 			m.statusMsg = ""
@@ -35,12 +31,8 @@ func (m Model) handleEntryKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 
-		// No unsaved changes, safe to exit to previous view
-		if m.previousView != "" {
-			m.view = m.previousView
-		} else {
-			m.view = "dashboard"
-		}
+		// No unsaved changes, safe to exit to dashboard
+		m.view = "dashboard"
 		m.textarea.Blur()
 		m.confirmingExit = false
 		return m, nil
