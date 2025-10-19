@@ -81,7 +81,7 @@ func RenderEntryList(width, height int, entries []models.Entry, selectedIdx int,
 			"enter", "view",
 			"t", "todos",
 			"@", "clear filter",
-			"d", "dashboard",
+			"esc", "cancel",
 			"q", "quit",
 		)
 	} else {
@@ -92,7 +92,7 @@ func RenderEntryList(width, height int, entries []models.Entry, selectedIdx int,
 			"enter", "view",
 			"t", "todos",
 			"@", "filter",
-			"d", "dashboard",
+			"esc", "cancel",
 			"q", "quit",
 		)
 	}

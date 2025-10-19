@@ -10,8 +10,8 @@ func (m Model) handleViewEntryKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch msg.String() {
 	case "q", "ctrl+c":
 		return m, tea.Quit
-	case "d":
-		// Go to dashboard (explicit navigation)
+	case "esc":
+		// Go back to dashboard
 		m.view = "dashboard"
 		return m, nil
 	case "n":

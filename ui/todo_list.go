@@ -98,7 +98,7 @@ func RenderTodoList(width, height int, todos []models.Todo, entries []models.Ent
 		"u/i", "move",
 		"space", "toggle",
 		"e", "entries",
-		"d", "dashboard",
+		"esc", "cancel",
 		"q", "quit",
 	) // Combine sections - help anchored to bottom
 	mainContent := lipgloss.JoinVertical(
