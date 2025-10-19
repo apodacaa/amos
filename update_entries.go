@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/apodacaa/amos/internal/models"
+	"github.com/apodacaa/amos/internal/helpers"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -47,16 +47,7 @@ func (m Model) handleEntriesListKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		// Open selected entry for read-only viewing
 		if m.selectedEntry >= 0 && m.selectedEntry < len(m.entries) {
 			// Need to get the sorted entry (newest first)
-			sorted := make([]models.Entry, len(m.entries))
-			copy(sorted, m.entries)
-			// Sort by timestamp descending (newest first) - same as in RenderEntryList
-			for i := 0; i < len(sorted)-1; i++ {
-				for j := i + 1; j < len(sorted); j++ {
-					if sorted[j].Timestamp.After(sorted[i].Timestamp) {
-						sorted[i], sorted[j] = sorted[j], sorted[i]
-					}
-				}
-			}
+			sorted := helpers.SortEntriesForDisplay(m.entries)
 			m.viewingEntry = sorted[m.selectedEntry]
 			m.view = "view_entry"
 			// Load todos so we can display them in the entry view

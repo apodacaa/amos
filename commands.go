@@ -53,31 +53,9 @@ func (m Model) moveTodo(direction string) tea.Cmd {
 			return todoMovedMsg{err: nil} // Nothing to move
 		}
 
-		// Sort same way as display: open before done, then by position, then newest first
-		sorted := make([]models.Todo, len(allTodos))
-		copy(sorted, allTodos)
-		for i := 0; i < len(sorted)-1; i++ {
-			for j := i + 1; j < len(sorted); j++ {
-				if sorted[i].Status == "done" && sorted[j].Status == "open" {
-					sorted[i], sorted[j] = sorted[j], sorted[i]
-				} else if sorted[i].Status == sorted[j].Status {
-					if sorted[i].Position != sorted[j].Position {
-						if sorted[j].Position < sorted[i].Position {
-							sorted[i], sorted[j] = sorted[j], sorted[i]
-						}
-					} else {
-						if sorted[j].CreatedAt.After(sorted[i].CreatedAt) {
-							sorted[i], sorted[j] = sorted[j], sorted[i]
-						}
-					}
-				}
-			}
-		}
-
-		// Re-number positions based on current sort order (always normalize)
-		for i := range sorted {
-			sorted[i].Position = i
-		}
+		// Sort same way as display and normalize positions
+		sorted := helpers.SortTodosForDisplay(allTodos)
+		sorted = helpers.NormalizeTodoPositions(sorted)
 
 		if m.selectedTodo < 0 || m.selectedTodo >= len(sorted) {
 			return todoMovedMsg{err: nil}
@@ -114,16 +92,7 @@ func (m Model) moveTodo(direction string) tea.Cmd {
 func (m Model) deleteEntry() tea.Cmd {
 	return func() tea.Msg {
 		// Get the sorted entry to delete
-		sorted := make([]models.Entry, len(m.entries))
-		copy(sorted, m.entries)
-		// Sort by timestamp descending (newest first)
-		for i := 0; i < len(sorted)-1; i++ {
-			for j := i + 1; j < len(sorted); j++ {
-				if sorted[j].Timestamp.After(sorted[i].Timestamp) {
-					sorted[i], sorted[j] = sorted[j], sorted[i]
-				}
-			}
-		}
+		sorted := helpers.SortEntriesForDisplay(m.entries)
 
 		if m.selectedEntry < 0 || m.selectedEntry >= len(sorted) {
 			return entryDeletedMsg{err: nil}

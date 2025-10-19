@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/apodacaa/amos/internal/helpers"
 	"github.com/apodacaa/amos/internal/models"
 	"github.com/charmbracelet/lipgloss"
 )
@@ -24,31 +25,8 @@ func RenderTodoList(width, height int, todos []models.Todo, selectedIdx int, sta
 			Align(lipgloss.Center)
 		listItems = append(listItems, emptyStyle.Render("No todos yet. Create an entry with !todo lines."))
 	} else {
-		// Sort todos: open first, then by position, then by created date descending
-		sorted := make([]models.Todo, len(todos))
-		copy(sorted, todos)
-
-		// Simple bubble sort: open before done, then by position (lower first), then newest first
-		for i := 0; i < len(sorted)-1; i++ {
-			for j := i + 1; j < len(sorted); j++ {
-				// Open todos come before done todos
-				if sorted[i].Status == "done" && sorted[j].Status == "open" {
-					sorted[i], sorted[j] = sorted[j], sorted[i]
-				} else if sorted[i].Status == sorted[j].Status {
-					// Within same status, sort by position first
-					if sorted[i].Position != sorted[j].Position {
-						if sorted[j].Position < sorted[i].Position {
-							sorted[i], sorted[j] = sorted[j], sorted[i]
-						}
-					} else {
-						// If position is same, sort by newest first
-						if sorted[j].CreatedAt.After(sorted[i].CreatedAt) {
-							sorted[i], sorted[j] = sorted[j], sorted[i]
-						}
-					}
-				}
-			}
-		}
+		// Sort todos using helper (same logic as commands)
+		sorted := helpers.SortTodosForDisplay(todos)
 
 		// Render each todo
 		for i, todo := range sorted {

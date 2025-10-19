@@ -2,9 +2,9 @@ package ui
 
 import (
 	"fmt"
-	"sort"
 	"strings"
 
+	"github.com/apodacaa/amos/internal/helpers"
 	"github.com/apodacaa/amos/internal/models"
 	"github.com/charmbracelet/lipgloss"
 )
@@ -15,11 +15,7 @@ func RenderEntryList(width, height int, entries []models.Entry, selectedIdx int,
 	title := GetTitleStyle(width).Render("Entries")
 
 	// Sort entries by timestamp (newest first)
-	sorted := make([]models.Entry, len(entries))
-	copy(sorted, entries)
-	sort.Slice(sorted, func(i, j int) bool {
-		return sorted[i].Timestamp.After(sorted[j].Timestamp)
-	})
+	sorted := helpers.SortEntriesForDisplay(entries)
 
 	// Build entry list
 	var listItems []string

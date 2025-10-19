@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/apodacaa/amos/internal/models"
+	"github.com/apodacaa/amos/internal/helpers"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -45,26 +45,8 @@ func (m Model) handleTodosListKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		// Toggle todo status (save immediately, no reload)
 		// Need to sort todos same way as display to get the right one
 		if m.selectedTodo >= 0 && m.selectedTodo < len(m.todos) {
-			// Sort same way as display: open before done, then by position, then newest first
-			sorted := make([]models.Todo, len(m.todos))
-			copy(sorted, m.todos)
-			for i := 0; i < len(sorted)-1; i++ {
-				for j := i + 1; j < len(sorted); j++ {
-					if sorted[i].Status == "done" && sorted[j].Status == "open" {
-						sorted[i], sorted[j] = sorted[j], sorted[i]
-					} else if sorted[i].Status == sorted[j].Status {
-						if sorted[i].Position != sorted[j].Position {
-							if sorted[j].Position < sorted[i].Position {
-								sorted[i], sorted[j] = sorted[j], sorted[i]
-							}
-						} else {
-							if sorted[j].CreatedAt.After(sorted[i].CreatedAt) {
-								sorted[i], sorted[j] = sorted[j], sorted[i]
-							}
-						}
-					}
-				}
-			}
+			// Sort using helper (same logic as UI and commands)
+			sorted := helpers.SortTodosForDisplay(m.todos)
 
 			// Get the todo from the sorted list (matches display order)
 			todo := sorted[m.selectedTodo]
