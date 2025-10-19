@@ -91,20 +91,22 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		// Route to appropriate key handler based on view
-		if m.view == "entry" {
+		switch m.view {
+		case "entry":
 			return m.handleEntryKeys(msg)
-		} else if m.view == "entries" {
+		case "entries":
 			return m.handleEntriesListKeys(msg)
-		} else if m.view == "view_entry" {
+		case "view_entry":
 			return m.handleViewEntryKeys(msg)
-		} else if m.view == "todos" {
+		case "todos":
 			return m.handleTodosListKeys(msg)
-		} else if m.view == "tag_picker" {
+		case "tag_picker":
 			return m.handleTagPickerKeys(msg)
-		} else if m.view == "add_todo" {
+		case "add_todo":
 			return m.handleAddTodoKeys(msg)
+		default:
+			return m.handleKeyPress(msg)
 		}
-		return m.handleKeyPress(msg)
 
 	case tea.WindowSizeMsg:
 		// Update terminal dimensions
