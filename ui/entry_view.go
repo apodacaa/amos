@@ -96,9 +96,13 @@ func RenderEntryView(width, height int, entry models.Entry, allTodos []models.To
 
 	// Help text at bottom
 	help := FormatHelpLeft(width,
+		"n", "new entry",
+		"a", "add todo",
+		"x", "toggle",
+		"t", "todos",
 		"e", "entries",
 		"d", "dashboard",
-		"n", "new entry",
+		"q", "quit",
 	)
 
 	// Combine all sections
