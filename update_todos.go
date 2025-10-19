@@ -15,6 +15,11 @@ func (m Model) handleTodosListKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.view = "dashboard"
 		m.statusMsg = ""
 		return m, nil
+	case "e":
+		// Jump to entry list (load entries and todos for display)
+		m.view = "entries"
+		m.selectedEntry = 0
+		return m, m.loadEntriesAndTodos()
 	case "j", "down":
 		if m.selectedTodo < len(m.todos)-1 {
 			m.selectedTodo++

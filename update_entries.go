@@ -28,6 +28,12 @@ func (m Model) handleEntriesListKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "esc":
 		m.view = "dashboard"
 		return m, nil
+	case "t":
+		// Jump to todo list
+		m.view = "todos"
+		m.selectedTodo = 0
+		// Todos already loaded (we load them when entering entries view)
+		return m, nil
 	case "j", "down":
 		if m.selectedEntry < len(m.entries)-1 {
 			m.selectedEntry++

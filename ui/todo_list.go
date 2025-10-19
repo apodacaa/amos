@@ -99,7 +99,7 @@ func RenderTodoList(width, height int, todos []models.Todo, selectedIdx int, sta
 	helpStyle := lipgloss.NewStyle().
 		Foreground(mutedColor).
 		Italic(true)
-	help := helpStyle.Render("j/k: navigate • u/i: move • space: toggle • esc: back • q: quit")
+	help := helpStyle.Render("j/k: navigate • u/i: move • space: toggle • e: entries • esc: back • q: quit")
 
 	// Combine sections
 	content := lipgloss.JoinVertical(
