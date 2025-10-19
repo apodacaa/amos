@@ -81,20 +81,36 @@ The app follows Elm architecture:
 
 ## File Structure
 ```
-main.go           # Entry point only (~10 lines)
-model.go          # Model, Init, Update, View (Elm architecture)
-ui/               # View renderers (pure functions)
+main.go                  # Entry point only (~10 lines)
+model.go                 # Model, Init, Update, View (Elm core)
+messages.go              # All message types (saveCompleteMsg, etc.)
+commands.go              # All tea.Cmd functions (side effects/async)
+update_dashboard.go      # Dashboard key handler
+update_entry.go          # Entry form key handler
+update_entries.go        # Entry list key handler
+update_entry_view.go     # Entry view key handler
+update_todos.go          # Todo list key handler
+ui/                      # View renderers (pure functions)
   dashboard.go
   entry_form.go
-internal/         # Business logic (planned)
-  storage/        # JSON read/write
+  entry_list.go
+  entry_view.go
+  todo_list.go
+  styles.go
+internal/                # Business logic
+  storage/               # JSON persistence (~/.amos/)
     storage.go
-  models/         # Data structures
+  models/                # Data structures
     entry.go
     todo.go
-  helpers/        # Utilities
+  helpers/               # Utilities
     tags.go
-    ids.go
+    todos.go
 ```
 
-See `ARCHITECTURE.md` for detailed organization guidelines.
+**Separation Pattern (Bubble Tea Best Practice):**
+- Model = State only
+- Messages = Async results
+- Commands = Side effects (I/O)
+- Update_* = State transitions per view
+- UI = Pure renderers

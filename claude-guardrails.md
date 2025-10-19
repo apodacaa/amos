@@ -119,21 +119,33 @@ import tea "github.com/charmbracelet/bubbletea"
 
 ## File Organization Rules
 
-### Project Structure
+### Project Structure (Bubble Tea Best Practices)
 ```
-main.go           # Entry point only - keep minimal
-helpers/          # Business logic (storage, formatting, etc.)
-  storage.go      # JSON read/write
-  formatting.go   # Date/text helpers
-views/            # View renderers (if needed)
+main.go                 # Entry point only (~10 lines)
+model.go                # Model struct + Init/Update/View (Elm core)
+messages.go             # All message types
+commands.go             # All tea.Cmd functions (side effects)
+update_*.go             # Key handlers per view (domain separation)
+ui/                     # View renderers (pure functions)
   dashboard.go
-  entry.go
+  entry_list.go
+  entry_view.go
+  todo_list.go
+  styles.go
+internal/               # Business logic
+  storage/              # JSON persistence
+  models/               # Data structures
+  helpers/              # Pure utility functions
 ```
 
-### Code Separation
-- **main.go**: Model definition, Init/Update/View
-- **helpers/**: Pure functions for data manipulation
-- **views/**: Complex rendering logic (if view functions get large)
+### Code Separation (Current Pattern)
+- **main.go**: Entry point only (~10 lines)
+- **model.go**: Model struct, Init(), Update() router, View() router
+- **messages.go**: All message types (saveCompleteMsg, todosLoadedMsg, etc.)
+- **commands.go**: All tea.Cmd functions (loadEntries, saveTodo, toggleTodoImmediate, etc.)
+- **update_*.go**: Key handlers per view (handleEntryKeys, handleTodosListKeys, etc.)
+- **ui/**: Pure view renderers (RenderEntryList, RenderTodoList, etc.)
+- **internal/**: Business logic (storage, models, helpers)
 
 ---
 
@@ -166,10 +178,21 @@ func (m model) View() string {
 - No custom color palettes
 - Stick to terminal defaults where possible
 
-### No Feature Creep
-- Journal entries with @tags
-- Todos with statuses
-- That's it - no plugins, extensions, or "nice to have" features without explicit user request
+### Brutalist Design Principles
+**Current features (keep minimal):**
+- Journal entries with @tags (auto-extracted)
+- Todos with `!todo` syntax (linked to entries)
+- Todo toggle with immediate save (space key)
+- Manual priority with u/i keys (position field)
+- Todo stats in entry list: `[3 todos: 1 open]`
+- Full todo display in entry view (no hidden info)
+
+**Core philosophy:**
+- Immediate writes (no deferred/pending state)
+- Full context visible (no navigation required)
+- One action = one effect
+- Normalize over preserve (simpler logic)
+- No feature creep without explicit user request
 
 ---
 
