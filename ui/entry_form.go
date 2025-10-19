@@ -18,12 +18,26 @@ func RenderEntryForm(width, height int, ta textarea.Model, statusMsg string) str
 	status := ""
 	if statusMsg != "" {
 		statusStyle := lipgloss.NewStyle().Foreground(mutedColor)
-		status = "\n" + statusStyle.Render(statusMsg)
+		status = statusStyle.Render(statusMsg)
 	}
 
-	content := title + "\n\n" +
-		ta.View() + "\n\n" +
-		help + status
+	// Build main content - help anchored to bottom
+	mainContent := lipgloss.JoinVertical(
+		lipgloss.Left,
+		title,
+		"",
+		ta.View(),
+	)
+	if status != "" {
+		mainContent = lipgloss.JoinVertical(lipgloss.Left, mainContent, "", status)
+	}
 
-	return containerStyle.Render(content)
+	// Place content with help anchored to bottom
+	fullContent := lipgloss.Place(
+		width-4, height-4,
+		lipgloss.Left, lipgloss.Top,
+		mainContent,
+	) + "\n" + help
+
+	return containerStyle.Render(fullContent)
 }

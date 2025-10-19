@@ -50,15 +50,20 @@ func RenderTagPicker(width, height int, tags []string, selectedIdx int) string {
 		"esc", "cancel",
 	)
 
-	// Combine sections
-	content := lipgloss.JoinVertical(
+	// Combine main content - help anchored to bottom
+	mainContent := lipgloss.JoinVertical(
 		lipgloss.Left,
 		title,
 		"",
 		list,
-		"",
-		help,
 	)
 
-	return container.Render(content)
+	// Place content with help anchored to bottom
+	fullContent := lipgloss.Place(
+		width-4, height-4,
+		lipgloss.Left, lipgloss.Top,
+		mainContent,
+	) + "\n" + help
+
+	return container.Render(fullContent)
 }
