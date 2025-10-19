@@ -2,18 +2,16 @@ package ui
 
 import "github.com/charmbracelet/lipgloss"
 
-// Brutalist color palette
-// Gainsboro (#DBDCE8), Metallic Silver (#AAA3B4), Purple Taupe (#463848),
-// Deep Tuscan Red (#6E3F52), Mauve Taupe (#976775)
+// Brutalist color palette - Pure monochrome concrete
 var (
-	// Primary text and borders - Purple Taupe (dark) / Gainsboro (light)
-	subtleColor = lipgloss.AdaptiveColor{Light: "#463848", Dark: "#DBDCE8"}
+	// Primary text and borders - Dark gray (light) / Light gray (dark)
+	subtleColor = lipgloss.AdaptiveColor{Light: "#404040", Dark: "#CCCCCC"}
 
-	// Accent/highlight - Deep Tuscan Red (both themes)
-	accentColor = lipgloss.AdaptiveColor{Light: "#6E3F52", Dark: "#976775"}
+	// Accent/highlight - Pure black/white for maximum contrast
+	accentColor = lipgloss.AdaptiveColor{Light: "#000000", Dark: "#FFFFFF"}
 
-	// Muted/help text - Metallic Silver (light) / Mauve Taupe (dark)
-	mutedColor = lipgloss.AdaptiveColor{Light: "#AAA3B4", Dark: "#976775"}
+	// Muted/help text - Mid gray
+	mutedColor = lipgloss.AdaptiveColor{Light: "#808080", Dark: "#666666"}
 )
 
 // GetContainerStyle returns a container style sized to terminal dimensions
@@ -42,8 +40,8 @@ func GetTitleStyle(width int) lipgloss.Style {
 	return lipgloss.NewStyle().
 		Bold(true).
 		Foreground(accentColor).
-		Align(lipgloss.Center).
-		Width(width - 8) // Account for container padding + border
+		Width(width - 8).
+		Align(lipgloss.Center)
 }
 
 // helpStyle for help text
@@ -67,4 +65,64 @@ func GetPromptStyle() lipgloss.Style {
 
 func GetTextStyle() lipgloss.Style {
 	return lipgloss.NewStyle().Foreground(subtleColor)
+}
+
+// FormatHelp formats help text with bold keys (reverse colors for impact)
+// Centered alignment for dashboard monument aesthetics
+// Example: FormatHelp(width, "n", "new entry", "a", "add todo")
+func FormatHelp(width int, keyDescPairs ...string) string {
+	return formatHelpWithAlign(width, lipgloss.Center, keyDescPairs...)
+}
+
+// FormatHelpLeft formats help text with bold keys (reverse colors for impact)
+// Left-aligned for utility views (honest functional UI)
+// Example: FormatHelpLeft(width, "n", "new entry", "a", "add todo")
+func FormatHelpLeft(width int, keyDescPairs ...string) string {
+	return formatHelpWithAlign(width, lipgloss.Left, keyDescPairs...)
+}
+
+// formatHelpWithAlign is the shared implementation for help text formatting
+func formatHelpWithAlign(width int, align lipgloss.Position, keyDescPairs ...string) string {
+	var parts []string
+
+	// Maximum contrast: invert accent colors (white on black / black on white)
+	keyFg := lipgloss.AdaptiveColor{Light: "#FFFFFF", Dark: "#000000"}
+	keyBg := lipgloss.AdaptiveColor{Light: "#000000", Dark: "#FFFFFF"}
+
+	keyStyle := lipgloss.NewStyle().
+		Foreground(keyFg).
+		Background(keyBg).
+		Bold(true).
+		Padding(0, 1). // Add small padding for readability
+		Inline(true)   // Keep inline to prevent breaking
+
+	descStyle := lipgloss.NewStyle().
+		Foreground(subtleColor).
+		Inline(true) // Keep inline to prevent breaking
+
+	for i := 0; i < len(keyDescPairs); i += 2 {
+		if i+1 < len(keyDescPairs) {
+			key := keyStyle.Render(keyDescPairs[i])
+			desc := descStyle.Render(" " + keyDescPairs[i+1])
+			// Combine key and desc as single unit with inline wrapper
+			pair := lipgloss.NewStyle().Inline(true).Render(key + desc)
+			parts = append(parts, pair)
+		}
+	}
+
+	// Join parts with spacing
+	result := ""
+	for i, part := range parts {
+		result += part
+		if i < len(parts)-1 {
+			result += "  " // Two spaces between items
+		}
+	}
+
+	return lipgloss.NewStyle().
+		Foreground(mutedColor).
+		Width(width - 8).
+		Align(align).
+		Inline(true). // Prevent wrapping
+		Render(result)
 }

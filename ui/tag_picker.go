@@ -17,7 +17,6 @@ func RenderTagPicker(width, height int, tags []string, selectedIdx int) string {
 	if len(tags) == 0 {
 		emptyStyle := lipgloss.NewStyle().
 			Foreground(mutedColor).
-			Italic(true).
 			Width(width - 4).
 			Align(lipgloss.Center)
 		listItems = append(listItems, emptyStyle.Render("No tags found"))
@@ -45,11 +44,11 @@ func RenderTagPicker(width, height int, tags []string, selectedIdx int) string {
 	// Join list items
 	list := lipgloss.JoinVertical(lipgloss.Left, listItems...)
 
-	// Help text
-	helpStyle := lipgloss.NewStyle().
-		Foreground(mutedColor).
-		Italic(true)
-	help := helpStyle.Render("j/k: navigate • enter: select • esc: cancel • q: quit")
+	// Help text at bottom
+	help := FormatHelpLeft(width,
+		"enter", "select",
+		"esc", "cancel",
+	)
 
 	// Combine sections
 	content := lipgloss.JoinVertical(

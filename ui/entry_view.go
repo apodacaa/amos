@@ -22,14 +22,13 @@ func RenderEntryView(width, height int, entry models.Entry, allTodos []models.To
 
 	// Metadata line: date and tags
 	metaStyle := lipgloss.NewStyle().
-		Foreground(mutedColor).
-		Italic(true)
+		Foreground(mutedColor)
 
 	timestamp := entry.Timestamp.Format("2006-01-02 15:04")
 	meta := timestamp
 
 	if len(entry.Tags) > 0 {
-		meta += " • " + strings.Join(entry.Tags, " ")
+		meta += " " + strings.Join(entry.Tags, " ")
 	}
 
 	metadata := metaStyle.Render(meta)
@@ -95,11 +94,12 @@ func RenderEntryView(width, height int, entry models.Entry, allTodos []models.To
 		}
 	}
 
-	// Help text
-	helpStyle := lipgloss.NewStyle().
-		Foreground(mutedColor).
-		Italic(true)
-	help := helpStyle.Render("n: new entry • a: add todo • t: todos • e: entries • d: dashboard • q: quit")
+	// Help text at bottom
+	help := FormatHelpLeft(width,
+		"e", "entries",
+		"d", "dashboard",
+		"n", "new entry",
+	)
 
 	// Combine all sections
 	content := lipgloss.JoinVertical(

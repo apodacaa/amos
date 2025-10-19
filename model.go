@@ -79,7 +79,7 @@ func NewModel() Model {
 
 // Init initializes the model (Elm architecture)
 func (m Model) Init() tea.Cmd {
-	// Load entries and todos on startup for dashboard stats
+	// Load entries and todos on startup
 	return tea.Batch(textarea.Blink, m.loadEntriesAndTodos())
 }
 

@@ -6,22 +6,19 @@ import (
 )
 
 // RenderAddTodoForm renders the standalone todo creation form
-func RenderAddTodoForm(width, height int, todoInput textarea.Model, statusMsg string) string {
-	container := GetFullScreenBox(width, height)
-	title := GetTitleStyle(width).Render("Add Todo")
+func RenderAddTodoForm(width, height int, ti textarea.Model, statusMsg string) string {
+	box := GetFullScreenBox(width, height)
+	titleStyle := GetTitleStyle(width)
 
-	// Help text
-	helpStyle := lipgloss.NewStyle().
-		Foreground(mutedColor).
-		Italic(true)
-	help := helpStyle.Render("enter: save • esc: cancel")
+	title := titleStyle.Render("ADD TODO")
+
+	help := FormatHelpLeft(width, "enter", "save", "esc", "cancel")
 
 	// Status message (if present)
 	status := ""
 	if statusMsg != "" {
 		statusStyle := lipgloss.NewStyle().
-			Foreground(mutedColor).
-			Italic(true)
+			Foreground(mutedColor)
 		status = "\n" + statusStyle.Render(statusMsg)
 	}
 
@@ -30,11 +27,11 @@ func RenderAddTodoForm(width, height int, todoInput textarea.Model, statusMsg st
 		lipgloss.Left,
 		title,
 		"",
-		todoInput.View(),
+		ti.View(),
 		status,
 		"",
 		help,
 	)
 
-	return container.Render(content)
+	return box.Render(content)
 }

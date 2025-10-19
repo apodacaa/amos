@@ -32,7 +32,6 @@ func RenderEntryList(width, height int, entries []models.Entry, selectedIdx int,
 	if len(sorted) == 0 {
 		emptyStyle := lipgloss.NewStyle().
 			Foreground(mutedColor).
-			Italic(true).
 			Width(width - 4).
 			Align(lipgloss.Center)
 		listItems = append(listItems, emptyStyle.Render("No entries yet"))
@@ -41,18 +40,6 @@ func RenderEntryList(width, height int, entries []models.Entry, selectedIdx int,
 			// Format: 2025-10-18 14:32 | Meeting with team
 			timestamp := entry.Timestamp.Format("2006-01-02 15:04")
 			line := fmt.Sprintf("%s | %s", timestamp, entry.Title)
-
-			// Add todo stats if entry has todos
-			if len(entry.TodoIDs) > 0 {
-				entryTodos := helpers.FilterTodosByEntry(todos, entry.ID)
-				if len(entryTodos) > 0 {
-					openCount, totalCount := helpers.CountTodoStats(entryTodos)
-					todoStats := lipgloss.NewStyle().
-						Foreground(mutedColor).
-						Render(fmt.Sprintf(" [%d todos: %d open]", totalCount, openCount))
-					line += todoStats
-				}
-			}
 
 			// Truncate if too long
 			maxLen := width - 6
@@ -63,13 +50,10 @@ func RenderEntryList(width, height int, entries []models.Entry, selectedIdx int,
 			// Style selected item differently
 			var styled string
 			if i == selectedIdx {
-				selectedStyle := lipgloss.NewStyle().
-					Foreground(accentColor).
-					Bold(true)
-				styled = selectedStyle.Render("► " + line)
+				selectedStyle := lipgloss.NewStyle().Foreground(subtleColor)
+				styled = selectedStyle.Render("> " + line)
 			} else {
-				normalStyle := lipgloss.NewStyle().
-					Foreground(subtleColor)
+				normalStyle := lipgloss.NewStyle().Foreground(subtleColor)
 				styled = normalStyle.Render("  " + line)
 			}
 
@@ -83,20 +67,35 @@ func RenderEntryList(width, height int, entries []models.Entry, selectedIdx int,
 	status := ""
 	if statusMsg != "" {
 		statusStyle := lipgloss.NewStyle().
-			Foreground(mutedColor).
-			Italic(true)
+			Foreground(mutedColor)
 		status = "\n" + statusStyle.Render(statusMsg) + "\n"
 	}
 
-	// Help text (changes based on filter state)
-	helpStyle := lipgloss.NewStyle().
-		Foreground(mutedColor).
-		Italic(true)
-	helpText := "n: new entry • a: add todo • j/k: navigate • enter: view • t: todos • @: filter • d: dashboard • q: quit"
+	// Help text (changes based on filter state) with bold keys
+	var help string
 	if filterTag != "" {
-		helpText = "n: new entry • a: add todo • j/k: navigate • enter: view • t: todos • @: clear filter • d: dashboard • q: quit"
+		help = FormatHelpLeft(width,
+			"n", "new entry",
+			"a", "add todo",
+			"j/k", "navigate",
+			"enter", "view",
+			"t", "todos",
+			"@", "clear filter",
+			"d", "dashboard",
+			"q", "quit",
+		)
+	} else {
+		help = FormatHelpLeft(width,
+			"n", "new entry",
+			"a", "add todo",
+			"j/k", "navigate",
+			"enter", "view",
+			"t", "todos",
+			"@", "filter",
+			"d", "dashboard",
+			"q", "quit",
+		)
 	}
-	help := helpStyle.Render(helpText)
 
 	// Combine sections
 	content := lipgloss.JoinVertical(

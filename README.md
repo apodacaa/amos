@@ -18,6 +18,7 @@ make run
 **Keyboard Shortcuts:**
 
 *Dashboard:*
+- Massive ASCII "AMOS" title with vanity metrics (total entries, this week, top tag, open todos)
 - `n` - New Entry
 - `a` - Add Standalone Todo
 - `t` - View Todos List
@@ -42,6 +43,7 @@ make run
 - `n` - New Entry
 - `a` - Add Standalone Todo
 - Shows entry with inline todos
+- `x` - Toggle todo status (saves immediately)
 - `t` - Jump to todos
 - `e` - Jump to entries
 - `d` - Go to dashboard
@@ -51,7 +53,7 @@ make run
 - `n` - New Entry
 - `a` - Add Standalone Todo
 - `j/k` or `↑/↓` - Navigate
-- `space` - Toggle todo status (saves immediately)
+- `x` - Toggle todo status (saves immediately)
 - `u/i` - Move todo up/down (manual priority)
 - `e` - Jump to entries
 - `d` - Go to dashboard
@@ -112,7 +114,7 @@ air               # Run with auto-reload
 ✅ **Todo Management**
 - **Standalone todos**: Create todos independently with `a` key from any view
 - **Entry-linked todos**: Extract from entries with `!todo` syntax
-- Toggle status with space (immediate save)
+- Toggle status with `x` (immediate save)
 - Manual priority with u/i keys (move up/down)
 - Sort: open first → position → newest
 - View todos by entry or all together
@@ -223,13 +225,14 @@ make build
 ## Design Philosophy
 
 **Brutalist Principles:**
-1. **Immediate writes** - Space toggles todo AND saves (no deferred state)
+1. **Immediate writes** - `x` toggles todo AND saves (no deferred state)
 2. **Full context** - Todos visible in entry view, stats in list
 3. **No hidden state** - What you see is what's saved
 4. **Simple is better** - Normalize positions every move vs complex tracking
 5. **One action = one effect** - No multi-step workflows
 6. **Context-aware navigation** - Escape returns to previous view (where you came from)
 7. **Global actions** - `n` and `a` keys work from any read-only view for fast creation
+8. **Monument aesthetics** - Dashboard hits you with massive centered ASCII art and stats, utility views are honest left-aligned workspaces
 
 **Tag Syntax:**
 - `@work` in entry content → auto-extracted to tags array

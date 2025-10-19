@@ -76,8 +76,8 @@ The app follows Elm architecture:
 
 ## Dependencies
 - **bubbletea** v1.3.10 - TUI framework
-- **lipgloss** (planned) - Styling library
-- **bubbles** (planned) - Reusable components
+- **lipgloss** v1.1.0 - Styling library
+- **bubbles** v0.21.0 - Textarea component
 
 ## File Structure
 ```
@@ -120,3 +120,30 @@ internal/                # Business logic
 - Update_* = State transitions per view
 - UI = Pure renderers
 - Helpers = Reusable logic (sorting, filtering, parsing)
+
+## Brutalist Design Philosophy
+
+**Navigation:**
+- Explicit keys work everywhere: `d` (dashboard), `t` (todos), `e` (entries), `n` (new entry), `a` (add todo)
+- No hidden previousView state - user always knows where they are
+- Escape only for forms (cancel action)
+
+**Visual Hierarchy:**
+- **Dashboard** - Monument aesthetic: massive centered ASCII art, centered stats, centered help
+- **Utility views** - Honest workspaces: left-aligned help, functional UI chrome
+- **Help text** - Reverse color keys (accent bg, subtle fg) with bold styling, no bullet separators
+- **FormatHelp()** - Centered alignment for dashboard only
+- **FormatHelpLeft()** - Left alignment for all other views
+
+**Data Philosophy:**
+- Append-only journal (no delete feature)
+- Immediate writes (`x` toggles todo AND saves)
+- Full context visible (todos show in entry view, entry titles in todo list)
+- No hidden pending state
+
+**Key Bindings:**
+- `x` - Toggle todo status (not space)
+- `d` - Dashboard (works from all views)
+- `n` - New entry (works from all read-only views)
+- `a` - Add standalone todo (works from all read-only views)
+- `@` - Filter by tag / clear filter

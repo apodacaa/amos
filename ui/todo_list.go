@@ -20,7 +20,6 @@ func RenderTodoList(width, height int, todos []models.Todo, entries []models.Ent
 	if len(todos) == 0 {
 		emptyStyle := lipgloss.NewStyle().
 			Foreground(mutedColor).
-			Italic(true).
 			Width(width - 4).
 			Align(lipgloss.Center)
 		listItems = append(listItems, emptyStyle.Render("No todos yet. Create an entry with !todo lines."))
@@ -47,20 +46,6 @@ func RenderTodoList(width, height int, todos []models.Todo, entries []models.Ent
 				titleText += tagStyle.Render(tagStr)
 			}
 
-			// Entry link indicator
-			if todo.EntryID != nil {
-				// Find entry title
-				entryTitle := "unknown entry"
-				for _, entry := range entries {
-					if entry.ID == *todo.EntryID {
-						entryTitle = entry.Title
-						break
-					}
-				}
-				linkStyle := lipgloss.NewStyle().Foreground(mutedColor)
-				titleText += linkStyle.Render(fmt.Sprintf(" (%s)", entryTitle))
-			}
-
 			line := fmt.Sprintf("%s %s", checkbox, titleText)
 
 			// Truncate if too long
@@ -72,23 +57,23 @@ func RenderTodoList(width, height int, todos []models.Todo, entries []models.Ent
 			// Apply selection and completion styling
 			var styled string
 			if i == selectedIdx {
-				// Selected item - use accent color (but dimmer if done)
-				selectedStyle := lipgloss.NewStyle().Bold(true)
+				// Selected items use subtle color (unless done)
 				if todo.Status == "done" {
-					selectedStyle = selectedStyle.Foreground(mutedColor)
+					selectedStyle := lipgloss.NewStyle().Foreground(mutedColor)
+					styled = selectedStyle.Render("> " + line)
 				} else {
-					selectedStyle = selectedStyle.Foreground(accentColor)
+					selectedStyle := lipgloss.NewStyle().Foreground(subtleColor)
+					styled = selectedStyle.Render("> " + line)
 				}
-				styled = selectedStyle.Render("► " + line)
 			} else {
-				// Not selected - use subtle or muted based on status
-				normalStyle := lipgloss.NewStyle()
+				// Dim completed todos, normal color for open
 				if todo.Status == "done" {
-					normalStyle = normalStyle.Foreground(mutedColor)
+					dimStyle := lipgloss.NewStyle().Foreground(mutedColor)
+					styled = dimStyle.Render("  " + line)
 				} else {
-					normalStyle = normalStyle.Foreground(subtleColor)
+					normalStyle := lipgloss.NewStyle().Foreground(subtleColor)
+					styled = normalStyle.Render("  " + line)
 				}
-				styled = normalStyle.Render("  " + line)
 			}
 
 			listItems = append(listItems, styled)
@@ -101,18 +86,21 @@ func RenderTodoList(width, height int, todos []models.Todo, entries []models.Ent
 	status := ""
 	if statusMsg != "" {
 		statusStyle := lipgloss.NewStyle().
-			Foreground(mutedColor).
-			Italic(true)
+			Foreground(mutedColor)
 		status = "\n" + statusStyle.Render(statusMsg) + "\n"
 	}
 
-	// Help text
-	helpStyle := lipgloss.NewStyle().
-		Foreground(mutedColor).
-		Italic(true)
-	help := helpStyle.Render("n: new entry • a: add todo • j/k: navigate • u/i: move • space: toggle • e: entries • d: dashboard • q: quit")
-
-	// Combine sections
+	// Help text at bottom
+	help := FormatHelpLeft(width,
+		"n", "new entry",
+		"a", "add todo",
+		"j/k", "navigate",
+		"u/i", "move",
+		"x", "toggle",
+		"e", "entries",
+		"d", "dashboard",
+		"q", "quit",
+	) // Combine sections
 	content := lipgloss.JoinVertical(
 		lipgloss.Left,
 		title,
