@@ -12,7 +12,7 @@ func RenderAddTodoForm(width, height int, ti textarea.Model, statusMsg string) s
 
 	title := titleStyle.Render("ADD TODO")
 
-	help := FormatHelpLeft(width, "ctrl+s", "save", "esc", "cancel")
+	help := FormatHelpLeft(width, "enter", "save", "ctrl+s", "save", "esc", "cancel")
 
 	// Status message (if present)
 	status := ""

@@ -39,8 +39,8 @@ func (m Model) handleAddTodoKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.confirmingExit = false
 		return m, nil
 
-	case "ctrl+s":
-		// Save standalone todo
+	case "ctrl+s", "enter":
+		// Save standalone todo (Enter for quick save, Ctrl+S for consistency with entry form)
 		m.confirmingExit = false // Clear confirmation if showing
 		title := strings.TrimSpace(m.todoInput.Value())
 		if title == "" {
