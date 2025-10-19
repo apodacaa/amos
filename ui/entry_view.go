@@ -99,8 +99,8 @@ func RenderEntryView(width, height int, entry models.Entry, allTodos []models.To
 		"n", "new entry",
 		"a", "add todo",
 		"j/k", "navigate",
-		"t", "todos",
 		"e", "entries",
+		"t", "todos",
 		"esc", "cancel",
 		"q", "quit",
 	)
