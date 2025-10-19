@@ -126,16 +126,27 @@ model.go                # Model struct + Init/Update/View (Elm core)
 messages.go             # All message types
 commands.go             # All tea.Cmd functions (side effects)
 update_*.go             # Key handlers per view (domain separation)
+  update_dashboard.go
+  update_entry.go
+  update_entries.go
+  update_entry_view.go
+  update_tag_picker.go
+  update_todos.go
 ui/                     # View renderers (pure functions)
   dashboard.go
+  entry_form.go
   entry_list.go
   entry_view.go
+  tag_picker.go
   todo_list.go
   styles.go
 internal/               # Business logic
   storage/              # JSON persistence
   models/               # Data structures
   helpers/              # Pure utility functions
+    sorting.go          # Centralized sorting logic
+    tags.go             # Tag extraction and filtering
+    todos.go            # Todo extraction
 ```
 
 ### Code Separation (Current Pattern)
@@ -143,9 +154,11 @@ internal/               # Business logic
 - **model.go**: Model struct, Init(), Update() router, View() router
 - **messages.go**: All message types (saveCompleteMsg, todosLoadedMsg, etc.)
 - **commands.go**: All tea.Cmd functions (loadEntries, saveTodo, toggleTodoImmediate, etc.)
-- **update_*.go**: Key handlers per view (handleEntryKeys, handleTodosListKeys, etc.)
-- **ui/**: Pure view renderers (RenderEntryList, RenderTodoList, etc.)
-- **internal/**: Business logic (storage, models, helpers)
+- **update_*.go**: Key handlers per view (handleEntryKeys, handleTodosListKeys, handleTagPickerKeys, etc.)
+- **ui/**: Pure view renderers (RenderEntryList, RenderTodoList, RenderTagPicker, etc.)
+- **internal/helpers/**: Centralized business logic (sorting, filtering, parsing)
+- **internal/storage/**: JSON persistence
+- **internal/models/**: Data structures
 
 ---
 
@@ -181,6 +194,8 @@ func (m model) View() string {
 ### Brutalist Design Principles
 **Current features (keep minimal):**
 - Journal entries with @tags (auto-extracted)
+- Tag filtering with @ key (brutalist picker: visible state, toggle on/off)
+- Cross-navigation (t/e keys to jump between entries and todos)
 - Todos with `!todo` syntax (linked to entries)
 - Todo toggle with immediate save (space key)
 - Manual priority with u/i keys (position field)
@@ -190,8 +205,10 @@ func (m model) View() string {
 **Core philosophy:**
 - Immediate writes (no deferred/pending state)
 - Full context visible (no navigation required)
+- Visible state (filter shown in title, no hidden modes)
 - One action = one effect
 - Normalize over preserve (simpler logic)
+- DRY principle (extract duplicates to helpers)
 - No feature creep without explicit user request
 
 ---

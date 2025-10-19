@@ -31,17 +31,21 @@ make run
 *Entry List:*
 - `j/k` or `↑/↓` - Navigate
 - `enter` - View entry detail
+- `t` - Jump to todos
+- `@` - Filter by tag (or clear filter)
 - `d` (double tap) - Delete entry
 - `esc` - Back to dashboard
 
 *Entry View:*
 - Shows entry with inline todos
+- `t` - Jump to todos
 - `esc` - Back to entry list
 
 *Todo List:*
 - `j/k` or `↑/↓` - Navigate
 - `space` - Toggle todo status (saves immediately)
 - `u/i` - Move todo up/down (manual priority)
+- `e` - Jump to entries
 - `esc` - Back to dashboard
 
 ## Development
@@ -85,9 +89,11 @@ air               # Run with auto-reload
 ✅ **Journal Entries**
 - Create entries with title + body
 - Auto-extract @tags from content
+- Filter by tag with @ key (brutalist tag picker)
 - View entries chronologically (newest first)
 - Delete entries with double-tap confirmation
 - See todo counts in entry list: `[3 todos: 1 open]`
+- Cross-navigation: jump to todos with `t` key
 
 ✅ **Todo Management**
 - Extract todos from entries with `!todo` syntax
@@ -95,6 +101,7 @@ air               # Run with auto-reload
 - Manual priority with u/i keys (move up/down)
 - Sort: open first → position → newest
 - View todos by entry or all together
+- Cross-navigation: jump to entries with `e` key
 
 ✅ **Brutalist Design**
 - Immediate writes (no hidden pending state)
@@ -115,12 +122,14 @@ air               # Run with auto-reload
 │   ├── update_entry.go
 │   ├── update_entries.go
 │   ├── update_entry_view.go
+│   ├── update_tag_picker.go
 │   └── update_todos.go
 ├── ui/                     # View renderers (pure functions)
 │   ├── dashboard.go
 │   ├── entry_form.go
 │   ├── entry_list.go
 │   ├── entry_view.go
+│   ├── tag_picker.go
 │   ├── todo_list.go
 │   └── styles.go
 ├── internal/               # Business logic
@@ -130,8 +139,9 @@ air               # Run with auto-reload
 │   ├── storage/           # JSON persistence
 │   │   └── storage.go
 │   └── helpers/           # Utilities
-│       ├── tags.go
-│       └── todos.go
+│       ├── sorting.go     # Centralized sorting logic
+│       ├── tags.go        # Tag extraction and filtering
+│       └── todos.go       # Todo extraction
 ├── Makefile               # Development commands
 └── go.mod                 # Go module definition
 ```

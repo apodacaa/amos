@@ -89,12 +89,14 @@ update_dashboard.go      # Dashboard key handler
 update_entry.go          # Entry form key handler
 update_entries.go        # Entry list key handler
 update_entry_view.go     # Entry view key handler
+update_tag_picker.go     # Tag picker key handler
 update_todos.go          # Todo list key handler
 ui/                      # View renderers (pure functions)
   dashboard.go
   entry_form.go
   entry_list.go
   entry_view.go
+  tag_picker.go
   todo_list.go
   styles.go
 internal/                # Business logic
@@ -104,8 +106,9 @@ internal/                # Business logic
     entry.go
     todo.go
   helpers/               # Utilities
-    tags.go
-    todos.go
+    sorting.go           # Centralized sorting (DRY)
+    tags.go              # Tag extraction and filtering
+    todos.go             # Todo extraction
 ```
 
 **Separation Pattern (Bubble Tea Best Practice):**
@@ -114,3 +117,4 @@ internal/                # Business logic
 - Commands = Side effects (I/O)
 - Update_* = State transitions per view
 - UI = Pure renderers
+- Helpers = Reusable logic (sorting, filtering, parsing)
