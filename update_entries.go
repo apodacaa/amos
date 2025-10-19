@@ -13,6 +13,7 @@ func (m Model) handleEntriesListKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "esc":
 		// Go back to dashboard
 		m.view = "dashboard"
+		m.statusMsg = "" // Clear status message when changing views
 		return m, nil
 	case "n":
 		// Create new entry (using shared helper)
@@ -21,6 +22,7 @@ func (m Model) handleEntriesListKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		// Jump to todo list (explicit navigation)
 		m.view = "todos"
 		m.selectedTodo = 0
+		m.statusMsg = "" // Clear status message when changing views
 		// Entries already loaded, just need to ensure todos are loaded
 		// (but loadEntriesAndTodos is safe to call again)
 		return m, m.loadEntriesAndTodos()

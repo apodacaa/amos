@@ -13,6 +13,7 @@ func (m Model) handleViewEntryKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "esc":
 		// Go back to dashboard
 		m.view = "dashboard"
+		m.statusMsg = "" // Clear status message when changing views
 		return m, nil
 	case "n":
 		// Create new entry (using shared helper)
@@ -24,11 +25,13 @@ func (m Model) handleViewEntryKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		// Jump to entries list (explicit navigation)
 		m.view = "entries"
 		m.selectedEntry = 0
+		m.statusMsg = "" // Clear status message when changing views
 		return m, m.loadEntriesAndTodos()
 	case "t":
 		// Jump to todo list (explicit navigation, load both todos and entries)
 		m.view = "todos"
 		m.selectedTodo = 0
+		m.statusMsg = "" // Clear status message when changing views
 		return m, m.loadEntriesAndTodos()
 	case "j", "down":
 		// Navigate to next entry (newer to older, same as entry list)
