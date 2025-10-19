@@ -42,7 +42,8 @@ make run
 *Entry View (Read-Only):*
 - `n` - New Entry
 - `a` - Add Standalone Todo
-- `j/k` or `↑/↓` - Navigate entries
+- `j/k` or `↑/↓` - Navigate between entries
+- `u/i` - Scroll up/down within long entries
 - Shows entry with inline todos
 - `e` - Jump to entries
 - `t` - Jump to todos
@@ -131,6 +132,9 @@ air               # Run with auto-reload
 - Fast, minimal TUI
 - **Monochrome design**: Pure black/white/gray palette
 - **Anchored help text**: Footer stays at bottom (no bouncing)
+- **Viewport windowing**: Long lists show 20-30 items with scroll indicators
+- **Entry scrolling**: Navigate long entries with `u/i` keys (u=down, i=up)
+- **Minimum size**: 80x24 terminal required (shows resize message if too small)
 
 ## Project Structure
 
@@ -240,6 +244,9 @@ make build
 10. **Anchored UI** - Help text stays at bottom (no bouncing during navigation)
 11. **Consistent ordering** - Keys appear in same logical order across all views
 12. **No decorations** - No italics, no Unicode bullets, just ASCII
+13. **Viewport windowing** - Lists show manageable chunks with scroll position indicators
+14. **Honest feedback** - Terminal size check shows clear resize message (minimum 80x24)
+15. **Predictable UI** - Help text always shows available keys (no conditional hiding)
 
 **Tag Syntax:**
 - `@work` in entry content → auto-extracted to tags array

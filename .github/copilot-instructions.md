@@ -151,4 +151,18 @@ internal/                # Business logic
 - `a` - Add standalone todo (works from all read-only views)
 - `@` - Filter by tag / clear filter
 - `j/k` - Navigate lists (consistent across entry list, todo list, entry view)
-- `u/i` - Move todo priority (only in todo list)
+- `u/i` - Move todo priority (in todo list) / scroll content (in entry view)
+
+**Viewport & Scrolling:**
+- **Lists** - Entry list and todo list use viewport windowing
+  - Show 20-30 items at a time (based on terminal height)
+  - Selected item stays centered in viewport
+  - Scroll indicator shows position: `(1-20 of 150)`
+- **Entry View** - Long entries can be scrolled
+  - `u` scrolls down, `i` scrolls up (follows j/k pattern)
+  - Scroll indicator: `(showing lines 1-50 of 200)`
+  - Scroll offset resets when switching entries
+  - Help text always shows `u/i scroll` for consistency
+- **Minimum Size** - 80x24 terminal required
+  - Shows clear resize message when too small
+  - Message displays current vs required size
