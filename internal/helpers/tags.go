@@ -70,6 +70,60 @@ func ExtractUniqueTags(entries []models.Entry) []string {
 	return tags
 }
 
+// ExtractUniqueTagsFromTodos collects all unique tags from a list of todos
+// Returns tags sorted alphabetically with @ prefix
+func ExtractUniqueTagsFromTodos(todos []models.Todo) []string {
+	tagMap := make(map[string]int) // tag -> count
+
+	for _, todo := range todos {
+		for _, tag := range todo.Tags {
+			tagMap[tag]++
+		}
+	}
+
+	// Convert to slice with @ prefix and sort
+	tags := make([]string, 0, len(tagMap))
+	for tag := range tagMap {
+		tags = append(tags, "@"+tag)
+	}
+
+	// Sort alphabetically
+	sort.Strings(tags)
+
+	return tags
+}
+
+// ExtractUniqueTagsFromAll collects all unique tags from entries and todos
+// Returns tags sorted alphabetically with @ prefix
+func ExtractUniqueTagsFromAll(entries []models.Entry, todos []models.Todo) []string {
+	tagMap := make(map[string]int) // tag -> count
+
+	// Collect from entries
+	for _, entry := range entries {
+		for _, tag := range entry.Tags {
+			tagMap[tag]++
+		}
+	}
+
+	// Collect from todos
+	for _, todo := range todos {
+		for _, tag := range todo.Tags {
+			tagMap[tag]++
+		}
+	}
+
+	// Convert to slice with @ prefix and sort
+	tags := make([]string, 0, len(tagMap))
+	for tag := range tagMap {
+		tags = append(tags, "@"+tag)
+	}
+
+	// Sort alphabetically
+	sort.Strings(tags)
+
+	return tags
+}
+
 // FilterEntriesByTag filters entries to only those containing the specified tag
 // Tag should be provided with @ prefix (e.g., "@client")
 // Returns filtered list or original list if filterTag is empty

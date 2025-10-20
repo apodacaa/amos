@@ -40,10 +40,10 @@ func (m Model) handleEntriesListKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.statusTime = time.Now()
 			return m, clearStatusAfterDelay()
 		}
-		// Extract unique tags from all entries
-		m.availableTags = helpers.ExtractUniqueTags(m.entries)
+		// Extract unique tags from entries and todos
+		m.availableTags = helpers.ExtractUniqueTagsFromAll(m.entries, m.todos)
 		if len(m.availableTags) == 0 {
-			m.statusMsg = "No tags found in entries"
+			m.statusMsg = "No tags found"
 			m.statusTime = time.Now()
 			return m, clearStatusAfterDelay()
 		}

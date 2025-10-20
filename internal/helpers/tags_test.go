@@ -157,6 +157,107 @@ func TestExtractUniqueTags(t *testing.T) {
 	}
 }
 
+func TestExtractUniqueTagsFromTodos(t *testing.T) {
+	tests := []struct {
+		name  string
+		todos []models.Todo
+		want  []string
+	}{
+		{
+			name: "unique tags from multiple todos",
+			todos: []models.Todo{
+				{ID: "1", Tags: []string{"work", "urgent"}},
+				{ID: "2", Tags: []string{"personal", "work"}},
+				{ID: "3", Tags: []string{"urgent", "meeting"}},
+			},
+			want: []string{"@meeting", "@personal", "@urgent", "@work"},
+		},
+		{
+			name: "no duplicate tags",
+			todos: []models.Todo{
+				{ID: "1", Tags: []string{"alpha"}},
+				{ID: "2", Tags: []string{"beta"}},
+				{ID: "3", Tags: []string{"gamma"}},
+			},
+			want: []string{"@alpha", "@beta", "@gamma"},
+		},
+		{
+			name:  "empty todos",
+			todos: []models.Todo{},
+			want:  []string{},
+		},
+		{
+			name: "todos with no tags",
+			todos: []models.Todo{
+				{ID: "1", Tags: []string{}},
+				{ID: "2", Tags: []string{}},
+			},
+			want: []string{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := ExtractUniqueTagsFromTodos(tt.todos)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("ExtractUniqueTagsFromTodos() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestExtractUniqueTagsFromAll(t *testing.T) {
+	entries := []models.Entry{
+		{ID: "1", Tags: []string{"work", "client"}},
+		{ID: "2", Tags: []string{"personal"}},
+	}
+	todos := []models.Todo{
+		{ID: "1", Tags: []string{"work", "urgent"}},
+		{ID: "2", Tags: []string{"meeting"}},
+	}
+
+	tests := []struct {
+		name    string
+		entries []models.Entry
+		todos   []models.Todo
+		want    []string
+	}{
+		{
+			name:    "tags from both entries and todos",
+			entries: entries,
+			todos:   todos,
+			want:    []string{"@client", "@meeting", "@personal", "@urgent", "@work"},
+		},
+		{
+			name:    "only entries",
+			entries: entries,
+			todos:   []models.Todo{},
+			want:    []string{"@client", "@personal", "@work"},
+		},
+		{
+			name:    "only todos",
+			entries: []models.Entry{},
+			todos:   todos,
+			want:    []string{"@meeting", "@urgent", "@work"},
+		},
+		{
+			name:    "empty both",
+			entries: []models.Entry{},
+			todos:   []models.Todo{},
+			want:    []string{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := ExtractUniqueTagsFromAll(tt.entries, tt.todos)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("ExtractUniqueTagsFromAll() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestFilterEntriesByTag(t *testing.T) {
 	entries := []models.Entry{
 		{ID: "1", Title: "Entry 1", Tags: []string{"work", "client"}},
