@@ -62,8 +62,8 @@ make run
 
 *Add Todo Form:*
 - Type todo title (tags auto-extracted from @mentions)
-- `enter` - Save
-- `esc` - Cancel
+- `enter` - Save and start new todo (power mode for rapid entry)
+- `esc` - Cancel and return to dashboard
 
 ## Development
 
