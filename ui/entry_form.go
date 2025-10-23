@@ -6,33 +6,21 @@ import (
 )
 
 // RenderEntryForm renders the entry editing form
-func RenderEntryForm(width, height int, ta textarea.Model, statusMsg string) string {
+func RenderEntryForm(width, height int, ta textarea.Model) string {
 	containerStyle := GetFullScreenBox(width, height)
 	titleStyle := GetTitleStyle(width)
 
-	title := titleStyle.Render("NEW ENTRY")
-
 	help := FormatHelpLeft(width, "ctrl+s", "save", "esc", "cancel")
 
-	// Add status message if present
-	status := ""
-	if statusMsg != "" {
-		statusStyle := lipgloss.NewStyle().Foreground(mutedColor)
-		status = statusStyle.Render(statusMsg)
-	}
+	title := titleStyle.Render("NEW ENTRY")
 
-	// Build main content (everything except help)
 	mainContent := lipgloss.JoinVertical(
 		lipgloss.Left,
 		title,
 		"",
 		ta.View(),
 	)
-	if status != "" {
-		mainContent = lipgloss.JoinVertical(lipgloss.Left, mainContent, "", status)
-	}
 
-	// Calculate how much vertical space to add to push help to bottom
 	mainLines := lipgloss.Height(mainContent)
 	helpLines := 1
 	availableSpace := height - 4
@@ -41,7 +29,6 @@ func RenderEntryForm(width, height int, ta textarea.Model, statusMsg string) str
 		padding = 0
 	}
 
-	// Add padding and help
 	content := mainContent
 	if padding > 0 {
 		content += "\n" + lipgloss.NewStyle().Height(padding).Render("")

@@ -15,27 +15,29 @@ import (
 
 // Model holds the application state
 type Model struct {
-	view           string         // Current view: "dashboard", "entry", "entries", "view_entry", "todos", "tag_picker", or "add_todo"
-	width          int            // Terminal width
-	height         int            // Terminal height
-	textarea       textarea.Model // Textarea for entry input
-	todoInput      textarea.Model // Single-line input for standalone todos
-	currentEntry   models.Entry   // Entry being edited
-	currentTodo    models.Todo    // Standalone todo being created
-	viewingEntry   models.Entry   // Entry being viewed (read-only)
-	scrollOffset   int            // Scroll offset for long entry view
-	statusMsg      string         // Status message to display
-	statusTime     time.Time      // When status message was set
-	hasUnsaved     bool           // Whether there are unsaved changes
-	savedContent   string         // Last saved content (to detect changes)
-	confirmingExit bool           // Whether showing exit confirmation
-	entries        []models.Entry // All entries (for list view)
-	selectedEntry  int            // Selected entry index in list
-	todos          []models.Todo  // All todos (for todo list view)
-	selectedTodo   int            // Selected todo index in list
-	filterTag      string         // Current tag filter (empty = no filter)
-	availableTags  []string       // All unique tags across entries
-	selectedTag    int            // Selected tag index in tag picker
+	view            string         // Current view: "dashboard", "entry", "entries", "view_entry", "todos", "tag_filter", or "add_todo"
+	width           int            // Terminal width
+	height          int            // Terminal height
+	textarea        textarea.Model // Textarea for entry input
+	todoInput       textarea.Model // Single-line input for standalone todos
+	tagFilterInput  textarea.Model // Single-line input for tag filtering
+	currentEntry    models.Entry   // Entry being edited
+	currentTodo     models.Todo    // Standalone todo being created
+	viewingEntry    models.Entry   // Entry being viewed (read-only)
+	scrollOffset    int            // Scroll offset for long entry view
+	statusMsg       string         // Status message to display
+	statusTime      time.Time      // When status message was set
+	hasUnsaved      bool           // Whether there are unsaved changes
+	savedContent    string         // Last saved content (to detect changes)
+	confirmingExit  bool           // Whether showing exit confirmation
+	entries         []models.Entry // All entries (for list view)
+	selectedEntry   int            // Selected entry index in list
+	todos           []models.Todo  // All todos (raw, unsorted)
+	displayTodos    []models.Todo  // Sorted todos for display (only updated on load/refresh)
+	selectedTodo    int            // Selected todo index in list
+	filterTags      []string       // Current tag filters (empty = no filter), supports multiple tags with AND logic
+	availableTags   []string       // All unique tags across entries
+	autocompleteTag string         // Current autocomplete suggestion for tag input
 }
 
 // NewModel creates a new model with default values
@@ -72,12 +74,28 @@ func NewModel() Model {
 	todoInput.FocusedStyle.Text = ui.GetTextStyle()
 	todoInput.BlurredStyle.Text = ui.GetTextStyle()
 
+	// Create single-line input for tag filtering
+	tagFilterInput := textarea.New()
+	tagFilterInput.Placeholder = "Type tags separated by spaces..."
+	tagFilterInput.CharLimit = 0
+	tagFilterInput.SetWidth(60)
+	tagFilterInput.SetHeight(1) // Single line
+	tagFilterInput.FocusedStyle.CursorLine = ui.GetTextareaStyle()
+	tagFilterInput.BlurredStyle.CursorLine = ui.GetTextareaStyle()
+	tagFilterInput.FocusedStyle.Placeholder = ui.GetPlaceholderStyle()
+	tagFilterInput.BlurredStyle.Placeholder = ui.GetPlaceholderStyle()
+	tagFilterInput.FocusedStyle.Prompt = ui.GetPromptStyle()
+	tagFilterInput.BlurredStyle.Prompt = ui.GetPromptStyle()
+	tagFilterInput.FocusedStyle.Text = ui.GetTextStyle()
+	tagFilterInput.BlurredStyle.Text = ui.GetTextStyle()
+
 	return Model{
-		view:      "dashboard",
-		width:     80, // Default width
-		height:    24, // Default height
-		textarea:  ta,
-		todoInput: todoInput,
+		view:           "dashboard",
+		width:          80, // Default width
+		height:         24, // Default height
+		textarea:       ta,
+		todoInput:      todoInput,
+		tagFilterInput: tagFilterInput,
 	}
 }
 
@@ -103,8 +121,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m.handleViewEntryKeys(msg)
 		case "todos":
 			return m.handleTodosListKeys(msg)
-		case "tag_picker":
-			return m.handleTagPickerKeys(msg)
+		case "tag_filter":
+			return m.handleTagFilterKeys(msg)
 		case "add_todo":
 			return m.handleAddTodoKeys(msg)
 		default:
@@ -152,27 +170,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.statusMsg = "Error loading todos: " + msg.err.Error()
 		} else {
 			m.todos = msg.todos
+			// Update display order (sort for display)
+			m.displayTodos = helpers.SortTodosForDisplay(m.todos)
 
-			// If we just moved a todo, reselect it by ID
-			if m.statusMsg != "" && m.statusMsg != "✓ Saved" && m.statusMsg != "✓ Done" && m.statusMsg != "✓ Reopened" {
-				// statusMsg contains the moved todo ID
-				movedTodoID := m.statusMsg
-				m.statusMsg = "" // Clear it
-
-				// Find the todo in the sorted list and select it
-				sorted := helpers.SortTodosForDisplay(m.todos)
-				for i, todo := range sorted {
-					if todo.ID == movedTodoID {
-						m.selectedTodo = i
-						break
-					}
-				}
-			} else {
-				// Only reset selection if we don't have a valid selection
-				// (e.g., first load or if selection is out of bounds)
-				if m.selectedTodo >= len(msg.todos) {
-					m.selectedTodo = 0
-				}
+			// Reset selection if out of bounds
+			if m.selectedTodo >= len(m.displayTodos) {
+				m.selectedTodo = 0
 			}
 		}
 		return m, nil
@@ -184,16 +187,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		// Don't reload - status already updated in memory
 		return m, nil
-
-	case todoMovedMsg:
-		if msg.err != nil {
-			m.statusMsg = "Error moving todo: " + msg.err.Error()
-			return m, clearStatusAfterDelay()
-		}
-		// Store the ID of the moved todo so we can reselect it after reload
-		m.statusMsg = msg.movedTodoID // Temporarily store ID in statusMsg (will use for reselection)
-		// Reload todos to update the list
-		return m, m.loadTodos()
 
 	case statusTimeoutMsg:
 		// Clear status message after timeout (only if it hasn't been updated recently)
@@ -229,17 +222,17 @@ func (m Model) View() string {
 
 	switch m.view {
 	case "entry":
-		return ui.RenderEntryForm(m.width, m.height, m.textarea, m.statusMsg)
+		return ui.RenderEntryForm(m.width, m.height, m.textarea)
 	case "entries":
-		return ui.RenderEntryList(m.width, m.height, m.entries, m.selectedEntry, m.statusMsg, m.todos, m.filterTag)
+		return ui.RenderEntryList(m.width, m.height, m.entries, m.selectedEntry, m.todos, m.filterTags)
 	case "view_entry":
 		return ui.RenderEntryView(m.width, m.height, m.viewingEntry, m.todos, m.scrollOffset)
 	case "todos":
-		return ui.RenderTodoList(m.width, m.height, m.todos, m.entries, m.selectedTodo, m.statusMsg)
-	case "tag_picker":
-		return ui.RenderTagPicker(m.width, m.height, m.availableTags, m.selectedTag)
+		return ui.RenderTodoList(m.width, m.height, m.displayTodos, m.entries, m.selectedTodo)
+	case "tag_filter":
+		return ui.RenderTagFilter(m.width, m.height, m.tagFilterInput, m.availableTags, m.autocompleteTag)
 	case "add_todo":
-		return ui.RenderAddTodoForm(m.width, m.height, m.todoInput, m.statusMsg)
+		return ui.RenderAddTodoForm(m.width, m.height, m.todoInput)
 	default:
 		return ui.RenderDashboard(m.width, m.height, m.entries, m.todos)
 	}
@@ -266,7 +259,6 @@ func (m Model) handleAddTodo() (Model, tea.Cmd) {
 	m.currentTodo = models.Todo{
 		ID:        m.generateID(),
 		Status:    "open",
-		Position:  0,
 		CreatedAt: time.Now(),
 	}
 	m.todoInput.Reset()

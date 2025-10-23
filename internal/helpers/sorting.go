@@ -2,48 +2,45 @@ package helpers
 
 import "github.com/apodacaa/amos/internal/models"
 
-// SortTodosForDisplay sorts todos the same way as the UI display:
-// open first, then by position (lower first), then newest first
+// SortTodosForDisplay sorts todos: next first, then open, then done
+// Within each status group, newest first
 func SortTodosForDisplay(todos []models.Todo) []models.Todo {
 	sorted := make([]models.Todo, len(todos))
 	copy(sorted, todos)
 
-	// Bubble sort with three-level comparison
+	// Helper to get priority (lower = higher priority)
+	getPriority := func(status string) int {
+		switch status {
+		case "next":
+			return 0
+		case "open":
+			return 1
+		case "done":
+			return 2
+		default:
+			return 1 // treat unknown as open
+		}
+	}
+
+	// Bubble sort with two-level comparison
 	for i := 0; i < len(sorted)-1; i++ {
 		for j := i + 1; j < len(sorted); j++ {
-			// First: open todos before done todos
-			if sorted[i].Status == "done" && sorted[j].Status == "open" {
+			iPriority := getPriority(sorted[i].Status)
+			jPriority := getPriority(sorted[j].Status)
+
+			// First: sort by status priority (next → open → done)
+			if jPriority < iPriority {
 				sorted[i], sorted[j] = sorted[j], sorted[i]
-			} else if sorted[i].Status == sorted[j].Status {
-				// Second: sort by position (lower position first)
-				if sorted[i].Position != sorted[j].Position {
-					if sorted[j].Position < sorted[i].Position {
-						sorted[i], sorted[j] = sorted[j], sorted[i]
-					}
-				} else {
-					// Third: sort by created date (newest first)
-					if sorted[j].CreatedAt.After(sorted[i].CreatedAt) {
-						sorted[i], sorted[j] = sorted[j], sorted[i]
-					}
+			} else if iPriority == jPriority {
+				// Second: within same status, newest first
+				if sorted[j].CreatedAt.After(sorted[i].CreatedAt) {
+					sorted[i], sorted[j] = sorted[j], sorted[i]
 				}
 			}
 		}
 	}
 
 	return sorted
-}
-
-// NormalizeTodoPositions renumbers todo positions to 0, 1, 2, 3...
-// This is used after sorting to ensure positions are sequential
-func NormalizeTodoPositions(todos []models.Todo) []models.Todo {
-	normalized := make([]models.Todo, len(todos))
-	copy(normalized, todos)
-
-	for i := range normalized {
-		normalized[i].Position = i
-	}
-
-	return normalized
 }
 
 // SortEntriesForDisplay sorts entries by timestamp (newest first)

@@ -6,9 +6,8 @@ import "time"
 type Todo struct {
 	ID        string    `json:"id"`
 	Title     string    `json:"title"`
-	Status    string    `json:"status"` // "open" or "done"
+	Status    string    `json:"status"` // "open", "next", or "done"
 	Tags      []string  `json:"tags"`
 	CreatedAt time.Time `json:"created_at"`
 	EntryID   *string   `json:"entry_id,omitempty"` // Pointer - nil if standalone
-	Position  int       `json:"position"`           // Manual priority (lower = higher priority)
 }

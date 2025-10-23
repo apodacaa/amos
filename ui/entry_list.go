@@ -10,18 +10,18 @@ import (
 )
 
 // RenderEntryList renders the entry list view
-func RenderEntryList(width, height int, entries []models.Entry, selectedIdx int, statusMsg string, todos []models.Todo, filterTag string) string {
+func RenderEntryList(width, height int, entries []models.Entry, selectedIdx int, todos []models.Todo, filterTags []string) string {
 	container := GetFullScreenBox(width, height)
 
 	// Update title to show filter if active
 	titleText := "Entries"
-	if filterTag != "" {
-		titleText = fmt.Sprintf("Entries (filtered: %s)", filterTag)
+	if len(filterTags) > 0 {
+		titleText = fmt.Sprintf("Entries (filtered: %s)", strings.Join(filterTags, " "))
 	}
 	title := GetTitleStyle(width).Render(titleText)
 
-	// Filter entries by tag if filter is active
-	filtered := helpers.FilterEntriesByTag(entries, filterTag)
+	// Filter entries by tags if filter is active
+	filtered := helpers.FilterEntriesByTags(entries, filterTags)
 
 	// Sort entries by timestamp (newest first)
 	sorted := helpers.SortEntriesForDisplay(filtered)
@@ -105,17 +105,9 @@ func RenderEntryList(width, height int, entries []models.Entry, selectedIdx int,
 
 	list := strings.Join(listItems, "\n")
 
-	// Status message (if present)
-	status := ""
-	if statusMsg != "" {
-		statusStyle := lipgloss.NewStyle().
-			Foreground(mutedColor)
-		status = "\n" + statusStyle.Render(statusMsg) + "\n"
-	}
-
 	// Help text (changes based on filter state) with bold keys
 	var help string
-	if filterTag != "" {
+	if len(filterTags) > 0 {
 		help = FormatHelpLeft(width,
 			"n", "new entry",
 			"a", "add todo",
@@ -145,7 +137,6 @@ func RenderEntryList(width, height int, entries []models.Entry, selectedIdx int,
 		title,
 		"",
 		list,
-		status,
 	)
 
 	// Calculate how much vertical space to add to push help to bottom

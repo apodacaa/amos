@@ -3,7 +3,6 @@ package main
 import (
 	"time"
 
-	"github.com/apodacaa/amos/internal/helpers"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -30,7 +29,7 @@ func (m Model) handleTodosListKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		// Add standalone todo (using shared helper)
 		return m.handleAddTodo()
 	case "j", "down":
-		if m.selectedTodo < len(m.todos)-1 {
+		if m.selectedTodo < len(m.displayTodos)-1 {
 			m.selectedTodo++
 		}
 		return m, nil
@@ -39,33 +38,36 @@ func (m Model) handleTodosListKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.selectedTodo--
 		}
 		return m, nil
-	case "u":
-		// Move todo down (lower priority)
-		// Don't adjust selection here - will be handled after reload
-		return m, m.moveTodo("down")
-	case "i":
-		// Move todo up (higher priority)
-		// Don't adjust selection here - will be handled after reload
-		return m, m.moveTodo("up")
+	case "r":
+		// Refresh - reload todos to re-sort
+		return m, m.loadTodos()
 	case " ":
-		// Toggle todo status (save immediately, no reload)
-		// Need to sort todos same way as display to get the right one
-		if m.selectedTodo >= 0 && m.selectedTodo < len(m.todos) {
-			// Sort using helper (same logic as UI and commands)
-			sorted := helpers.SortTodosForDisplay(m.todos)
+		// Cycle todo status: open → next → done → open (save immediately, no re-sort)
+		// Use displayTodos to keep selection stable
+		if m.selectedTodo >= 0 && m.selectedTodo < len(m.displayTodos) {
+			// Get the todo from displayTodos (current display order)
+			todo := m.displayTodos[m.selectedTodo]
 
-			// Get the todo from the sorted list (matches display order)
-			todo := sorted[m.selectedTodo]
-
-			// Toggle status
-			if todo.Status == "done" {
-				todo.Status = "open"
-				m.statusMsg = "✓ Reopened"
-			} else {
+			// Cycle status: open → next → done → open
+			switch todo.Status {
+			case "open":
+				todo.Status = "next"
+				m.statusMsg = "→ Next"
+			case "next":
 				todo.Status = "done"
 				m.statusMsg = "✓ Done"
+			case "done":
+				todo.Status = "open"
+				m.statusMsg = "○ Open"
+			default:
+				// Unknown status, set to open
+				todo.Status = "open"
+				m.statusMsg = "○ Open"
 			}
 			m.statusTime = time.Now()
+
+			// Update in displayTodos (in place, no re-sort)
+			m.displayTodos[m.selectedTodo].Status = todo.Status
 
 			// Update in m.todos array (find by ID)
 			for i := range m.todos {
@@ -78,9 +80,6 @@ func (m Model) handleTodosListKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			// Save immediately and start timer to clear status
 			return m, tea.Batch(m.toggleTodoImmediate(todo), clearStatusAfterDelay())
 		}
-		return m, nil
-	case "s":
-		// No longer needed, but keep for consistency (does nothing)
 		return m, nil
 	}
 	return m, nil

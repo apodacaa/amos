@@ -33,6 +33,62 @@ go test -v ./internal/storage
 go test -cover ./internal/helpers
 ```
 
+## Efficiency Guidelines for Claude Code
+
+This codebase is small (~3000 lines) and well-organized. Work efficiently:
+
+### 1. Trust the Documentation
+- File organization below tells you exactly where everything is
+- Go DIRECTLY to files - don't explore or search
+- Use the Quick Reference Map below for common tasks
+
+### 2. Use Parallel Reads
+- Read multiple files at once in a single message
+- Example: Read model.go, update_entries.go, and ui/entry_list.go together
+- Don't read files sequentially
+
+### 3. Use Grep Instead of Full Reads
+- Finding usage: `grep -n "filterTags" -C 3` shows context
+- Finding definitions: `grep -n "func.*Filter"`
+- Only use Read for files you need to edit
+
+### 4. Never Re-read Files
+- Remember what you've read in the conversation
+- Trust your memory of the code structure
+- Only re-read if you made edits and need to see results
+
+### Quick Reference Map
+
+**Tag Filtering:**
+- Input handler: `update_tag_filter.go`
+- UI renderer: `ui/tag_filter.go`
+- Filter logic: `internal/helpers/tags.go` (FilterEntriesByTags)
+- Entry list integration: `update_entries.go`, `ui/entry_list.go`
+
+**Entry Management:**
+- Entry form: `update_entry.go`, `ui/entry_form.go`
+- Entry list: `update_entries.go`, `ui/entry_list.go`
+- Entry view: `update_entry_view.go`, `ui/entry_view.go`
+
+**Todo Management:**
+- Todo list: `update_todos.go`, `ui/todo_list.go`
+- Add todo: `update_add_todo.go`, `ui/add_todo_form.go`
+- Todo logic: `internal/helpers/todos.go`, `internal/helpers/sorting.go`
+
+**Core State:**
+- Model struct: `model.go:17-40`
+- Update routing: `model.go:97-129` (switch on view)
+- View routing: `model.go:247-262` (switch on view)
+- Message types: `messages.go`
+- Commands: `commands.go`
+
+**Common Edit Pattern:**
+1. Identify 2-3 files from map above
+2. Read them in parallel (one message)
+3. Make edits
+4. Run `make ci`
+5. Done (no re-reading unless errors)
+
 ## Architecture
 
 ### Bubble Tea (Elm Architecture)
@@ -64,7 +120,7 @@ update_*.go              # Key handlers per view (domain separation)
   update_entries.go      # Entry list navigation
   update_entry_view.go   # Read-only entry view
   update_todos.go        # Todo list (toggle, reorder)
-  update_tag_picker.go   # Tag filtering
+  update_tag_filter.go   # Tag filtering
   update_add_todo.go     # Standalone todo form
 ui/                      # Pure view renderers
   dashboard.go
@@ -72,7 +128,7 @@ ui/                      # Pure view renderers
   entry_list.go
   entry_view.go
   todo_list.go
-  tag_picker.go
+  tag_filter.go
   add_todo_form.go
   styles.go              # Brutalist styling (monochrome)
 internal/
@@ -90,8 +146,8 @@ internal/
 ### Key Architectural Patterns
 
 **State Management**:
-- All state lives in the `Model` struct (model.go:17-39)
-- View routing via `m.view` string field ("dashboard", "entry", "entries", "view_entry", "todos", "tag_picker", "add_todo")
+- All state lives in the `Model` struct (model.go:17-40)
+- View routing via `m.view` string field ("dashboard", "entry", "entries", "view_entry", "todos", "tag_filter", "add_todo")
 - No hidden previousView tracking - explicit navigation only
 
 **Message Flow**:
@@ -118,7 +174,7 @@ internal/
 **Tag System**:
 - Auto-extracted from `@mention` syntax in entry body
 - Stored in `Tags` array on both Entry and Todo
-- Tag filtering via `@` key (shows tag picker)
+- Tag filtering via `@` key (shows tag filter input with autocomplete)
 
 ## Brutalist Design Philosophy
 

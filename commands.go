@@ -47,57 +47,6 @@ func (m Model) toggleTodoImmediate(todo models.Todo) tea.Cmd {
 	}
 }
 
-// moveTodo moves a todo up or down in priority (changes position)
-func (m Model) moveTodo(direction string) tea.Cmd {
-	return func() tea.Msg {
-		// Load all todos fresh from storage
-		allTodos, err := storage.LoadTodos()
-		if err != nil {
-			return todoMovedMsg{err: err}
-		}
-
-		if len(allTodos) < 2 {
-			return todoMovedMsg{err: nil} // Nothing to move
-		}
-
-		// Sort same way as display and normalize positions
-		sorted := helpers.SortTodosForDisplay(allTodos)
-		sorted = helpers.NormalizeTodoPositions(sorted)
-
-		if m.selectedTodo < 0 || m.selectedTodo >= len(sorted) {
-			return todoMovedMsg{err: nil}
-		}
-
-		// Find target index
-		targetIdx := m.selectedTodo
-		if direction == "up" {
-			targetIdx--
-			if targetIdx < 0 {
-				return todoMovedMsg{err: nil} // Already at top
-			}
-		} else { // down
-			targetIdx++
-			if targetIdx >= len(sorted) {
-				return todoMovedMsg{err: nil} // Already at bottom
-			}
-		}
-
-		// Remember the ID of the todo we're moving (so we can reselect it after reload)
-		movedTodoID := sorted[m.selectedTodo].ID
-
-		// Swap positions
-		sorted[m.selectedTodo].Position, sorted[targetIdx].Position = sorted[targetIdx].Position, sorted[m.selectedTodo].Position
-
-		// Save both todos
-		err = storage.SaveTodo(sorted[m.selectedTodo])
-		if err != nil {
-			return todoMovedMsg{movedTodoID: movedTodoID, err: err}
-		}
-		err = storage.SaveTodo(sorted[targetIdx])
-		return todoMovedMsg{movedTodoID: movedTodoID, err: err}
-	}
-}
-
 // saveEntry saves the current entry and extracts todos
 func (m Model) saveEntry() tea.Cmd {
 	return func() tea.Msg {
@@ -115,30 +64,15 @@ func (m Model) saveEntry() tea.Cmd {
 		// Create todo IDs list
 		todoIDs := make([]string, 0, len(todoTitles))
 
-		// Load existing todos to determine max position
-		existingTodos, err := storage.LoadTodos()
-		if err != nil {
-			return saveCompleteMsg{err: err}
-		}
-
-		// Find max position
-		maxPosition := 0
-		for _, t := range existingTodos {
-			if t.Position > maxPosition {
-				maxPosition = t.Position
-			}
-		}
-
 		// Create and save todos
-		for idx, todoTitle := range todoTitles {
+		for _, todoTitle := range todoTitles {
 			todo := models.Todo{
 				ID:        uuid.New().String(),
 				Title:     todoTitle,
 				Status:    "open",
 				Tags:      helpers.ExtractTags(todoTitle), // Extract tags from todo title
 				CreatedAt: time.Now(),
-				EntryID:   &m.currentEntry.ID,    // Link to this entry
-				Position:  maxPosition + idx + 1, // Append to end
+				EntryID:   &m.currentEntry.ID, // Link to this entry
 			}
 
 			// Save each todo
@@ -157,7 +91,7 @@ func (m Model) saveEntry() tea.Cmd {
 		m.currentEntry.Timestamp = time.Now()
 
 		// Save entry to storage
-		err = storage.SaveEntry(m.currentEntry)
+		err := storage.SaveEntry(m.currentEntry)
 
 		return saveCompleteMsg{err: err}
 	}
@@ -166,25 +100,8 @@ func (m Model) saveEntry() tea.Cmd {
 // saveTodo saves a standalone todo and returns to dashboard
 func (m Model) saveTodo() tea.Cmd {
 	return func() tea.Msg {
-		// Load existing todos to determine position
-		existingTodos, err := storage.LoadTodos()
-		if err != nil {
-			return saveCompleteMsg{err: err}
-		}
-
-		// Find max position
-		maxPosition := 0
-		for _, t := range existingTodos {
-			if t.Position > maxPosition {
-				maxPosition = t.Position
-			}
-		}
-
-		// Set position for new todo (at the end)
-		m.currentTodo.Position = maxPosition + 1
-
 		// Save todo
-		err = storage.SaveTodo(m.currentTodo)
+		err := storage.SaveTodo(m.currentTodo)
 
 		return saveCompleteMsg{err: err}
 	}

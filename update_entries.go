@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/apodacaa/amos/internal/helpers"
+	"github.com/charmbracelet/bubbles/textarea"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -32,10 +33,10 @@ func (m Model) handleEntriesListKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		// Add standalone todo (using shared helper)
 		return m.handleAddTodo()
 	case "@":
-		// Open tag picker (or clear filter if already filtering)
-		if m.filterTag != "" {
-			// Clear filter
-			m.filterTag = ""
+		// Open tag filter input (or clear filter if already filtering)
+		if len(m.filterTags) > 0 {
+			// Clear filters
+			m.filterTags = []string{}
 			m.statusMsg = "✓ Filter cleared"
 			m.statusTime = time.Now()
 			return m, clearStatusAfterDelay()
@@ -47,9 +48,12 @@ func (m Model) handleEntriesListKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.statusTime = time.Now()
 			return m, clearStatusAfterDelay()
 		}
-		m.selectedTag = 0
-		m.view = "tag_picker"
-		return m, nil
+		// Open tag filter view
+		m.tagFilterInput.Reset()
+		m.tagFilterInput.Focus()
+		m.autocompleteTag = ""
+		m.view = "tag_filter"
+		return m, textarea.Blink
 	case "j", "down":
 		if m.selectedEntry < len(m.entries)-1 {
 			m.selectedEntry++
@@ -63,7 +67,7 @@ func (m Model) handleEntriesListKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "enter":
 		// Open selected entry for read-only viewing
 		// Apply filter if active (same logic as UI)
-		filtered := helpers.FilterEntriesByTag(m.entries, m.filterTag)
+		filtered := helpers.FilterEntriesByTags(m.entries, m.filterTags)
 
 		if m.selectedEntry >= 0 && m.selectedEntry < len(filtered) {
 			// Need to get the sorted entry (newest first)

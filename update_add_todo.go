@@ -43,7 +43,6 @@ func (m Model) handleAddTodoKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.currentTodo = models.Todo{
 			ID:        m.generateID(),
 			Status:    "open",
-			Position:  0,
 			CreatedAt: time.Now(),
 		}
 		m.todoInput.Reset()

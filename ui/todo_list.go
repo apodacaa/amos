@@ -4,13 +4,12 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/apodacaa/amos/internal/helpers"
 	"github.com/apodacaa/amos/internal/models"
 	"github.com/charmbracelet/lipgloss"
 )
 
 // RenderTodoList renders the todo list view
-func RenderTodoList(width, height int, todos []models.Todo, entries []models.Entry, selectedIdx int, statusMsg string) string {
+func RenderTodoList(width, height int, todos []models.Todo, entries []models.Entry, selectedIdx int) string {
 	container := GetFullScreenBox(width, height)
 	title := GetTitleStyle(width).Render("Todos")
 
@@ -24,8 +23,8 @@ func RenderTodoList(width, height int, todos []models.Todo, entries []models.Ent
 			Align(lipgloss.Center)
 		listItems = append(listItems, emptyStyle.Render("No todos yet. Create an entry with !todo lines."))
 	} else {
-		// Sort todos using helper (same logic as commands)
-		sorted := helpers.SortTodosForDisplay(todos)
+		// Todos are pre-sorted (displayTodos from model)
+		sorted := todos
 
 		// Calculate viewport (visible window of items)
 		availableHeight := height - 10 // Conservative estimate for chrome
@@ -62,10 +61,12 @@ func RenderTodoList(width, height int, todos []models.Todo, entries []models.Ent
 		// Render visible todos
 		for i := start; i < end; i++ {
 			todo := sorted[i]
-			// Checkbox (simple - status is always current)
-			checkbox := "[ ]"
-			if todo.Status == "done" {
-				checkbox = "[x]"
+			// Checkbox based on status
+			checkbox := "[ ]" // open
+			if todo.Status == "next" {
+				checkbox = "[>]" // next (brutalist arrow)
+			} else if todo.Status == "done" {
+				checkbox = "[x]" // done
 			}
 
 			// Title with tags
@@ -122,21 +123,13 @@ func RenderTodoList(width, height int, todos []models.Todo, entries []models.Ent
 
 	list := strings.Join(listItems, "\n")
 
-	// Status message (if present)
-	status := ""
-	if statusMsg != "" {
-		statusStyle := lipgloss.NewStyle().
-			Foreground(mutedColor)
-		status = "\n" + statusStyle.Render(statusMsg) + "\n"
-	}
-
 	// Help text at bottom
 	help := FormatHelpLeft(width,
 		"n", "new entry",
 		"a", "add todo",
 		"j/k", "navigate",
-		"u/i", "move",
-		"space", "toggle",
+		"space", "cycle",
+		"r", "refresh",
 		"e", "entries",
 		"esc", "cancel",
 		"q", "quit",
@@ -148,7 +141,6 @@ func RenderTodoList(width, height int, todos []models.Todo, entries []models.Ent
 		title,
 		"",
 		list,
-		status,
 	)
 
 	// Calculate how much vertical space to add to push help to bottom
