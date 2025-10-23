@@ -8,5 +8,6 @@
     "editor.formatOnSave": true
   },
   "go.lintOnSave": "workspace",
-  "go.formatTool": "gofmt"
+  "go.formatTool": "gofmt",
+  "claude-code.useTerminal": true
 }
