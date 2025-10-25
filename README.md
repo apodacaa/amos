@@ -26,7 +26,7 @@ make run
 - `q` or `Ctrl+C` - Quit
 
 *Entry Form:*
-- `Ctrl+S` - Save entry
+- `Ctrl+S` - Save entry (shows "saved" confirmation)
 - `esc` - Cancel
 
 *Entry List:*
@@ -55,14 +55,15 @@ make run
 - `a` - Add Standalone Todo
 - `j/k` or `↑/↓` - Navigate
 - `space` - Toggle todo status (saves immediately)
-- `u/i` - Move todo up/down (manual priority)
+- `@` - Filter by tag (or clear filter)
+- `r` - Refresh (re-sort todos)
 - `e` - Jump to entries
 - `esc` - Back to dashboard
 - `q` - Quit
 
 *Add Todo Form:*
 - Type todo title (tags auto-extracted from @mentions)
-- `enter` - Save and start new todo (power mode for rapid entry)
+- `enter` - Save and start new todo (shows "saved" confirmation, power mode for rapid entry)
 - `esc` - Cancel and return to dashboard
 
 ## Development
@@ -106,21 +107,24 @@ air               # Run with auto-reload
 ✅ **Journal Entries**
 - Create entries with title + body
 - Auto-extract @tags from content
-- Filter by tag with @ key (brutalist tag picker)
+- Filter by tag with @ key (brutalist tag filter with autocomplete)
 - View entries chronologically (newest first)
 - **Append-only**: No delete (journal is historical record)
 - Cross-navigation: jump between todos/entries with `t`/`e` keys
 - Global create: `n` (new entry) and `a` (add todo) work from any read-only view
+- Save confirmation: entry form shows "saved" toast message
 
 ✅ **Todo Management**
 - **Standalone todos**: Create todos independently with `a` key from any view
 - **Entry-linked todos**: Extract from entries with `!todo` syntax
 - Toggle status with `space` (immediate save)
+- Filter by tag with @ key (same as entries - brutalist tag filter with autocomplete)
 - Manual priority with u/i keys (move up/down)
 - Sort: open first → position → newest
 - View todos by entry or all together
 - Cross-navigation: jump between todos/entries with `t`/`e` keys
 - Global create: `n` (new entry) and `a` (add todo) work from any read-only view
+- Save confirmation: add todo form shows "saved" toast message
 
 ✅ **Brutalist Navigation**
 - Explicit navigation: `e` (entries), `t` (todos) work from all views

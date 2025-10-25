@@ -62,8 +62,10 @@ This codebase is small (~3000 lines) and well-organized. Work efficiently:
 **Tag Filtering:**
 - Input handler: `update_tag_filter.go`
 - UI renderer: `ui/tag_filter.go`
-- Filter logic: `internal/helpers/tags.go` (FilterEntriesByTags)
+- Filter logic: `internal/helpers/tags.go` (FilterEntriesByTags, FilterTodosByTags)
 - Entry list integration: `update_entries.go`, `ui/entry_list.go`
+- Todo list integration: `update_todos.go`, `ui/todo_list.go`
+- Context tracking: `model.go` (filterContext field determines return view)
 
 **Entry Management:**
 - Entry form: `update_entry.go`, `ui/entry_form.go`
@@ -76,11 +78,12 @@ This codebase is small (~3000 lines) and well-organized. Work efficiently:
 - Todo logic: `internal/helpers/todos.go`, `internal/helpers/sorting.go`
 
 **Core State:**
-- Model struct: `model.go:17-40`
+- Model struct: `model.go:17-42` (includes filterContext field)
 - Update routing: `model.go:97-129` (switch on view)
-- View routing: `model.go:247-262` (switch on view)
+- View routing: `model.go:224-239` (switch on view)
 - Message types: `messages.go`
 - Commands: `commands.go`
+- Status messages: Forms display statusMsg above help text (saved, errors, etc.)
 
 **Common Edit Pattern:**
 1. Identify 2-3 files from map above
@@ -146,8 +149,9 @@ internal/
 ### Key Architectural Patterns
 
 **State Management**:
-- All state lives in the `Model` struct (model.go:17-40)
+- All state lives in the `Model` struct (model.go:17-42)
 - View routing via `m.view` string field ("dashboard", "entry", "entries", "view_entry", "todos", "tag_filter", "add_todo")
+- Filter context via `m.filterContext` ("entries" or "todos") - determines return view from tag filter
 - No hidden previousView tracking - explicit navigation only
 
 **Message Flow**:
@@ -172,9 +176,13 @@ internal/
 - Extract from entries with `!todo Task description @tag` syntax
 
 **Tag System**:
-- Auto-extracted from `@mention` syntax in entry body
+- Auto-extracted from `@mention` syntax in entry body and todo titles
 - Stored in `Tags` array on both Entry and Todo
-- Tag filtering via `@` key (shows tag filter input with autocomplete)
+- Tag filtering via `@` key in both entries and todos views (shows tag filter input with autocomplete)
+- Filter uses AND logic (all tags must match)
+- Filtered titles display as "Entries @tag1 @tag2" or "Todos @tag1 @tag2" (brutalist: no parentheses)
+- Autocomplete uses non-breaking spaces to prevent key/description wrapping
+- Tag filter autocomplete clears after tab completion
 
 ## Brutalist Design Philosophy
 
@@ -194,6 +202,9 @@ The app follows strict brutalist principles:
 - **Monochrome palette**: Pure black/white/gray (no colors)
 - **No decorations**: No italics, no Unicode bullets (use `>` not `►`), just ASCII
 - Help text uses inverted black/white for maximum contrast
+- Help text uses non-breaking spaces (\u00A0) to prevent key/description splitting
+- Wrapped helper lines have blank line between them for readability
+- Status messages appear above help text (e.g., "saved" in forms)
 
 **Data Integrity**:
 - Append-only journal (no delete feature for entries)
@@ -280,7 +291,10 @@ Todos stored in `~/.amos/todos.json`:
 ## Important Notes
 
 - Entries are append-only (no delete operation by design)
-- Todo status: "open" or "done"
+- Todo status: "open", "next", or "done" (cycle with space key)
 - Position normalization: when reordering todos, all positions are renumbered sequentially
-- Tag syntax: `@tagname` in entry body auto-extracts to Tags array
+- Tag syntax: `@tagname` in entry body or todo title auto-extracts to Tags array
 - Todo syntax: `!todo Task description @tag` creates linked todo with extracted tags
+- Tag filtering: Works identically for both entries and todos views (press @ key)
+- Save confirmations: Entry and add_todo forms show "saved" toast message (brutalist: no emoji)
+- Helper text: Uses non-breaking spaces and vertical spacing for better readability on narrow terminals
