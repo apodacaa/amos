@@ -8,7 +8,7 @@ Minimal Bubble Tea (Go) TUI for journal + todo management. Brutalist design, fas
 # Install dependencies
 go mod download
 
-# Install git hooks (recommended)
+# Install git hooks (recommended for development)
 ./scripts/install-hooks.sh
 
 # Run the app

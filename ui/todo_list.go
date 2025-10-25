@@ -11,24 +11,9 @@ import (
 
 // RenderTodoList renders the todo list view
 func RenderTodoList(width, height int, todos []models.Todo, entries []models.Entry, selectedIdx int, filterTags []string, filterDate string) string {
-	container := GetFullScreenBox(width, height)
-
 	// Apply filters: first date, then tags
 	filtered := helpers.FilterTodosByDateRange(todos, filterDate)
 	filtered = helpers.FilterTodosByTags(filtered, filterTags)
-
-	// Update title to show filter status
-	titleText := "Todos"
-	if len(filterTags) > 0 {
-		titleText += " " + strings.Join(filterTags, " ")
-	}
-	if filterDate != "" {
-		dateLabel := helpers.FormatDatePreset(filterDate)
-		if dateLabel != "" {
-			titleText += " " + dateLabel
-		}
-	}
-	title := GetTitleStyle(width).Render(titleText)
 
 	// Build todo list
 	var listItems []string
@@ -48,7 +33,7 @@ func RenderTodoList(width, height int, todos []models.Todo, entries []models.Ent
 		sorted := filtered
 
 		// Calculate viewport (visible window of items)
-		availableHeight := height - 10 // Conservative estimate for chrome
+		availableHeight := height - 2 // header + footer
 		if availableHeight < 5 {
 			availableHeight = 5
 		}
@@ -90,18 +75,27 @@ func RenderTodoList(width, height int, todos []models.Todo, entries []models.Ent
 				checkbox = "[x]" // done
 			}
 
-			// Format: [ ] 2006-01-02 | Title @tag1 @tag2
+			// Table format: checkbox  date  title (padded)  tags
 			dateStr := todo.CreatedAt.Format("2006-01-02")
-			line := fmt.Sprintf("%s %s | %s", checkbox, dateStr, todo.Title)
 
-			// Add tags if present
+			// Pad title to fixed width for column alignment
+			titleWidth := 35
+			paddedTitle := todo.Title
+			if len(paddedTitle) > titleWidth {
+				paddedTitle = paddedTitle[:titleWidth]
+			} else {
+				paddedTitle = paddedTitle + strings.Repeat(" ", titleWidth-len(paddedTitle))
+			}
+
+			line := fmt.Sprintf("%s %s  %s", checkbox, dateStr, paddedTitle)
+
+			// Add tags if present (aligned after padded title)
 			if len(todo.Tags) > 0 {
-				tagStyle := lipgloss.NewStyle().Foreground(mutedColor)
 				tagStr := ""
 				for _, tag := range todo.Tags {
 					tagStr += " @" + tag
 				}
-				line += tagStyle.Render(tagStr)
+				line += tagStr
 			}
 
 			// Truncate if too long
@@ -110,93 +104,126 @@ func RenderTodoList(width, height int, todos []models.Todo, entries []models.Ent
 				line = line[:maxLen-3] + "..."
 			}
 
-			// Apply selection and completion styling
+			// Apply selection and completion styling with inverted colors (brutalist full-width bar)
 			var styled string
 			if i == selectedIdx {
-				// Selected items use subtle color (unless done)
+				// Selected items with inverted colors - full width bar
 				if todo.Status == "done" {
-					selectedStyle := lipgloss.NewStyle().Foreground(mutedColor)
-					styled = selectedStyle.Render("> " + line)
+					selectedStyle := lipgloss.NewStyle().
+						Foreground(mutedColor).
+						Reverse(true).
+						Width(width - 4)
+					styled = selectedStyle.Render(line)
 				} else {
-					selectedStyle := lipgloss.NewStyle().Foreground(subtleColor)
-					styled = selectedStyle.Render("> " + line)
+					selectedStyle := lipgloss.NewStyle().
+						Foreground(subtleColor).
+						Reverse(true).
+						Width(width - 4)
+					styled = selectedStyle.Render(line)
 				}
 			} else {
 				// Dim completed todos, normal color for open
 				if todo.Status == "done" {
 					dimStyle := lipgloss.NewStyle().Foreground(mutedColor)
-					styled = dimStyle.Render("  " + line)
+					styled = dimStyle.Render(line)
 				} else {
 					normalStyle := lipgloss.NewStyle().Foreground(subtleColor)
-					styled = normalStyle.Render("  " + line)
+					styled = normalStyle.Render(line)
 				}
 			}
 
 			listItems = append(listItems, styled)
 		}
-
-		// Add scroll indicator if needed
-		if len(sorted) > availableHeight {
-			scrollInfo := fmt.Sprintf("(%d-%d of %d)", start+1, end, len(sorted))
-			scrollStyle := lipgloss.NewStyle().Foreground(mutedColor)
-			listItems = append(listItems, scrollStyle.Render(scrollInfo))
-		}
 	}
 
 	list := strings.Join(listItems, "\n")
 
-	// Help text at bottom
-	var help string
+	// Header
 	hasFilters := len(filterTags) > 0 || filterDate != ""
+	var header string
 	if hasFilters {
-		help = FormatHelpLeft(width,
-			"n", "new entry",
-			"a", "add todo",
-			"j/k", "navigate",
-			"space", "cycle",
-			"r", "refresh",
-			"e", "entries",
-			"/", "clear filters",
-			"esc", "cancel",
-			"q", "quit",
-		)
+		header = RenderHeader(width, "n", "new", "a", "todo", "j/k", "nav", "space", "cycle", "/", "clear", "e", "entries", "esc", "cancel", "q", "quit")
 	} else {
-		help = FormatHelpLeft(width,
-			"n", "new entry",
-			"a", "add todo",
-			"j/k", "navigate",
-			"space", "cycle",
-			"r", "refresh",
-			"e", "entries",
-			"/", "filter",
-			"esc", "cancel",
-			"q", "quit",
-		)
+		header = RenderHeader(width, "n", "new", "a", "todo", "j/k", "nav", "space", "cycle", "/", "filter", "e", "entries", "esc", "cancel", "q", "quit")
 	}
 
-	// Build main content (everything except help)
-	mainContent := lipgloss.JoinVertical(
-		lipgloss.Left,
-		title,
-		"",
-		list,
-	)
+	// Footer
+	footerTitle := "Todos"
+	if len(filterTags) > 0 {
+		footerTitle += " " + strings.Join(filterTags, " ")
+	}
+	if filterDate != "" {
+		dateLabel := helpers.FormatDatePreset(filterDate)
+		if dateLabel != "" {
+			footerTitle += " " + dateLabel
+		}
+	}
 
-	// Calculate how much vertical space to add to push help to bottom
-	mainLines := strings.Count(mainContent, "\n") + 1
-	helpLines := 1
-	availableSpace := height - 4
-	padding := availableSpace - mainLines - helpLines
+	// Stats for footer
+	openCount := 0
+	nextCount := 0
+	doneCount := 0
+	for _, todo := range filtered {
+		switch todo.Status {
+		case "open":
+			openCount++
+		case "next":
+			nextCount++
+		case "done":
+			doneCount++
+		}
+	}
+
+	// Build stats with scroll info if needed
+	var stats string
+	if len(filtered) > 0 {
+		// Calculate viewport info
+		availableHeight := height - 2
+		if availableHeight < 5 {
+			availableHeight = 5
+		}
+
+		if len(filtered) > availableHeight {
+			// Showing windowed view - calculate same viewport as rendering
+			half := availableHeight / 2
+			start := selectedIdx - half
+			end := selectedIdx + half + 1
+
+			if start < 0 {
+				start = 0
+				end = availableHeight
+			}
+
+			if end > len(filtered) {
+				end = len(filtered)
+				start = end - availableHeight
+				if start < 0 {
+					start = 0
+				}
+			}
+
+			stats = fmt.Sprintf("%d-%d of %d | %d open, %d next, %d done", start+1, end, len(filtered), openCount, nextCount, doneCount)
+		} else {
+			stats = fmt.Sprintf("%d open, %d next, %d done", openCount, nextCount, doneCount)
+		}
+	}
+
+	footer := RenderFooter(width, footerTitle, stats)
+
+	// Calculate padding for content area
+	contentHeight := height - 2 // header + footer
+	listLines := strings.Count(list, "\n") + 1
+	padding := contentHeight - listLines
 	if padding < 0 {
 		padding = 0
 	}
 
-	// Add padding and help
-	content := mainContent
+	// Build full view
+	content := header + "\n" + list
 	if padding > 0 {
 		content += strings.Repeat("\n", padding)
 	}
-	content += "\n" + help
+	content += "\n" + footer
 
-	return container.Render(content)
+	return content
 }

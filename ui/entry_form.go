@@ -1,52 +1,34 @@
 package ui
 
 import (
+	"strings"
+
 	"github.com/charmbracelet/bubbles/textarea"
 	"github.com/charmbracelet/lipgloss"
 )
 
 // RenderEntryForm renders the entry editing form
 func RenderEntryForm(width, height int, ta textarea.Model, statusMsg string) string {
-	containerStyle := GetFullScreenBox(width, height)
-	titleStyle := GetTitleStyle(width)
+	// Header
+	header := RenderHeader(width, "ctrl+s", "save", "esc", "cancel")
 
-	help := FormatHelpLeft(width, "ctrl+s", "save", "esc", "cancel")
+	// Footer
+	footer := RenderFooter(width, "New Entry", statusMsg)
 
-	title := titleStyle.Render("NEW ENTRY")
-
-	mainContent := lipgloss.JoinVertical(
-		lipgloss.Left,
-		title,
-		"",
-		ta.View(),
-	)
-
-	mainLines := lipgloss.Height(mainContent)
-	helpLines := 1
-	statusLines := 0
-
-	// Add status message if present
-	var statusRendered string
-	if statusMsg != "" {
-		statusStyle := lipgloss.NewStyle().Foreground(subtleColor)
-		statusRendered = statusStyle.Render(statusMsg)
-		statusLines = 1
-	}
-
-	availableSpace := height - 4
-	padding := availableSpace - mainLines - helpLines - statusLines
+	// Calculate padding for content area
+	contentHeight := height - 2 // header + footer
+	textareaLines := lipgloss.Height(ta.View())
+	padding := contentHeight - textareaLines
 	if padding < 0 {
 		padding = 0
 	}
 
-	content := mainContent
+	// Build full view
+	content := header + "\n" + ta.View()
 	if padding > 0 {
-		content += "\n" + lipgloss.NewStyle().Height(padding).Render("")
+		content += strings.Repeat("\n", padding)
 	}
-	if statusMsg != "" {
-		content += "\n" + statusRendered
-	}
-	content += "\n" + help
+	content += "\n" + footer
 
-	return containerStyle.Render(content)
+	return content
 }

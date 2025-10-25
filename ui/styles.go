@@ -25,7 +25,7 @@ func GetFullScreenBox(width, height int) lipgloss.Style {
 		BorderForeground(accentColor).
 		Padding(1, 2).
 		Width(width - 2).  // Minimal margin for border
-		Height(height - 2) // Minimal margin for border
+		Height(height - 3) // Adjust to prevent top border clipping
 }
 
 // GetTitleStyle returns a title style sized to container width
@@ -120,4 +120,63 @@ func formatHelpWithAlign(width int, align lipgloss.Position, keyDescPairs ...str
 	}
 
 	return rendered
+}
+
+// RenderHeader renders the top bar with app name and help shortcuts
+// Format: "AMOS  n:new  a:todo  esc:cancel  q:quit"
+func RenderHeader(width int, keyDescPairs ...string) string {
+	// Build shortcuts string
+	var shortcuts []string
+	for i := 0; i < len(keyDescPairs); i += 2 {
+		if i+1 < len(keyDescPairs) {
+			shortcuts = append(shortcuts, keyDescPairs[i]+":"+keyDescPairs[i+1])
+		}
+	}
+
+	content := strings.Join(shortcuts, "  ")
+
+	// Truncate if too long
+	if len(content) > width {
+		content = content[:width]
+	}
+
+	// Maximum contrast: inverted accent colors (black bg/white text in dark, white bg/black text in light)
+	headerFg := lipgloss.AdaptiveColor{Light: "#FFFFFF", Dark: "#000000"}
+	headerBg := lipgloss.AdaptiveColor{Light: "#000000", Dark: "#FFFFFF"}
+
+	// Pad to full width and highlight
+	headerStyle := lipgloss.NewStyle().
+		Foreground(headerFg).
+		Background(headerBg).
+		Width(width).
+		Bold(true)
+
+	return headerStyle.Render(content)
+}
+
+// RenderFooter renders the bottom bar with view context and stats
+// Format: "Entries @work  15 items"
+func RenderFooter(width int, title string, stats string) string {
+	content := title
+	if stats != "" {
+		content += "  " + stats
+	}
+
+	// Truncate if too long
+	if len(content) > width {
+		content = content[:width]
+	}
+
+	// Maximum contrast: inverted accent colors (black bg/white text in dark, white bg/black text in light)
+	footerFg := lipgloss.AdaptiveColor{Light: "#FFFFFF", Dark: "#000000"}
+	footerBg := lipgloss.AdaptiveColor{Light: "#000000", Dark: "#FFFFFF"}
+
+	// Pad to full width and highlight
+	footerStyle := lipgloss.NewStyle().
+		Foreground(footerFg).
+		Background(footerBg).
+		Width(width).
+		Bold(true)
+
+	return footerStyle.Render(content)
 }

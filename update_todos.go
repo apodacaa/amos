@@ -1,9 +1,8 @@
 package main
 
 import (
-	"time"
-
 	"github.com/apodacaa/amos/internal/helpers"
+	"github.com/charmbracelet/bubbles/textarea"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -30,22 +29,28 @@ func (m Model) handleTodosListKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		// Add standalone todo (using shared helper)
 		return m.handleAddTodo()
 	case "/":
-		// Open unified filter view (or clear all filters if already filtering)
+		// Open unified filter input (or clear all filters if already filtering)
 		if len(m.filterTags) > 0 || m.filterDate != "" {
 			// Clear all filters
 			m.filterTags = []string{}
 			m.filterDate = ""
-			m.statusMsg = "✓ Filters cleared"
-			m.statusTime = time.Now()
-			return m, clearStatusAfterDelay()
+			m.statusMsg = ""
+			return m, nil
 		}
-		// Open filter view
+		// Open unified filter
 		m.filterContext = "todos"
-		m.view = "filter_view"
-		return m, nil
+		m.availableTags = helpers.ExtractUniqueTagsFromAll(m.entries, m.todos)
+		m.unifiedFilterInput.Reset()
+		m.unifiedFilterInput.Focus()
+		m.autocompleteTag = ""
+		m.view = "unified_filter"
+		m.statusMsg = ""
+		return m, textarea.Blink
 	case "j", "down":
-		// Apply filter to get the displayed list
-		filtered := helpers.FilterTodosByTags(m.displayTodos, m.filterTags)
+		// Apply filters to get the displayed list (same as UI)
+		filtered := helpers.FilterTodosByDateRange(m.displayTodos, m.filterDate)
+		filtered = helpers.FilterTodosByTags(filtered, m.filterTags)
+
 		if m.selectedTodo < len(filtered)-1 {
 			m.selectedTodo++
 		}
@@ -61,7 +66,8 @@ func (m Model) handleTodosListKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case " ":
 		// Cycle todo status: open → next → done → open (save immediately, no re-sort)
 		// Use filtered displayTodos to keep selection stable
-		filtered := helpers.FilterTodosByTags(m.displayTodos, m.filterTags)
+		filtered := helpers.FilterTodosByDateRange(m.displayTodos, m.filterDate)
+		filtered = helpers.FilterTodosByTags(filtered, m.filterTags)
 		if m.selectedTodo >= 0 && m.selectedTodo < len(filtered) {
 			// Get the todo from filtered list (current display order)
 			todo := filtered[m.selectedTodo]
@@ -82,7 +88,6 @@ func (m Model) handleTodosListKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 				todo.Status = "open"
 				m.statusMsg = "○ Open"
 			}
-			m.statusTime = time.Now()
 
 			// Update in m.todos array and displayTodos (find by ID)
 			// We can't update displayTodos[m.selectedTodo] directly because

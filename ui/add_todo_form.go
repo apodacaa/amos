@@ -1,52 +1,34 @@
 package ui
 
 import (
+	"strings"
+
 	"github.com/charmbracelet/bubbles/textarea"
 	"github.com/charmbracelet/lipgloss"
 )
 
 // RenderAddTodoForm renders the standalone todo creation form
 func RenderAddTodoForm(width, height int, ti textarea.Model, statusMsg string) string {
-	box := GetFullScreenBox(width, height)
-	titleStyle := GetTitleStyle(width)
+	// Header
+	header := RenderHeader(width, "enter", "save", "esc", "cancel")
 
-	help := FormatHelpLeft(width, "enter", "save", "esc", "cancel")
+	// Footer
+	footer := RenderFooter(width, "Add Todo", statusMsg)
 
-	title := titleStyle.Render("ADD TODO")
-
-	mainContent := lipgloss.JoinVertical(
-		lipgloss.Left,
-		title,
-		"",
-		ti.View(),
-	)
-
-	mainLines := lipgloss.Height(mainContent)
-	helpLines := 1
-	statusLines := 0
-
-	// Add status message if present
-	var statusRendered string
-	if statusMsg != "" {
-		statusStyle := lipgloss.NewStyle().Foreground(subtleColor)
-		statusRendered = statusStyle.Render(statusMsg)
-		statusLines = 1
-	}
-
-	availableSpace := height - 4
-	padding := availableSpace - mainLines - helpLines - statusLines
+	// Calculate padding for content area
+	contentHeight := height - 2 // header + footer
+	textareaLines := lipgloss.Height(ti.View())
+	padding := contentHeight - textareaLines
 	if padding < 0 {
 		padding = 0
 	}
 
-	content := mainContent
+	// Build full view
+	content := header + "\n" + ti.View()
 	if padding > 0 {
-		content += "\n" + lipgloss.NewStyle().Height(padding).Render("")
+		content += strings.Repeat("\n", padding)
 	}
-	if statusMsg != "" {
-		content += "\n" + statusRendered
-	}
-	content += "\n" + help
+	content += "\n" + footer
 
-	return box.Render(content)
+	return content
 }

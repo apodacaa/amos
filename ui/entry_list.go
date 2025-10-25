@@ -11,21 +11,6 @@ import (
 
 // RenderEntryList renders the entry list view
 func RenderEntryList(width, height int, entries []models.Entry, selectedIdx int, todos []models.Todo, filterTags []string, filterDate string) string {
-	container := GetFullScreenBox(width, height)
-
-	// Update title to show filters if active
-	titleText := "Entries"
-	if len(filterTags) > 0 {
-		titleText += " " + strings.Join(filterTags, " ")
-	}
-	if filterDate != "" {
-		dateLabel := helpers.FormatDatePreset(filterDate)
-		if dateLabel != "" {
-			titleText += " " + dateLabel
-		}
-	}
-	title := GetTitleStyle(width).Render(titleText)
-
 	// Apply filters: first date, then tags
 	filtered := helpers.FilterEntriesByDateRange(entries, filterDate)
 	filtered = helpers.FilterEntriesByTags(filtered, filterTags)
@@ -44,8 +29,7 @@ func RenderEntryList(width, height int, entries []models.Entry, selectedIdx int,
 		listItems = append(listItems, emptyStyle.Render("No entries yet"))
 	} else {
 		// Calculate viewport (visible window of items)
-		// Reserve space: title (1) + blank (1) + status (1) + blank (1) + help (1) = 5 lines minimum
-		availableHeight := height - 10 // Conservative estimate for chrome
+		availableHeight := height - 2 // header + footer
 		if availableHeight < 5 {
 			availableHeight = 5
 		}
@@ -79,18 +63,27 @@ func RenderEntryList(width, height int, entries []models.Entry, selectedIdx int,
 		// Render visible items
 		for i := start; i < end; i++ {
 			entry := sorted[i]
-			// Format: 2006-01-02 | Meeting with team @tag1 @tag2
+			// Table format: date  title (padded)  tags
 			timestamp := entry.Timestamp.Format("2006-01-02")
-			line := fmt.Sprintf("%s | %s", timestamp, entry.Title)
 
-			// Add tags if present
+			// Pad title to fixed width for column alignment
+			titleWidth := 40
+			paddedTitle := entry.Title
+			if len(paddedTitle) > titleWidth {
+				paddedTitle = paddedTitle[:titleWidth]
+			} else {
+				paddedTitle = paddedTitle + strings.Repeat(" ", titleWidth-len(paddedTitle))
+			}
+
+			line := fmt.Sprintf("%s  %s", timestamp, paddedTitle)
+
+			// Add tags if present (aligned after padded title)
 			if len(entry.Tags) > 0 {
-				tagStyle := lipgloss.NewStyle().Foreground(mutedColor)
 				tagStr := ""
 				for _, tag := range entry.Tags {
 					tagStr += " @" + tag
 				}
-				line += tagStyle.Render(tagStr)
+				line += tagStr
 			}
 
 			// Truncate if too long
@@ -99,79 +92,96 @@ func RenderEntryList(width, height int, entries []models.Entry, selectedIdx int,
 				line = line[:maxLen-3] + "..."
 			}
 
-			// Style selected item differently
+			// Style selected item with inverted colors (brutalist full-width bar)
 			var styled string
 			if i == selectedIdx {
-				selectedStyle := lipgloss.NewStyle().Foreground(subtleColor)
-				styled = selectedStyle.Render("> " + line)
+				selectedStyle := lipgloss.NewStyle().
+					Foreground(subtleColor).
+					Reverse(true).
+					Width(width - 4)
+				styled = selectedStyle.Render(line)
 			} else {
 				normalStyle := lipgloss.NewStyle().Foreground(subtleColor)
-				styled = normalStyle.Render("  " + line)
+				styled = normalStyle.Render(line)
 			}
 
 			listItems = append(listItems, styled)
-		}
-
-		// Add scroll indicator if needed
-		if len(sorted) > availableHeight {
-			scrollInfo := fmt.Sprintf("(%d-%d of %d)", start+1, end, len(sorted))
-			scrollStyle := lipgloss.NewStyle().Foreground(mutedColor)
-			listItems = append(listItems, scrollStyle.Render(scrollInfo))
 		}
 	}
 
 	list := strings.Join(listItems, "\n")
 
-	// Help text (changes based on filter state) with bold keys
-	var help string
+	// Header
 	hasFilters := len(filterTags) > 0 || filterDate != ""
+	var header string
 	if hasFilters {
-		help = FormatHelpLeft(width,
-			"n", "new entry",
-			"a", "add todo",
-			"j/k", "navigate",
-			"enter", "view",
-			"/", "clear filters",
-			"t", "todos",
-			"esc", "cancel",
-			"q", "quit",
-		)
+		header = RenderHeader(width, "n", "new", "a", "todo", "j/k", "nav", "enter", "view", "/", "clear", "t", "todos", "esc", "cancel", "q", "quit")
 	} else {
-		help = FormatHelpLeft(width,
-			"n", "new entry",
-			"a", "add todo",
-			"j/k", "navigate",
-			"enter", "view",
-			"/", "filter",
-			"t", "todos",
-			"esc", "cancel",
-			"q", "quit",
-		)
+		header = RenderHeader(width, "n", "new", "a", "todo", "j/k", "nav", "enter", "view", "/", "filter", "t", "todos", "esc", "cancel", "q", "quit")
 	}
 
-	// Build main content (everything except help)
-	mainContent := lipgloss.JoinVertical(
-		lipgloss.Left,
-		title,
-		"",
-		list,
-	)
+	// Footer
+	footerTitle := "Entries"
+	if len(filterTags) > 0 {
+		footerTitle += " " + strings.Join(filterTags, " ")
+	}
+	if filterDate != "" {
+		dateLabel := helpers.FormatDatePreset(filterDate)
+		if dateLabel != "" {
+			footerTitle += " " + dateLabel
+		}
+	}
 
-	// Calculate how much vertical space to add to push help to bottom
-	mainLines := strings.Count(mainContent, "\n") + 1
-	helpLines := 1
-	availableSpace := height - 4
-	padding := availableSpace - mainLines - helpLines
+	// Build stats with scroll info if needed
+	var stats string
+	if len(sorted) > 0 {
+		// Calculate viewport info
+		availableHeight := height - 2
+		if availableHeight < 5 {
+			availableHeight = 5
+		}
+
+		if len(sorted) > availableHeight {
+			// Showing windowed view - calculate same viewport as rendering
+			half := availableHeight / 2
+			start := selectedIdx - half
+			end := selectedIdx + half + 1
+
+			if start < 0 {
+				start = 0
+				end = availableHeight
+			}
+
+			if end > len(sorted) {
+				end = len(sorted)
+				start = end - availableHeight
+				if start < 0 {
+					start = 0
+				}
+			}
+
+			stats = fmt.Sprintf("%d-%d of %d items", start+1, end, len(sorted))
+		} else {
+			stats = fmt.Sprintf("%d items", len(sorted))
+		}
+	}
+
+	footer := RenderFooter(width, footerTitle, stats)
+
+	// Calculate padding for content area
+	contentHeight := height - 2 // header + footer
+	listLines := strings.Count(list, "\n") + 1
+	padding := contentHeight - listLines
 	if padding < 0 {
 		padding = 0
 	}
 
-	// Add padding and help
-	content := mainContent
+	// Build full view
+	content := header + "\n" + list
 	if padding > 0 {
 		content += strings.Repeat("\n", padding)
 	}
-	content += "\n" + help
+	content += "\n" + footer
 
-	return container.Render(content)
+	return content
 }

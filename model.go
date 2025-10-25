@@ -15,12 +15,12 @@ import (
 
 // Model holds the application state
 type Model struct {
-	view               string         // Current view: "dashboard", "entry", "entries", "view_entry", "todos", "filter_view", "tag_filter", "date_filter", or "add_todo"
+	view               string         // Current view: "dashboard", "entry", "entries", "view_entry", "todos", "unified_filter", or "add_todo"
 	width              int            // Terminal width
 	height             int            // Terminal height
 	textarea           textarea.Model // Textarea for entry input
 	todoInput          textarea.Model // Single-line input for standalone todos
-	tagFilterInput     textarea.Model // Single-line input for tag filtering
+	unifiedFilterInput textarea.Model // Single-line input for unified filtering (tags + dates)
 	currentEntry       models.Entry   // Entry being edited
 	currentTodo        models.Todo    // Standalone todo being created
 	viewingEntry       models.Entry   // Entry being viewed (read-only)
@@ -38,7 +38,6 @@ type Model struct {
 	filterTags         []string       // Current tag filters (empty = no filter), supports multiple tags with AND logic
 	filterContext      string         // Context for filtering: "entries" or "todos" (which view to return to)
 	filterDate         string         // Current date filter preset (empty = no filter)
-	selectedDatePreset int            // Selected preset index in date filter view
 	availableTags      []string       // All unique tags across entries
 	autocompleteTag    string         // Current autocomplete suggestion for tag input
 }
@@ -77,28 +76,28 @@ func NewModel() Model {
 	todoInput.FocusedStyle.Text = ui.GetTextStyle()
 	todoInput.BlurredStyle.Text = ui.GetTextStyle()
 
-	// Create single-line input for tag filtering
-	tagFilterInput := textarea.New()
-	tagFilterInput.Placeholder = "Type tags separated by spaces..."
-	tagFilterInput.CharLimit = 0
-	tagFilterInput.SetWidth(60)
-	tagFilterInput.SetHeight(1) // Single line
-	tagFilterInput.FocusedStyle.CursorLine = ui.GetTextareaStyle()
-	tagFilterInput.BlurredStyle.CursorLine = ui.GetTextareaStyle()
-	tagFilterInput.FocusedStyle.Placeholder = ui.GetPlaceholderStyle()
-	tagFilterInput.BlurredStyle.Placeholder = ui.GetPlaceholderStyle()
-	tagFilterInput.FocusedStyle.Prompt = ui.GetPromptStyle()
-	tagFilterInput.BlurredStyle.Prompt = ui.GetPromptStyle()
-	tagFilterInput.FocusedStyle.Text = ui.GetTextStyle()
-	tagFilterInput.BlurredStyle.Text = ui.GetTextStyle()
+	// Create single-line input for unified filtering (tags + dates)
+	unifiedFilterInput := textarea.New()
+	unifiedFilterInput.Placeholder = "e.g. @work yesterday, last 30 days @client"
+	unifiedFilterInput.CharLimit = 0
+	unifiedFilterInput.SetWidth(60)
+	unifiedFilterInput.SetHeight(1) // Single line
+	unifiedFilterInput.FocusedStyle.CursorLine = ui.GetTextareaStyle()
+	unifiedFilterInput.BlurredStyle.CursorLine = ui.GetTextareaStyle()
+	unifiedFilterInput.FocusedStyle.Placeholder = ui.GetPlaceholderStyle()
+	unifiedFilterInput.BlurredStyle.Placeholder = ui.GetPlaceholderStyle()
+	unifiedFilterInput.FocusedStyle.Prompt = ui.GetPromptStyle()
+	unifiedFilterInput.BlurredStyle.Prompt = ui.GetPromptStyle()
+	unifiedFilterInput.FocusedStyle.Text = ui.GetTextStyle()
+	unifiedFilterInput.BlurredStyle.Text = ui.GetTextStyle()
 
 	return Model{
-		view:           "dashboard",
-		width:          80, // Default width
-		height:         24, // Default height
-		textarea:       ta,
-		todoInput:      todoInput,
-		tagFilterInput: tagFilterInput,
+		view:               "dashboard",
+		width:              80, // Default width
+		height:             24, // Default height
+		textarea:           ta,
+		todoInput:          todoInput,
+		unifiedFilterInput: unifiedFilterInput,
 	}
 }
 
@@ -124,12 +123,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m.handleViewEntryKeys(msg)
 		case "todos":
 			return m.handleTodosListKeys(msg)
-		case "filter_view":
-			return m.handleFilterViewKeys(msg)
-		case "tag_filter":
-			return m.handleTagFilterKeys(msg)
-		case "date_filter":
-			return m.handleDateFilterKeys(msg)
+		case "unified_filter":
+			return m.handleUnifiedFilterKeys(msg)
 		case "add_todo":
 			return m.handleAddTodoKeys(msg)
 		default:
@@ -236,13 +231,8 @@ func (m Model) View() string {
 		return ui.RenderEntryView(m.width, m.height, m.viewingEntry, m.todos, m.scrollOffset)
 	case "todos":
 		return ui.RenderTodoList(m.width, m.height, m.displayTodos, m.entries, m.selectedTodo, m.filterTags, m.filterDate)
-	case "filter_view":
-		dateLabel := helpers.FormatDatePreset(m.filterDate)
-		return ui.RenderFilterView(m.width, m.height, m.filterTags, m.filterDate, dateLabel)
-	case "tag_filter":
-		return ui.RenderTagFilter(m.width, m.height, m.tagFilterInput, m.availableTags, m.autocompleteTag)
-	case "date_filter":
-		return ui.RenderDateFilter(m.width, m.height, m.selectedDatePreset)
+	case "unified_filter":
+		return ui.RenderUnifiedFilter(m.width, m.height, m.unifiedFilterInput, m.availableTags, m.autocompleteTag, m.statusMsg)
 	case "add_todo":
 		return ui.RenderAddTodoForm(m.width, m.height, m.todoInput, m.statusMsg)
 	default:

@@ -35,8 +35,9 @@ func (m Model) handleViewEntryKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, m.loadEntriesAndTodos()
 	case "j", "down":
 		// Navigate to next entry (newer to older, same as entry list)
-		// Apply filter and sort (same as entry list view)
-		filtered := helpers.FilterEntriesByTags(m.entries, m.filterTags)
+		// Apply filters and sort (same as entry list view)
+		filtered := helpers.FilterEntriesByDateRange(m.entries, m.filterDate)
+		filtered = helpers.FilterEntriesByTags(filtered, m.filterTags)
 		sorted := helpers.SortEntriesForDisplay(filtered)
 
 		if len(sorted) > 0 {
@@ -59,8 +60,9 @@ func (m Model) handleViewEntryKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 	case "k", "up":
 		// Navigate to previous entry (older to newer, same as entry list)
-		// Apply filter and sort (same as entry list view)
-		filtered := helpers.FilterEntriesByTags(m.entries, m.filterTags)
+		// Apply filters and sort (same as entry list view)
+		filtered := helpers.FilterEntriesByDateRange(m.entries, m.filterDate)
+		filtered = helpers.FilterEntriesByTags(filtered, m.filterTags)
 		sorted := helpers.SortEntriesForDisplay(filtered)
 
 		if len(sorted) > 0 {

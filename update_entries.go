@@ -1,9 +1,8 @@
 package main
 
 import (
-	"time"
-
 	"github.com/apodacaa/amos/internal/helpers"
+	"github.com/charmbracelet/bubbles/textarea"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -32,21 +31,29 @@ func (m Model) handleEntriesListKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		// Add standalone todo (using shared helper)
 		return m.handleAddTodo()
 	case "/":
-		// Open unified filter view (or clear all filters if already filtering)
+		// Open unified filter input (or clear all filters if already filtering)
 		if len(m.filterTags) > 0 || m.filterDate != "" {
 			// Clear all filters
 			m.filterTags = []string{}
 			m.filterDate = ""
-			m.statusMsg = "✓ Filters cleared"
-			m.statusTime = time.Now()
-			return m, clearStatusAfterDelay()
+			m.statusMsg = ""
+			return m, nil
 		}
-		// Open filter view
+		// Open unified filter
 		m.filterContext = "entries"
-		m.view = "filter_view"
-		return m, nil
+		m.availableTags = helpers.ExtractUniqueTagsFromAll(m.entries, m.todos)
+		m.unifiedFilterInput.Reset()
+		m.unifiedFilterInput.Focus()
+		m.autocompleteTag = ""
+		m.view = "unified_filter"
+		m.statusMsg = ""
+		return m, textarea.Blink
 	case "j", "down":
-		if m.selectedEntry < len(m.entries)-1 {
+		// Apply filters to get displayed list
+		filtered := helpers.FilterEntriesByDateRange(m.entries, m.filterDate)
+		filtered = helpers.FilterEntriesByTags(filtered, m.filterTags)
+
+		if m.selectedEntry < len(filtered)-1 {
 			m.selectedEntry++
 		}
 		return m, nil
@@ -57,8 +64,9 @@ func (m Model) handleEntriesListKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 	case "enter":
 		// Open selected entry for read-only viewing
-		// Apply filter if active (same logic as UI)
-		filtered := helpers.FilterEntriesByTags(m.entries, m.filterTags)
+		// Apply filters (same logic as UI)
+		filtered := helpers.FilterEntriesByDateRange(m.entries, m.filterDate)
+		filtered = helpers.FilterEntriesByTags(filtered, m.filterTags)
 
 		if m.selectedEntry >= 0 && m.selectedEntry < len(filtered) {
 			// Need to get the sorted entry (newest first)
