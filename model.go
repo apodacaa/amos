@@ -15,30 +15,32 @@ import (
 
 // Model holds the application state
 type Model struct {
-	view            string         // Current view: "dashboard", "entry", "entries", "view_entry", "todos", "tag_filter", or "add_todo"
-	width           int            // Terminal width
-	height          int            // Terminal height
-	textarea        textarea.Model // Textarea for entry input
-	todoInput       textarea.Model // Single-line input for standalone todos
-	tagFilterInput  textarea.Model // Single-line input for tag filtering
-	currentEntry    models.Entry   // Entry being edited
-	currentTodo     models.Todo    // Standalone todo being created
-	viewingEntry    models.Entry   // Entry being viewed (read-only)
-	scrollOffset    int            // Scroll offset for long entry view
-	statusMsg       string         // Status message to display
-	statusTime      time.Time      // When status message was set
-	hasUnsaved      bool           // Whether there are unsaved changes
-	savedContent    string         // Last saved content (to detect changes)
-	confirmingExit  bool           // Whether showing exit confirmation
-	entries         []models.Entry // All entries (for list view)
-	selectedEntry   int            // Selected entry index in list
-	todos           []models.Todo  // All todos (raw, unsorted)
-	displayTodos    []models.Todo  // Sorted todos for display (only updated on load/refresh)
-	selectedTodo    int            // Selected todo index in list
-	filterTags      []string       // Current tag filters (empty = no filter), supports multiple tags with AND logic
-	filterContext   string         // Context for tag filtering: "entries" or "todos" (which view to return to)
-	availableTags   []string       // All unique tags across entries
-	autocompleteTag string         // Current autocomplete suggestion for tag input
+	view               string         // Current view: "dashboard", "entry", "entries", "view_entry", "todos", "filter_view", "tag_filter", "date_filter", or "add_todo"
+	width              int            // Terminal width
+	height             int            // Terminal height
+	textarea           textarea.Model // Textarea for entry input
+	todoInput          textarea.Model // Single-line input for standalone todos
+	tagFilterInput     textarea.Model // Single-line input for tag filtering
+	currentEntry       models.Entry   // Entry being edited
+	currentTodo        models.Todo    // Standalone todo being created
+	viewingEntry       models.Entry   // Entry being viewed (read-only)
+	scrollOffset       int            // Scroll offset for long entry view
+	statusMsg          string         // Status message to display
+	statusTime         time.Time      // When status message was set
+	hasUnsaved         bool           // Whether there are unsaved changes
+	savedContent       string         // Last saved content (to detect changes)
+	confirmingExit     bool           // Whether showing exit confirmation
+	entries            []models.Entry // All entries (for list view)
+	selectedEntry      int            // Selected entry index in list
+	todos              []models.Todo  // All todos (raw, unsorted)
+	displayTodos       []models.Todo  // Sorted todos for display (only updated on load/refresh)
+	selectedTodo       int            // Selected todo index in list
+	filterTags         []string       // Current tag filters (empty = no filter), supports multiple tags with AND logic
+	filterContext      string         // Context for filtering: "entries" or "todos" (which view to return to)
+	filterDate         string         // Current date filter preset (empty = no filter)
+	selectedDatePreset int            // Selected preset index in date filter view
+	availableTags      []string       // All unique tags across entries
+	autocompleteTag    string         // Current autocomplete suggestion for tag input
 }
 
 // NewModel creates a new model with default values
@@ -122,8 +124,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m.handleViewEntryKeys(msg)
 		case "todos":
 			return m.handleTodosListKeys(msg)
+		case "filter_view":
+			return m.handleFilterViewKeys(msg)
 		case "tag_filter":
 			return m.handleTagFilterKeys(msg)
+		case "date_filter":
+			return m.handleDateFilterKeys(msg)
 		case "add_todo":
 			return m.handleAddTodoKeys(msg)
 		default:
@@ -225,13 +231,18 @@ func (m Model) View() string {
 	case "entry":
 		return ui.RenderEntryForm(m.width, m.height, m.textarea, m.statusMsg)
 	case "entries":
-		return ui.RenderEntryList(m.width, m.height, m.entries, m.selectedEntry, m.todos, m.filterTags)
+		return ui.RenderEntryList(m.width, m.height, m.entries, m.selectedEntry, m.todos, m.filterTags, m.filterDate)
 	case "view_entry":
 		return ui.RenderEntryView(m.width, m.height, m.viewingEntry, m.todos, m.scrollOffset)
 	case "todos":
-		return ui.RenderTodoList(m.width, m.height, m.displayTodos, m.entries, m.selectedTodo, m.filterTags)
+		return ui.RenderTodoList(m.width, m.height, m.displayTodos, m.entries, m.selectedTodo, m.filterTags, m.filterDate)
+	case "filter_view":
+		dateLabel := helpers.FormatDatePreset(m.filterDate)
+		return ui.RenderFilterView(m.width, m.height, m.filterTags, m.filterDate, dateLabel)
 	case "tag_filter":
 		return ui.RenderTagFilter(m.width, m.height, m.tagFilterInput, m.availableTags, m.autocompleteTag)
+	case "date_filter":
+		return ui.RenderDateFilter(m.width, m.height, m.selectedDatePreset)
 	case "add_todo":
 		return ui.RenderAddTodoForm(m.width, m.height, m.todoInput, m.statusMsg)
 	default:

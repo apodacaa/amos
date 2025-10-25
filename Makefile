@@ -1,4 +1,4 @@
-.PHONY: help build run fmt vet test test-v test-cover check check-all ci ci-cover staticcheck install-air clean
+.PHONY: help build run fmt vet test test-v test-cover check check-all ci ci-cover staticcheck install-air clean gen-test-data
 
 help: ## Show this help message
 	@echo 'Usage: make [target]'
@@ -60,5 +60,11 @@ install-air: ## Install air for hot reload
 
 clean: ## Remove built binaries
 	rm -f amos
+
+gen-test-data: ## Generate test data (usage: make gen-test-data ENTRIES=1000 TODOS=500)
+	@ENTRIES=$${ENTRIES:-100}; \
+	TODOS=$${TODOS:-50}; \
+	echo "Generating $$ENTRIES entries and $$TODOS todos..."; \
+	go run scripts/generate_test_data.go -entries $$ENTRIES -todos $$TODOS
 
 .DEFAULT_GOAL := help

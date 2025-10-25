@@ -10,18 +10,25 @@ import (
 )
 
 // RenderEntryList renders the entry list view
-func RenderEntryList(width, height int, entries []models.Entry, selectedIdx int, todos []models.Todo, filterTags []string) string {
+func RenderEntryList(width, height int, entries []models.Entry, selectedIdx int, todos []models.Todo, filterTags []string, filterDate string) string {
 	container := GetFullScreenBox(width, height)
 
-	// Update title to show filter if active
+	// Update title to show filters if active
 	titleText := "Entries"
 	if len(filterTags) > 0 {
 		titleText += " " + strings.Join(filterTags, " ")
 	}
+	if filterDate != "" {
+		dateLabel := helpers.FormatDatePreset(filterDate)
+		if dateLabel != "" {
+			titleText += " " + dateLabel
+		}
+	}
 	title := GetTitleStyle(width).Render(titleText)
 
-	// Filter entries by tags if filter is active
-	filtered := helpers.FilterEntriesByTags(entries, filterTags)
+	// Apply filters: first date, then tags
+	filtered := helpers.FilterEntriesByDateRange(entries, filterDate)
+	filtered = helpers.FilterEntriesByTags(filtered, filterTags)
 
 	// Sort entries by timestamp (newest first)
 	sorted := helpers.SortEntriesForDisplay(filtered)
@@ -72,9 +79,19 @@ func RenderEntryList(width, height int, entries []models.Entry, selectedIdx int,
 		// Render visible items
 		for i := start; i < end; i++ {
 			entry := sorted[i]
-			// Format: 2006-01-02 15:04 | Meeting with team
-			timestamp := entry.Timestamp.Format("2006-01-02 15:04")
+			// Format: 2006-01-02 | Meeting with team @tag1 @tag2
+			timestamp := entry.Timestamp.Format("2006-01-02")
 			line := fmt.Sprintf("%s | %s", timestamp, entry.Title)
+
+			// Add tags if present
+			if len(entry.Tags) > 0 {
+				tagStyle := lipgloss.NewStyle().Foreground(mutedColor)
+				tagStr := ""
+				for _, tag := range entry.Tags {
+					tagStr += " @" + tag
+				}
+				line += tagStyle.Render(tagStr)
+			}
 
 			// Truncate if too long
 			maxLen := width - 6
@@ -107,13 +124,14 @@ func RenderEntryList(width, height int, entries []models.Entry, selectedIdx int,
 
 	// Help text (changes based on filter state) with bold keys
 	var help string
-	if len(filterTags) > 0 {
+	hasFilters := len(filterTags) > 0 || filterDate != ""
+	if hasFilters {
 		help = FormatHelpLeft(width,
 			"n", "new entry",
 			"a", "add todo",
 			"j/k", "navigate",
 			"enter", "view",
-			"@", "clear filter",
+			"/", "clear filters",
 			"t", "todos",
 			"esc", "cancel",
 			"q", "quit",
@@ -124,7 +142,7 @@ func RenderEntryList(width, height int, entries []models.Entry, selectedIdx int,
 			"a", "add todo",
 			"j/k", "navigate",
 			"enter", "view",
-			"@", "filter",
+			"/", "filter",
 			"t", "todos",
 			"esc", "cancel",
 			"q", "quit",

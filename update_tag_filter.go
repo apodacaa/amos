@@ -15,8 +15,8 @@ func (m Model) handleTagFilterKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "q", "ctrl+c":
 		return m, tea.Quit
 	case "esc":
-		// Cancel and go back to previous view without filtering
-		m.view = m.filterContext
+		// Cancel and return to filter view
+		m.view = "filter_view"
 		m.statusMsg = ""
 		return m, nil
 	case "tab":
@@ -40,29 +40,17 @@ func (m Model) handleTagFilterKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		// Parse input and apply filters
 		input := strings.TrimSpace(m.tagFilterInput.Value())
 		if input == "" {
-			// No input, clear filters and go back
+			// No input, clear tag filter and return to filter view
 			m.filterTags = []string{}
-			m.view = m.filterContext
-			if m.filterContext == "entries" {
-				m.selectedEntry = 0
-			} else if m.filterContext == "todos" {
-				m.selectedTodo = 0
-			}
-			m.statusMsg = "✓ Filter cleared"
-			m.statusTime = time.Now()
-			return m, clearStatusAfterDelay()
+			m.view = "filter_view"
+			return m, nil
 		}
 
 		// Parse space-separated tags
 		tags := parseTagInput(input)
 		if len(tags) > 0 {
 			m.filterTags = tags
-			m.view = m.filterContext
-			if m.filterContext == "entries" {
-				m.selectedEntry = 0
-			} else if m.filterContext == "todos" {
-				m.selectedTodo = 0
-			}
+			m.view = "filter_view"
 			m.statusMsg = ""
 			return m, nil
 		}

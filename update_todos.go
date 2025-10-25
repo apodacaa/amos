@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"github.com/apodacaa/amos/internal/helpers"
-	"github.com/charmbracelet/bubbles/textarea"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -30,29 +29,20 @@ func (m Model) handleTodosListKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "a":
 		// Add standalone todo (using shared helper)
 		return m.handleAddTodo()
-	case "@":
-		// Open tag filter input (or clear filter if already filtering)
-		if len(m.filterTags) > 0 {
-			// Clear filters
+	case "/":
+		// Open unified filter view (or clear all filters if already filtering)
+		if len(m.filterTags) > 0 || m.filterDate != "" {
+			// Clear all filters
 			m.filterTags = []string{}
-			m.statusMsg = "✓ Filter cleared"
+			m.filterDate = ""
+			m.statusMsg = "✓ Filters cleared"
 			m.statusTime = time.Now()
 			return m, clearStatusAfterDelay()
 		}
-		// Extract unique tags from entries and todos
-		m.availableTags = helpers.ExtractUniqueTagsFromAll(m.entries, m.todos)
-		if len(m.availableTags) == 0 {
-			m.statusMsg = "No tags found"
-			m.statusTime = time.Now()
-			return m, clearStatusAfterDelay()
-		}
-		// Open tag filter view
-		m.tagFilterInput.Reset()
-		m.tagFilterInput.Focus()
-		m.autocompleteTag = ""
+		// Open filter view
 		m.filterContext = "todos"
-		m.view = "tag_filter"
-		return m, textarea.Blink
+		m.view = "filter_view"
+		return m, nil
 	case "j", "down":
 		// Apply filter to get the displayed list
 		filtered := helpers.FilterTodosByTags(m.displayTodos, m.filterTags)

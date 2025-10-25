@@ -10,16 +10,23 @@ import (
 )
 
 // RenderTodoList renders the todo list view
-func RenderTodoList(width, height int, todos []models.Todo, entries []models.Entry, selectedIdx int, filterTags []string) string {
+func RenderTodoList(width, height int, todos []models.Todo, entries []models.Entry, selectedIdx int, filterTags []string, filterDate string) string {
 	container := GetFullScreenBox(width, height)
 
-	// Apply filter if active
-	filtered := helpers.FilterTodosByTags(todos, filterTags)
+	// Apply filters: first date, then tags
+	filtered := helpers.FilterTodosByDateRange(todos, filterDate)
+	filtered = helpers.FilterTodosByTags(filtered, filterTags)
 
 	// Update title to show filter status
 	titleText := "Todos"
 	if len(filterTags) > 0 {
 		titleText += " " + strings.Join(filterTags, " ")
+	}
+	if filterDate != "" {
+		dateLabel := helpers.FormatDatePreset(filterDate)
+		if dateLabel != "" {
+			titleText += " " + dateLabel
+		}
 	}
 	title := GetTitleStyle(width).Render(titleText)
 
@@ -83,18 +90,19 @@ func RenderTodoList(width, height int, todos []models.Todo, entries []models.Ent
 				checkbox = "[x]" // done
 			}
 
-			// Title with tags
-			titleText := todo.Title
+			// Format: [ ] 2006-01-02 | Title @tag1 @tag2
+			dateStr := todo.CreatedAt.Format("2006-01-02")
+			line := fmt.Sprintf("%s %s | %s", checkbox, dateStr, todo.Title)
+
+			// Add tags if present
 			if len(todo.Tags) > 0 {
 				tagStyle := lipgloss.NewStyle().Foreground(mutedColor)
 				tagStr := ""
 				for _, tag := range todo.Tags {
 					tagStr += " @" + tag
 				}
-				titleText += tagStyle.Render(tagStr)
+				line += tagStyle.Render(tagStr)
 			}
-
-			line := fmt.Sprintf("%s %s", checkbox, titleText)
 
 			// Truncate if too long
 			maxLen := width - 6
@@ -139,7 +147,8 @@ func RenderTodoList(width, height int, todos []models.Todo, entries []models.Ent
 
 	// Help text at bottom
 	var help string
-	if len(filterTags) > 0 {
+	hasFilters := len(filterTags) > 0 || filterDate != ""
+	if hasFilters {
 		help = FormatHelpLeft(width,
 			"n", "new entry",
 			"a", "add todo",
@@ -147,7 +156,7 @@ func RenderTodoList(width, height int, todos []models.Todo, entries []models.Ent
 			"space", "cycle",
 			"r", "refresh",
 			"e", "entries",
-			"@", "clear filter",
+			"/", "clear filters",
 			"esc", "cancel",
 			"q", "quit",
 		)
@@ -159,7 +168,7 @@ func RenderTodoList(width, height int, todos []models.Todo, entries []models.Ent
 			"space", "cycle",
 			"r", "refresh",
 			"e", "entries",
-			"@", "filter",
+			"/", "filter",
 			"esc", "cancel",
 			"q", "quit",
 		)
