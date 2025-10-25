@@ -36,6 +36,7 @@ type Model struct {
 	displayTodos    []models.Todo  // Sorted todos for display (only updated on load/refresh)
 	selectedTodo    int            // Selected todo index in list
 	filterTags      []string       // Current tag filters (empty = no filter), supports multiple tags with AND logic
+	filterContext   string         // Context for tag filtering: "entries" or "todos" (which view to return to)
 	availableTags   []string       // All unique tags across entries
 	autocompleteTag string         // Current autocomplete suggestion for tag input
 }
@@ -228,7 +229,7 @@ func (m Model) View() string {
 	case "view_entry":
 		return ui.RenderEntryView(m.width, m.height, m.viewingEntry, m.todos, m.scrollOffset)
 	case "todos":
-		return ui.RenderTodoList(m.width, m.height, m.displayTodos, m.entries, m.selectedTodo)
+		return ui.RenderTodoList(m.width, m.height, m.displayTodos, m.entries, m.selectedTodo, m.filterTags)
 	case "tag_filter":
 		return ui.RenderTagFilter(m.width, m.height, m.tagFilterInput, m.availableTags, m.autocompleteTag)
 	case "add_todo":

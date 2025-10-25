@@ -16,7 +16,7 @@ func RenderEntryList(width, height int, entries []models.Entry, selectedIdx int,
 	// Update title to show filter if active
 	titleText := "Entries"
 	if len(filterTags) > 0 {
-		titleText = fmt.Sprintf("Entries (filtered: %s)", strings.Join(filterTags, " "))
+		titleText += " " + strings.Join(filterTags, " ")
 	}
 	title := GetTitleStyle(width).Render(titleText)
 

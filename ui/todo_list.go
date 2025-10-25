@@ -4,27 +4,41 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/apodacaa/amos/internal/helpers"
 	"github.com/apodacaa/amos/internal/models"
 	"github.com/charmbracelet/lipgloss"
 )
 
 // RenderTodoList renders the todo list view
-func RenderTodoList(width, height int, todos []models.Todo, entries []models.Entry, selectedIdx int) string {
+func RenderTodoList(width, height int, todos []models.Todo, entries []models.Entry, selectedIdx int, filterTags []string) string {
 	container := GetFullScreenBox(width, height)
-	title := GetTitleStyle(width).Render("Todos")
+
+	// Apply filter if active
+	filtered := helpers.FilterTodosByTags(todos, filterTags)
+
+	// Update title to show filter status
+	titleText := "Todos"
+	if len(filterTags) > 0 {
+		titleText += " " + strings.Join(filterTags, " ")
+	}
+	title := GetTitleStyle(width).Render(titleText)
 
 	// Build todo list
 	var listItems []string
 
-	if len(todos) == 0 {
+	if len(filtered) == 0 {
 		emptyStyle := lipgloss.NewStyle().
 			Foreground(mutedColor).
 			Width(width - 4).
 			Align(lipgloss.Center)
-		listItems = append(listItems, emptyStyle.Render("No todos yet. Create an entry with !todo lines."))
+		if len(filterTags) > 0 {
+			listItems = append(listItems, emptyStyle.Render("No todos match the filter."))
+		} else {
+			listItems = append(listItems, emptyStyle.Render("No todos yet. Create an entry with !todo lines."))
+		}
 	} else {
-		// Todos are pre-sorted (displayTodos from model)
-		sorted := todos
+		// Todos are pre-sorted (displayTodos from model) and filtered
+		sorted := filtered
 
 		// Calculate viewport (visible window of items)
 		availableHeight := height - 10 // Conservative estimate for chrome
@@ -124,16 +138,32 @@ func RenderTodoList(width, height int, todos []models.Todo, entries []models.Ent
 	list := strings.Join(listItems, "\n")
 
 	// Help text at bottom
-	help := FormatHelpLeft(width,
-		"n", "new entry",
-		"a", "add todo",
-		"j/k", "navigate",
-		"space", "cycle",
-		"r", "refresh",
-		"e", "entries",
-		"esc", "cancel",
-		"q", "quit",
-	)
+	var help string
+	if len(filterTags) > 0 {
+		help = FormatHelpLeft(width,
+			"n", "new entry",
+			"a", "add todo",
+			"j/k", "navigate",
+			"space", "cycle",
+			"r", "refresh",
+			"e", "entries",
+			"@", "clear filter",
+			"esc", "cancel",
+			"q", "quit",
+		)
+	} else {
+		help = FormatHelpLeft(width,
+			"n", "new entry",
+			"a", "add todo",
+			"j/k", "navigate",
+			"space", "cycle",
+			"r", "refresh",
+			"e", "entries",
+			"@", "filter",
+			"esc", "cancel",
+			"q", "quit",
+		)
+	}
 
 	// Build main content (everything except help)
 	mainContent := lipgloss.JoinVertical(

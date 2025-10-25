@@ -52,6 +52,7 @@ func (m Model) handleEntriesListKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.tagFilterInput.Reset()
 		m.tagFilterInput.Focus()
 		m.autocompleteTag = ""
+		m.filterContext = "entries"
 		m.view = "tag_filter"
 		return m, textarea.Blink
 	case "j", "down":

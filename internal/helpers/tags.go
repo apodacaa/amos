@@ -187,3 +187,44 @@ func FilterEntriesByTags(entries []models.Entry, filterTags []string) []models.E
 
 	return filtered
 }
+
+// FilterTodosByTags filters todos to only those containing ALL specified tags (AND logic)
+// Tags should be provided with @ prefix (e.g., ["@work", "@urgent"])
+// Returns filtered list or original list if filterTags is empty
+func FilterTodosByTags(todos []models.Todo, filterTags []string) []models.Todo {
+	if len(filterTags) == 0 {
+		return todos
+	}
+
+	// Normalize filter tags (remove @ prefix, lowercase)
+	normalizedFilters := make([]string, len(filterTags))
+	for i, tag := range filterTags {
+		normalizedFilters[i] = strings.ToLower(strings.TrimPrefix(tag, "@"))
+	}
+
+	filtered := []models.Todo{}
+
+	for _, todo := range todos {
+		// Check if todo has ALL filter tags (AND logic)
+		hasAllTags := true
+		for _, filterTag := range normalizedFilters {
+			found := false
+			for _, todoTag := range todo.Tags {
+				if strings.ToLower(todoTag) == filterTag {
+					found = true
+					break
+				}
+			}
+			if !found {
+				hasAllTags = false
+				break
+			}
+		}
+
+		if hasAllTags {
+			filtered = append(filtered, todo)
+		}
+	}
+
+	return filtered
+}

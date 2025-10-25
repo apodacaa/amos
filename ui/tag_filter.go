@@ -92,7 +92,6 @@ func RenderTagFilter(width, height int, ti textarea.Model, availableTags []strin
 
 // getLastWord extracts the last word from the input (after the last space)
 func getLastWord(input string) string {
-	input = strings.TrimSpace(input)
 	if input == "" {
 		return ""
 	}
@@ -100,11 +99,11 @@ func getLastWord(input string) string {
 	// Find last space
 	lastSpaceIdx := strings.LastIndex(input, " ")
 	if lastSpaceIdx == -1 {
-		// No spaces, entire input is the word
-		return input
+		// No spaces, return entire input (trimmed)
+		return strings.TrimSpace(input)
 	}
 
-	// Return everything after the last space
+	// Return everything after the last space (trimmed)
 	return strings.TrimSpace(input[lastSpaceIdx+1:])
 }
 
