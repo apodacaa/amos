@@ -6,7 +6,7 @@ import (
 )
 
 // RenderAddTodoForm renders the standalone todo creation form
-func RenderAddTodoForm(width, height int, ti textarea.Model) string {
+func RenderAddTodoForm(width, height int, ti textarea.Model, statusMsg string) string {
 	box := GetFullScreenBox(width, height)
 	titleStyle := GetTitleStyle(width)
 
@@ -23,8 +23,18 @@ func RenderAddTodoForm(width, height int, ti textarea.Model) string {
 
 	mainLines := lipgloss.Height(mainContent)
 	helpLines := 1
+	statusLines := 0
+
+	// Add status message if present
+	var statusRendered string
+	if statusMsg != "" {
+		statusStyle := lipgloss.NewStyle().Foreground(subtleColor)
+		statusRendered = statusStyle.Render(statusMsg)
+		statusLines = 1
+	}
+
 	availableSpace := height - 4
-	padding := availableSpace - mainLines - helpLines
+	padding := availableSpace - mainLines - helpLines - statusLines
 	if padding < 0 {
 		padding = 0
 	}
@@ -32,6 +42,9 @@ func RenderAddTodoForm(width, height int, ti textarea.Model) string {
 	content := mainContent
 	if padding > 0 {
 		content += "\n" + lipgloss.NewStyle().Height(padding).Render("")
+	}
+	if statusMsg != "" {
+		content += "\n" + statusRendered
 	}
 	content += "\n" + help
 

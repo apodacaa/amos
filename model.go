@@ -145,7 +145,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if msg.err != nil {
 			m.statusMsg = "Error saving: " + msg.err.Error()
 		} else {
-			m.statusMsg = "✓ Saved"
+			m.statusMsg = "saved"
 			// Mark as saved
 			m.hasUnsaved = false
 			if m.view == "entry" {
@@ -223,7 +223,7 @@ func (m Model) View() string {
 
 	switch m.view {
 	case "entry":
-		return ui.RenderEntryForm(m.width, m.height, m.textarea)
+		return ui.RenderEntryForm(m.width, m.height, m.textarea, m.statusMsg)
 	case "entries":
 		return ui.RenderEntryList(m.width, m.height, m.entries, m.selectedEntry, m.todos, m.filterTags)
 	case "view_entry":
@@ -233,7 +233,7 @@ func (m Model) View() string {
 	case "tag_filter":
 		return ui.RenderTagFilter(m.width, m.height, m.tagFilterInput, m.availableTags, m.autocompleteTag)
 	case "add_todo":
-		return ui.RenderAddTodoForm(m.width, m.height, m.todoInput)
+		return ui.RenderAddTodoForm(m.width, m.height, m.todoInput, m.statusMsg)
 	default:
 		return ui.RenderDashboard(m.width, m.height, m.entries, m.todos)
 	}

@@ -1,6 +1,10 @@
 package ui
 
-import "github.com/charmbracelet/lipgloss"
+import (
+	"strings"
+
+	"github.com/charmbracelet/lipgloss"
+)
 
 // Brutalist color palette - Pure monochrome concrete
 var (
@@ -86,7 +90,7 @@ func formatHelpWithAlign(width int, align lipgloss.Position, keyDescPairs ...str
 	for i := 0; i < len(keyDescPairs); i += 2 {
 		if i+1 < len(keyDescPairs) {
 			key := keyStyle.Render(keyDescPairs[i])
-			desc := descStyle.Render(" " + keyDescPairs[i+1])
+			desc := descStyle.Render("\u00A0" + keyDescPairs[i+1])
 			// Combine key and desc as single unit with inline wrapper
 			pair := lipgloss.NewStyle().Inline(true).Render(key + desc)
 			parts = append(parts, pair)
@@ -102,10 +106,18 @@ func formatHelpWithAlign(width int, align lipgloss.Position, keyDescPairs ...str
 		}
 	}
 
-	return lipgloss.NewStyle().
+	// Render with lipgloss (which may wrap based on width)
+	rendered := lipgloss.NewStyle().
 		Foreground(mutedColor).
 		Width(width - 8).
 		Align(align).
-		Inline(true). // Prevent wrapping
 		Render(result)
+
+	// Add vertical spacing between wrapped lines
+	lines := strings.Split(rendered, "\n")
+	if len(lines) > 1 {
+		rendered = strings.Join(lines, "\n\n") // Double newline for breathing room
+	}
+
+	return rendered
 }
