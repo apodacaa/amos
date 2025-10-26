@@ -3,6 +3,7 @@ package ui
 import (
 	"strings"
 
+	"github.com/charmbracelet/bubbles/textarea"
 	"github.com/charmbracelet/lipgloss"
 )
 
@@ -103,6 +104,18 @@ func GetNormalItemStyle() lipgloss.Style {
 // GetDimmedStyle returns muted foreground for completed items
 func GetDimmedStyle() lipgloss.Style {
 	return lipgloss.NewStyle().Foreground(mutedColor)
+}
+
+// ApplyTextareaStyle applies consistent styling to a textarea
+func ApplyTextareaStyle(ta *textarea.Model) {
+	ta.FocusedStyle.CursorLine = GetTextareaStyle()
+	ta.BlurredStyle.CursorLine = GetTextareaStyle()
+	ta.FocusedStyle.Placeholder = GetPlaceholderStyle()
+	ta.BlurredStyle.Placeholder = GetPlaceholderStyle()
+	ta.FocusedStyle.Prompt = GetPromptStyle()
+	ta.BlurredStyle.Prompt = GetPromptStyle()
+	ta.FocusedStyle.Text = GetTextStyle()
+	ta.BlurredStyle.Text = GetTextStyle()
 }
 
 // CalculateViewport calculates start/end indices for viewport windowing

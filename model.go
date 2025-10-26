@@ -1,6 +1,7 @@
 package main
 
 import (
+	"strings"
 	"time"
 
 	"github.com/apodacaa/amos/internal/helpers"
@@ -50,14 +51,7 @@ func NewModel() Model {
 	ta.SetHeight(10)
 
 	// Style textarea with brutalist colors
-	ta.FocusedStyle.CursorLine = ui.GetTextareaStyle()
-	ta.BlurredStyle.CursorLine = ui.GetTextareaStyle()
-	ta.FocusedStyle.Placeholder = ui.GetPlaceholderStyle()
-	ta.BlurredStyle.Placeholder = ui.GetPlaceholderStyle()
-	ta.FocusedStyle.Prompt = ui.GetPromptStyle()
-	ta.BlurredStyle.Prompt = ui.GetPromptStyle()
-	ta.FocusedStyle.Text = ui.GetTextStyle()
-	ta.BlurredStyle.Text = ui.GetTextStyle()
+	ui.ApplyTextareaStyle(&ta)
 
 	// Create single-line input for standalone todos
 	todoInput := textarea.New()
@@ -65,14 +59,7 @@ func NewModel() Model {
 	todoInput.CharLimit = 0
 	todoInput.SetWidth(60)
 	todoInput.SetHeight(1) // Single line
-	todoInput.FocusedStyle.CursorLine = ui.GetTextareaStyle()
-	todoInput.BlurredStyle.CursorLine = ui.GetTextareaStyle()
-	todoInput.FocusedStyle.Placeholder = ui.GetPlaceholderStyle()
-	todoInput.BlurredStyle.Placeholder = ui.GetPlaceholderStyle()
-	todoInput.FocusedStyle.Prompt = ui.GetPromptStyle()
-	todoInput.BlurredStyle.Prompt = ui.GetPromptStyle()
-	todoInput.FocusedStyle.Text = ui.GetTextStyle()
-	todoInput.BlurredStyle.Text = ui.GetTextStyle()
+	ui.ApplyTextareaStyle(&todoInput)
 
 	// Create single-line input for unified filtering (tags + dates)
 	unifiedFilterInput := textarea.New()
@@ -80,14 +67,7 @@ func NewModel() Model {
 	unifiedFilterInput.CharLimit = 0
 	unifiedFilterInput.SetWidth(60)
 	unifiedFilterInput.SetHeight(1) // Single line
-	unifiedFilterInput.FocusedStyle.CursorLine = ui.GetTextareaStyle()
-	unifiedFilterInput.BlurredStyle.CursorLine = ui.GetTextareaStyle()
-	unifiedFilterInput.FocusedStyle.Placeholder = ui.GetPlaceholderStyle()
-	unifiedFilterInput.BlurredStyle.Placeholder = ui.GetPlaceholderStyle()
-	unifiedFilterInput.FocusedStyle.Prompt = ui.GetPromptStyle()
-	unifiedFilterInput.BlurredStyle.Prompt = ui.GetPromptStyle()
-	unifiedFilterInput.FocusedStyle.Text = ui.GetTextStyle()
-	unifiedFilterInput.BlurredStyle.Text = ui.GetTextStyle()
+	ui.ApplyTextareaStyle(&unifiedFilterInput)
 
 	return Model{
 		view:               "entries",
@@ -258,4 +238,41 @@ func (m Model) handleAddTodo() (Model, tea.Cmd) {
 // generateID generates a new UUID string
 func (m Model) generateID() string {
 	return uuid.New().String()
+}
+
+// openUnifiedFilter opens the unified filter view with current filter state
+func (m Model) openUnifiedFilter(context string) (Model, tea.Cmd) {
+	m.filterContext = context
+	m.availableTags = helpers.ExtractUniqueTagsFromAll(m.entries, m.todos)
+
+	// Reconstruct current filter string from tags and date
+	var filterParts []string
+	filterParts = append(filterParts, m.filterTags...)
+	if m.filterDate != "" {
+		filterParts = append(filterParts, m.filterDate)
+	}
+	currentFilter := strings.Join(filterParts, " ")
+
+	// Set the input with current filter
+	m.unifiedFilterInput.Reset()
+	m.unifiedFilterInput.SetValue(currentFilter)
+	m.unifiedFilterInput.Focus()
+	m.autocompleteTag = ""
+	m.view = "unified_filter"
+	m.statusMsg = ""
+	return m, textarea.Blink
+}
+
+// clearFilters clears all active filters and resets selection
+func (m Model) clearFilters() (Model, tea.Cmd) {
+	if len(m.filterTags) > 0 || m.filterDate != "" {
+		m.filterTags = []string{}
+		m.filterDate = ""
+		m.selectedEntry = 0
+		m.selectedTodo = 0
+		m.statusMsg = "Filter cleared"
+		m.statusTime = time.Now()
+		return m, clearStatusAfterDelay()
+	}
+	return m, nil
 }

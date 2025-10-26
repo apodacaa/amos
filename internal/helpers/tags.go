@@ -8,6 +8,75 @@ import (
 	"github.com/apodacaa/amos/internal/models"
 )
 
+// Taggable is an interface for items that have tags
+type Taggable interface {
+	GetTags() []string
+}
+
+// filterByTags is a generic function that filters items by tags with AND logic
+// Tags should be provided with @ prefix (e.g., ["@work", "@urgent"])
+// Returns filtered list or original list if filterTags is empty
+func filterByTags[T Taggable](items []T, filterTags []string) []T {
+	if len(filterTags) == 0 {
+		return items
+	}
+
+	// Normalize filter tags (remove @ prefix, lowercase)
+	normalizedFilters := make([]string, len(filterTags))
+	for i, tag := range filterTags {
+		normalizedFilters[i] = strings.ToLower(strings.TrimPrefix(tag, "@"))
+	}
+
+	filtered := []T{}
+
+	for _, item := range items {
+		// Check if item has ALL filter tags (AND logic)
+		hasAllTags := true
+		for _, filterTag := range normalizedFilters {
+			found := false
+			for _, itemTag := range item.GetTags() {
+				if strings.ToLower(itemTag) == filterTag {
+					found = true
+					break
+				}
+			}
+			if !found {
+				hasAllTags = false
+				break
+			}
+		}
+
+		if hasAllTags {
+			filtered = append(filtered, item)
+		}
+	}
+
+	return filtered
+}
+
+// extractUniqueTags is a generic function that collects all unique tags from a list of items
+// Returns tags sorted alphabetically with @ prefix
+func extractUniqueTags[T Taggable](items []T) []string {
+	tagMap := make(map[string]int) // tag -> count
+
+	for _, item := range items {
+		for _, tag := range item.GetTags() {
+			tagMap[tag]++
+		}
+	}
+
+	// Convert to slice with @ prefix and sort
+	tags := make([]string, 0, len(tagMap))
+	for tag := range tagMap {
+		tags = append(tags, "@"+tag)
+	}
+
+	// Sort alphabetically
+	sort.Strings(tags)
+
+	return tags
+}
+
 // ParseEntryContent splits entry content into title and body
 // First line becomes title, rest becomes body
 func ParseEntryContent(content string) (title, body string) {
@@ -50,47 +119,13 @@ func ExtractTags(text string) []string {
 // ExtractUniqueTags collects all unique tags from a list of entries
 // Returns tags sorted alphabetically with @ prefix
 func ExtractUniqueTags(entries []models.Entry) []string {
-	tagMap := make(map[string]int) // tag -> count
-
-	for _, entry := range entries {
-		for _, tag := range entry.Tags {
-			tagMap[tag]++
-		}
-	}
-
-	// Convert to slice with @ prefix and sort
-	tags := make([]string, 0, len(tagMap))
-	for tag := range tagMap {
-		tags = append(tags, "@"+tag)
-	}
-
-	// Sort alphabetically
-	sort.Strings(tags)
-
-	return tags
+	return extractUniqueTags(entries)
 }
 
 // ExtractUniqueTagsFromTodos collects all unique tags from a list of todos
 // Returns tags sorted alphabetically with @ prefix
 func ExtractUniqueTagsFromTodos(todos []models.Todo) []string {
-	tagMap := make(map[string]int) // tag -> count
-
-	for _, todo := range todos {
-		for _, tag := range todo.Tags {
-			tagMap[tag]++
-		}
-	}
-
-	// Convert to slice with @ prefix and sort
-	tags := make([]string, 0, len(tagMap))
-	for tag := range tagMap {
-		tags = append(tags, "@"+tag)
-	}
-
-	// Sort alphabetically
-	sort.Strings(tags)
-
-	return tags
+	return extractUniqueTags(todos)
 }
 
 // ExtractUniqueTagsFromAll collects all unique tags from entries and todos
@@ -100,14 +135,14 @@ func ExtractUniqueTagsFromAll(entries []models.Entry, todos []models.Todo) []str
 
 	// Collect from entries
 	for _, entry := range entries {
-		for _, tag := range entry.Tags {
+		for _, tag := range entry.GetTags() {
 			tagMap[tag]++
 		}
 	}
 
 	// Collect from todos
 	for _, todo := range todos {
-		for _, tag := range todo.Tags {
+		for _, tag := range todo.GetTags() {
 			tagMap[tag]++
 		}
 	}
@@ -151,80 +186,12 @@ func FilterEntriesByTag(entries []models.Entry, filterTag string) []models.Entry
 // Tags should be provided with @ prefix (e.g., ["@work", "@urgent"])
 // Returns filtered list or original list if filterTags is empty
 func FilterEntriesByTags(entries []models.Entry, filterTags []string) []models.Entry {
-	if len(filterTags) == 0 {
-		return entries
-	}
-
-	// Normalize filter tags (remove @ prefix, lowercase)
-	normalizedFilters := make([]string, len(filterTags))
-	for i, tag := range filterTags {
-		normalizedFilters[i] = strings.ToLower(strings.TrimPrefix(tag, "@"))
-	}
-
-	filtered := []models.Entry{}
-
-	for _, entry := range entries {
-		// Check if entry has ALL filter tags (AND logic)
-		hasAllTags := true
-		for _, filterTag := range normalizedFilters {
-			found := false
-			for _, entryTag := range entry.Tags {
-				if strings.ToLower(entryTag) == filterTag {
-					found = true
-					break
-				}
-			}
-			if !found {
-				hasAllTags = false
-				break
-			}
-		}
-
-		if hasAllTags {
-			filtered = append(filtered, entry)
-		}
-	}
-
-	return filtered
+	return filterByTags(entries, filterTags)
 }
 
 // FilterTodosByTags filters todos to only those containing ALL specified tags (AND logic)
 // Tags should be provided with @ prefix (e.g., ["@work", "@urgent"])
 // Returns filtered list or original list if filterTags is empty
 func FilterTodosByTags(todos []models.Todo, filterTags []string) []models.Todo {
-	if len(filterTags) == 0 {
-		return todos
-	}
-
-	// Normalize filter tags (remove @ prefix, lowercase)
-	normalizedFilters := make([]string, len(filterTags))
-	for i, tag := range filterTags {
-		normalizedFilters[i] = strings.ToLower(strings.TrimPrefix(tag, "@"))
-	}
-
-	filtered := []models.Todo{}
-
-	for _, todo := range todos {
-		// Check if todo has ALL filter tags (AND logic)
-		hasAllTags := true
-		for _, filterTag := range normalizedFilters {
-			found := false
-			for _, todoTag := range todo.Tags {
-				if strings.ToLower(todoTag) == filterTag {
-					found = true
-					break
-				}
-			}
-			if !found {
-				hasAllTags = false
-				break
-			}
-		}
-
-		if hasAllTags {
-			filtered = append(filtered, todo)
-		}
-	}
-
-	return filtered
+	return filterByTags(todos, filterTags)
 }
