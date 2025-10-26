@@ -2,6 +2,7 @@ package main
 
 import (
 	"strings"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 
@@ -74,7 +75,8 @@ func (m Model) handleUnifiedFilterKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		// Show errors if any
 		if len(result.Errors) > 0 {
 			m.statusMsg = strings.Join(result.Errors, "; ") + ". Try: " + helpers.GetFilterHint()
-			return m, nil
+			m.statusTime = time.Now()
+			return m, clearStatusAfterDelay()
 		}
 
 		// Success - return to list
@@ -119,21 +121,27 @@ func (m Model) handleUnifiedFilterKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
-// getLastWord extracts the last word from the input (after the last space)
+// getLastWord extracts the last word from input (only handles tags now)
 func getLastWord(input string) string {
 	if input == "" {
 		return ""
 	}
 
-	// Find last space
-	lastSpaceIdx := strings.LastIndex(input, " ")
-	if lastSpaceIdx == -1 {
-		// No spaces, return entire input (trimmed)
-		return strings.TrimSpace(input)
+	input = strings.TrimSpace(input)
+	words := strings.Fields(input)
+
+	if len(words) == 0 {
+		return ""
 	}
 
-	// Return everything after the last space (trimmed)
-	return strings.TrimSpace(input[lastSpaceIdx+1:])
+	// Return last word only if it's a tag
+	lastWord := words[len(words)-1]
+	if strings.HasPrefix(lastWord, "@") {
+		return lastWord
+	}
+
+	// Not a tag, return empty (no autocomplete for dates)
+	return ""
 }
 
 // findBestTagMatch finds the first tag that starts with the given prefix (case-insensitive)
@@ -156,21 +164,8 @@ func findBestTagMatch(prefix string, availableTags []string) string {
 	return ""
 }
 
-// findBestDateMatch finds the first date phrase that starts with the given prefix
+// findBestDateMatch returns empty string (date autocomplete disabled)
 func findBestDateMatch(prefix string) string {
-	if prefix == "" {
-		return ""
-	}
-
-	normalizedPrefix := strings.ToLower(prefix)
-	dateSuggestions := helpers.GetDateSuggestions()
-
-	for _, suggestion := range dateSuggestions {
-		if strings.HasPrefix(suggestion, normalizedPrefix) {
-			return suggestion
-		}
-	}
-
 	return ""
 }
 

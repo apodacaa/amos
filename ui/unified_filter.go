@@ -139,21 +139,7 @@ func filterMatchingTags(prefix string, availableTags []string) []string {
 	return matches
 }
 
-// filterMatchingDates returns date phrases that start with the given prefix
+// filterMatchingDates returns empty (date autocomplete disabled)
 func filterMatchingDates(prefix string) []string {
-	if prefix == "" {
-		return nil
-	}
-
-	normalizedPrefix := strings.ToLower(prefix)
-	dateSuggestions := helpers.GetDateSuggestions()
-
-	var matches []string
-	for _, suggestion := range dateSuggestions {
-		if strings.HasPrefix(suggestion, normalizedPrefix) {
-			matches = append(matches, suggestion)
-		}
-	}
-
-	return matches
+	return nil
 }

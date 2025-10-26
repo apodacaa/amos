@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/apodacaa/amos/internal/helpers"
@@ -9,7 +8,6 @@ import (
 	"github.com/apodacaa/amos/ui"
 	"github.com/charmbracelet/bubbles/textarea"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 	"github.com/google/uuid"
 )
 
@@ -208,20 +206,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 // View renders the UI (Elm architecture)
 func (m Model) View() string {
-	// Minimum terminal size check (brutalist: be honest about limitations)
-	const minWidth = 80
-	const minHeight = 24
-
-	if m.width < minWidth || m.height < minHeight {
-		msg := fmt.Sprintf("Terminal too small\n\nMinimum size: %dx%d\nCurrent size: %dx%d\n\nResize your terminal",
-			minWidth, minHeight, m.width, m.height)
-		return lipgloss.NewStyle().
-			Width(m.width).
-			Height(m.height).
-			Align(lipgloss.Center, lipgloss.Center).
-			Render(msg)
-	}
-
 	switch m.view {
 	case "entry":
 		return ui.RenderEntryForm(m.width, m.height, m.textarea, m.statusMsg)

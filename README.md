@@ -34,7 +34,8 @@ make run
 - `a` - Add Standalone Todo
 - `j/k` or `↑/↓` - Navigate
 - `enter` - View entry detail
-- `@` - Filter by tag (or clear filter)
+- `/` - Filter by tags and/or date (opens filter with current values for editing)
+- `c` - Clear filter
 - `t` - Jump to todos
 - `esc` - Back to dashboard
 - `q` - Quit
@@ -55,7 +56,8 @@ make run
 - `a` - Add Standalone Todo
 - `j/k` or `↑/↓` - Navigate
 - `space` - Toggle todo status (saves immediately)
-- `@` - Filter by tag (or clear filter)
+- `/` - Filter by tags and/or date (opens filter with current values for editing)
+- `c` - Clear filter
 - `r` - Refresh (re-sort todos)
 - `e` - Jump to entries
 - `esc` - Back to dashboard
@@ -107,7 +109,11 @@ air               # Run with auto-reload
 ✅ **Journal Entries**
 - Create entries with title + body
 - Auto-extract @tags from content
-- Filter by tag with @ key (brutalist tag filter with autocomplete)
+- **Unified filtering**: Filter by tags and/or dates with `/` key
+  - Tag autocomplete (type `@` then tag name, press `tab` to complete)
+  - Date filters: `today`, `yesterday`, `last N days`, `YYYY-MM-DD`, `YYYY-MM-DD to YYYY-MM-DD`
+  - `/` opens filter with current values for easy editing
+  - `c` clears filter
 - View entries chronologically (newest first)
 - **Append-only**: No delete (journal is historical record)
 - Cross-navigation: jump between todos/entries with `t`/`e` keys
@@ -118,7 +124,11 @@ air               # Run with auto-reload
 - **Standalone todos**: Create todos independently with `a` key from any view
 - **Entry-linked todos**: Extract from entries with `!todo` syntax
 - Toggle status with `space` (immediate save)
-- Filter by tag with @ key (same as entries - brutalist tag filter with autocomplete)
+- **Unified filtering**: Same as entries - filter by tags and/or dates with `/` key
+  - Tag autocomplete (type `@` then tag name, press `tab` to complete)
+  - Date filters: `today`, `yesterday`, `last N days`, `YYYY-MM-DD`, `YYYY-MM-DD to YYYY-MM-DD`
+  - `/` opens filter with current values for easy editing
+  - `c` clears filter
 - Manual priority with u/i keys (move up/down)
 - Sort: open first → position → newest
 - View todos by entry or all together
@@ -138,7 +148,6 @@ air               # Run with auto-reload
 - **Anchored help text**: Footer stays at bottom (no bouncing)
 - **Viewport windowing**: Long lists show 20-30 items with scroll indicators
 - **Entry scrolling**: Navigate long entries with `u/i` keys (u=down, i=up)
-- **Minimum size**: 80x24 terminal required (shows resize message if too small)
 
 ## Project Structure
 
@@ -153,7 +162,7 @@ air               # Run with auto-reload
 │   ├── update_entry.go
 │   ├── update_entries.go
 │   ├── update_entry_view.go
-│   ├── update_tag_picker.go
+│   ├── update_unified_filter.go
 │   ├── update_todos.go
 │   └── update_add_todo.go
 ├── ui/                     # View renderers (pure functions)
@@ -161,7 +170,7 @@ air               # Run with auto-reload
 │   ├── entry_form.go
 │   ├── entry_list.go
 │   ├── entry_view.go
-│   ├── tag_picker.go
+│   ├── unified_filter.go
 │   ├── todo_list.go
 │   ├── add_todo_form.go
 │   └── styles.go
@@ -174,7 +183,9 @@ air               # Run with auto-reload
 │   └── helpers/           # Utilities
 │       ├── sorting.go     # Centralized sorting logic
 │       ├── tags.go        # Tag extraction and filtering
-│       └── todos.go       # Todo extraction
+│       ├── todos.go       # Todo extraction
+│       ├── dates.go       # Date filter parsing
+│       └── filter_parser.go  # Unified filter parsing
 ├── Makefile               # Development commands
 └── go.mod                 # Go module definition
 ```
@@ -249,8 +260,7 @@ make build
 11. **Consistent ordering** - Keys appear in same logical order across all views
 12. **No decorations** - No italics, no Unicode bullets, just ASCII
 13. **Viewport windowing** - Lists show manageable chunks with scroll position indicators
-14. **Honest feedback** - Terminal size check shows clear resize message (minimum 80x24)
-15. **Predictable UI** - Help text always shows available keys (no conditional hiding)
+14. **Predictable UI** - Help text always shows available keys (no conditional hiding)
 
 **Tag Syntax:**
 - `@work` in entry content → auto-extracted to tags array
