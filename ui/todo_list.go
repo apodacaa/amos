@@ -116,7 +116,7 @@ func RenderTodoList(width, height int, todos []models.Todo, entries []models.Ent
 					styled = selectedStyle.Render(line)
 				} else {
 					selectedStyle := lipgloss.NewStyle().
-						Foreground(subtleColor).
+						Foreground(accentColor).
 						Reverse(true).
 						Width(width - 4)
 					styled = selectedStyle.Render(line)

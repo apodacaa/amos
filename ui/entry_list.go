@@ -96,7 +96,7 @@ func RenderEntryList(width, height int, entries []models.Entry, selectedIdx int,
 			var styled string
 			if i == selectedIdx {
 				selectedStyle := lipgloss.NewStyle().
-					Foreground(subtleColor).
+					Foreground(accentColor).
 					Reverse(true).
 					Width(width - 4)
 				styled = selectedStyle.Render(line)
