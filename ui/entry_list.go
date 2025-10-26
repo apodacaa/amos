@@ -67,7 +67,7 @@ func RenderEntryList(width, height int, entries []models.Entry, selectedIdx int,
 			timestamp := entry.Timestamp.Format("2006-01-02")
 
 			// Pad title to fixed width for column alignment
-			titleWidth := 40
+			titleWidth := 30
 			paddedTitle := entry.Title
 			if len(paddedTitle) > titleWidth {
 				paddedTitle = paddedTitle[:titleWidth]
@@ -96,12 +96,12 @@ func RenderEntryList(width, height int, entries []models.Entry, selectedIdx int,
 			var styled string
 			if i == selectedIdx {
 				selectedStyle := lipgloss.NewStyle().
-					Foreground(subtleColor).
+					Foreground(accentColor).
 					Reverse(true).
 					Width(width - 4)
 				styled = selectedStyle.Render(line)
 			} else {
-				normalStyle := lipgloss.NewStyle().Foreground(subtleColor)
+				normalStyle := lipgloss.NewStyle().Foreground(accentColor)
 				styled = normalStyle.Render(line)
 			}
 
@@ -112,13 +112,7 @@ func RenderEntryList(width, height int, entries []models.Entry, selectedIdx int,
 	list := strings.Join(listItems, "\n")
 
 	// Header
-	hasFilters := len(filterTags) > 0 || filterDate != ""
-	var header string
-	if hasFilters {
-		header = RenderHeader(width, "n", "new", "a", "todo", "j/k", "nav", "enter", "view", "/", "clear", "t", "todos", "esc", "cancel", "q", "quit")
-	} else {
-		header = RenderHeader(width, "n", "new", "a", "todo", "j/k", "nav", "enter", "view", "/", "filter", "t", "todos", "esc", "cancel", "q", "quit")
-	}
+	header := RenderHeader(width, "n", "new", "a", "todo", "j/k", "nav", "enter", "view", "/", "filter", "c", "clear", "t", "todos", "esc", "cancel", "q", "quit")
 
 	// Footer
 	footerTitle := "Entries"
@@ -126,10 +120,7 @@ func RenderEntryList(width, height int, entries []models.Entry, selectedIdx int,
 		footerTitle += " " + strings.Join(filterTags, " ")
 	}
 	if filterDate != "" {
-		dateLabel := helpers.FormatDatePreset(filterDate)
-		if dateLabel != "" {
-			footerTitle += " " + dateLabel
-		}
+		footerTitle += " " + filterDate
 	}
 
 	// Build stats with scroll info if needed
@@ -168,16 +159,23 @@ func RenderEntryList(width, height int, entries []models.Entry, selectedIdx int,
 
 	footer := RenderFooter(width, footerTitle, stats)
 
-	// Calculate padding for content area
-	contentHeight := height - 2 // header + footer
-	listLines := strings.Count(list, "\n") + 1
-	padding := contentHeight - listLines
+	// Build full view with guaranteed header and footer
+	// Content area is strictly limited to avoid pushing header/footer off screen
+	contentHeight := height - 2 // Reserve space for header + footer
+
+	// Ensure list fits within content area
+	listLines := strings.Split(list, "\n")
+	if len(listLines) > contentHeight {
+		listLines = listLines[:contentHeight]
+	}
+
+	// Add padding to fill remaining space
+	padding := contentHeight - len(listLines)
 	if padding < 0 {
 		padding = 0
 	}
 
-	// Build full view
-	content := header + "\n" + list
+	content := header + "\n" + strings.Join(listLines, "\n")
 	if padding > 0 {
 		content += strings.Repeat("\n", padding)
 	}

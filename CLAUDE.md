@@ -59,13 +59,16 @@ This codebase is small (~3000 lines) and well-organized. Work efficiently:
 
 ### Quick Reference Map
 
-**Tag Filtering:**
-- Input handler: `update_tag_filter.go`
-- UI renderer: `ui/tag_filter.go`
-- Filter logic: `internal/helpers/tags.go` (FilterEntriesByTags, FilterTodosByTags)
+**Unified Filtering (Tags + Dates):**
+- Input handler: `update_unified_filter.go`
+- UI renderer: `ui/unified_filter.go`
+- Filter parsing: `internal/helpers/filter_parser.go` (ParseFilterInput)
+- Tag logic: `internal/helpers/tags.go` (FilterEntriesByTags, FilterTodosByTags)
+- Date logic: `internal/helpers/dates.go` (ParseDateFilter, FilterEntriesByDateRange, FilterTodosByDateRange)
 - Entry list integration: `update_entries.go`, `ui/entry_list.go`
 - Todo list integration: `update_todos.go`, `ui/todo_list.go`
 - Context tracking: `model.go` (filterContext field determines return view)
+- Filter workflow: `/` opens filter with current values for editing, `c` clears filter
 
 **Entry Management:**
 - Entry form: `update_entry.go`, `ui/entry_form.go`
@@ -123,7 +126,7 @@ update_*.go              # Key handlers per view (domain separation)
   update_entries.go      # Entry list navigation
   update_entry_view.go   # Read-only entry view
   update_todos.go        # Todo list (toggle, reorder)
-  update_tag_filter.go   # Tag filtering
+  update_unified_filter.go  # Unified filtering (tags + dates)
   update_add_todo.go     # Standalone todo form
 ui/                      # Pure view renderers
   dashboard.go
@@ -131,7 +134,7 @@ ui/                      # Pure view renderers
   entry_list.go
   entry_view.go
   todo_list.go
-  tag_filter.go
+  unified_filter.go      # Unified filter view
   add_todo_form.go
   styles.go              # Brutalist styling (monochrome)
 internal/
@@ -142,8 +145,10 @@ internal/
     storage.go           # Load/Save functions for entries.json and todos.json
   helpers/               # Reusable business logic
     sorting.go           # Centralized sorting (todos by status→position→date)
-    tags.go              # Tag extraction (@mention syntax)
+    tags.go              # Tag extraction (@mention syntax) and filtering
     todos.go             # Todo extraction (!todo syntax)
+    dates.go             # Date filter parsing and date range filtering
+    filter_parser.go     # Unified filter parsing (tags + dates)
 ```
 
 ### Key Architectural Patterns
@@ -175,14 +180,29 @@ internal/
 - Sorting: open todos first → by position → newest first (helpers/sorting.go)
 - Extract from entries with `!todo Task description @tag` syntax
 
-**Tag System**:
-- Auto-extracted from `@mention` syntax in entry body and todo titles
+**Unified Filter System (Tags + Dates)**:
+- Auto-extracted tags from `@mention` syntax in entry body and todo titles
 - Stored in `Tags` array on both Entry and Todo
-- Tag filtering via `@` key in both entries and todos views (shows tag filter input with autocomplete)
-- Filter uses AND logic (all tags must match)
-- Filtered titles display as "Entries @tag1 @tag2" or "Todos @tag1 @tag2" (brutalist: no parentheses)
-- Autocomplete uses non-breaking spaces to prevent key/description wrapping
-- Tag filter autocomplete clears after tab completion
+- Unified filtering via `/` key in both entries and todos views
+- **Filter workflow**:
+  - `/` always opens filter with current values pre-populated (for editing)
+  - `c` clears filter entirely
+  - Filter persists across navigation until cleared
+- **Tag filtering**:
+  - Type `@tagname` to filter by tags (autocomplete with `tab`)
+  - Filter uses AND logic (all tags must match)
+  - Autocomplete clears after tab completion
+- **Date filtering**:
+  - Supports: `today`, `yesterday`, `last N days` (any number), `YYYY-MM-DD`, `YYYY-MM-DD to YYYY-MM-DD`
+  - "last N days" includes today (e.g., "last 14 days" = 13 days ago through today)
+  - Date ranges are inclusive on both ends
+  - No date autocomplete (only tags have autocomplete)
+- **Filter validation**:
+  - Invalid filters show error message with hint
+  - Errors auto-clear after 3 seconds
+- **Display**:
+  - Filtered titles show as "Entries @tag1 @tag2 last 14 days" or "Todos @work today"
+  - Footer uses raw filter string (brutalist: no formatting)
 
 ## Brutalist Design Philosophy
 
@@ -215,7 +235,6 @@ The app follows strict brutalist principles:
 **Viewport & Scrolling**:
 - Lists (entries, todos) use viewport windowing: show 20-30 items with scroll indicators
 - Entry view: long entries scrollable with `u` (down) / `i` (up) keys
-- Minimum terminal size: 80x24 (shows resize message if too small)
 
 ## Common Patterns
 
@@ -295,6 +314,12 @@ Todos stored in `~/.amos/todos.json`:
 - Position normalization: when reordering todos, all positions are renumbered sequentially
 - Tag syntax: `@tagname` in entry body or todo title auto-extracts to Tags array
 - Todo syntax: `!todo Task description @tag` creates linked todo with extracted tags
-- Tag filtering: Works identically for both entries and todos views (press @ key)
+- Unified filtering: Works identically for both entries and todos views
+  - `/` key opens filter with current values for editing
+  - `c` key clears filter
+  - Supports tags (@work), dates (today, yesterday, last N days, YYYY-MM-DD, date ranges)
+  - Only tag autocomplete (no date autocomplete)
+  - Invalid filters show error with 3-second auto-clear
 - Save confirmations: Entry and add_todo forms show "saved" toast message (brutalist: no emoji)
+- Status messages: Auto-clear after 3 seconds (saved confirmations, filter cleared, errors)
 - Helper text: Uses non-breaking spaces and vertical spacing for better readability on narrow terminals

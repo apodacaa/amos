@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/apodacaa/amos/internal/helpers"
 	"github.com/apodacaa/amos/internal/models"
 	"github.com/charmbracelet/lipgloss"
 )
@@ -51,38 +50,37 @@ func RenderDashboard(width, height int, entries []models.Entry, todos []models.T
 			"",
 		}, "\n"))
 
-	// Weekly stats (90 days = ~13 weeks)
-	weekStats := helpers.AggregateByWeek(entries, todos, 13)
-
-	// Calculate available height for graph (total - header - footer - title)
-	titleLines := 8 // ASCII art lines
-	availableHeight := height - 2 - titleLines
-	if availableHeight < 15 {
-		availableHeight = 15 // Minimum for readable graph
-	}
-
-	statsSection := RenderLineGraph(weekStats, width, availableHeight)
-
 	// Calculate content area (height - header - footer)
 	contentHeight := height - 2 // 1 for header, 1 for footer
 	titleHeight := lipgloss.Height(title)
-	statsLines := lipgloss.Height(statsSection)
-	mainContentLines := titleHeight + statsLines + 1 // +1 for spacing
 
-	padding := contentHeight - mainContentLines
+	// Calculate padding to center title vertically
+	padding := (contentHeight - titleHeight) / 2
 	if padding < 0 {
 		padding = 0
 	}
 
-	// Build main content: title, spacing, stats
-	mainContent := title + "\n" + statsSection
+	// Build centered content
+	var content strings.Builder
+	content.WriteString(header)
+	content.WriteString("\n")
 
-	// Build full view
-	content := header + "\n" + mainContent
+	// Top padding
 	if padding > 0 {
-		content += strings.Repeat("\n", padding)
+		content.WriteString(strings.Repeat("\n", padding))
 	}
-	content += "\n" + footer
 
-	return content
+	// Centered title
+	content.WriteString(title)
+
+	// Bottom padding
+	remainingPadding := contentHeight - titleHeight - padding
+	if remainingPadding > 0 {
+		content.WriteString(strings.Repeat("\n", remainingPadding))
+	}
+
+	content.WriteString("\n")
+	content.WriteString(footer)
+
+	return content.String()
 }
