@@ -67,7 +67,7 @@ func RenderEntryList(width, height int, entries []models.Entry, selectedIdx int,
 			timestamp := entry.Timestamp.Format("2006-01-02")
 
 			// Pad title to fixed width for column alignment
-			titleWidth := 40
+			titleWidth := 30
 			paddedTitle := entry.Title
 			if len(paddedTitle) > titleWidth {
 				paddedTitle = paddedTitle[:titleWidth]
@@ -101,7 +101,7 @@ func RenderEntryList(width, height int, entries []models.Entry, selectedIdx int,
 					Width(width - 4)
 				styled = selectedStyle.Render(line)
 			} else {
-				normalStyle := lipgloss.NewStyle().Foreground(subtleColor)
+				normalStyle := lipgloss.NewStyle().Foreground(accentColor)
 				styled = normalStyle.Render(line)
 			}
 

@@ -127,7 +127,7 @@ func RenderTodoList(width, height int, todos []models.Todo, entries []models.Ent
 					dimStyle := lipgloss.NewStyle().Foreground(mutedColor)
 					styled = dimStyle.Render(line)
 				} else {
-					normalStyle := lipgloss.NewStyle().Foreground(subtleColor)
+					normalStyle := lipgloss.NewStyle().Foreground(accentColor)
 					styled = normalStyle.Render(line)
 				}
 			}
