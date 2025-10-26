@@ -119,7 +119,7 @@ func RenderEntryView(width, height int, entry models.Entry, allTodos []models.To
 	}
 
 	// Header
-	header := RenderHeader(width, "n", "new", "a", "todo", "u/i", "scroll", "e", "entries", "t", "todos", "esc", "cancel", "q", "quit")
+	header := RenderHeader(width, "n", "new", "a", "todo", "d/u", "scroll", "e", "entries", "t", "todos", "esc", "cancel", "q", "quit")
 
 	// Footer: date (no time) + tags + scroll info
 	footerTitle := entry.Timestamp.Format("2006-01-02")

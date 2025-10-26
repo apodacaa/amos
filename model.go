@@ -90,7 +90,7 @@ func NewModel() Model {
 	unifiedFilterInput.BlurredStyle.Text = ui.GetTextStyle()
 
 	return Model{
-		view:               "dashboard",
+		view:               "entries",
 		width:              80, // Default width
 		height:             24, // Default height
 		textarea:           ta,
@@ -126,7 +126,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "add_todo":
 			return m.handleAddTodoKeys(msg)
 		default:
-			return m.handleKeyPress(msg)
+			// Default to entry list (app opens to entries)
+			return m.handleEntriesListKeys(msg)
 		}
 
 	case tea.WindowSizeMsg:
@@ -144,7 +145,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if msg.err != nil {
 			m.statusMsg = "Error saving: " + msg.err.Error()
 		} else {
-			m.statusMsg = "saved"
+			m.statusMsg = "Saved"
 			// Mark as saved
 			m.hasUnsaved = false
 			if m.view == "entry" {
@@ -208,7 +209,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m Model) View() string {
 	switch m.view {
 	case "entry":
-		return ui.RenderEntryForm(m.width, m.height, m.textarea, m.statusMsg)
+		return ui.RenderEntryForm(m.width, m.height, m.textarea, m.statusMsg, m.hasUnsaved)
 	case "entries":
 		return ui.RenderEntryList(m.width, m.height, m.entries, m.selectedEntry, m.todos, m.filterTags, m.filterDate)
 	case "view_entry":
@@ -218,9 +219,9 @@ func (m Model) View() string {
 	case "unified_filter":
 		return ui.RenderUnifiedFilter(m.width, m.height, m.unifiedFilterInput, m.availableTags, m.autocompleteTag, m.statusMsg)
 	case "add_todo":
-		return ui.RenderAddTodoForm(m.width, m.height, m.todoInput, m.statusMsg)
+		return ui.RenderAddTodoForm(m.width, m.height, m.todoInput, m.statusMsg, m.hasUnsaved)
 	default:
-		return ui.RenderDashboard(m.width, m.height, m.entries, m.todos)
+		return ui.RenderEntryList(m.width, m.height, m.entries, m.selectedEntry, m.todos, m.filterTags, m.filterDate)
 	}
 }
 

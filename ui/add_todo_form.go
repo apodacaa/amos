@@ -8,12 +8,17 @@ import (
 )
 
 // RenderAddTodoForm renders the standalone todo creation form
-func RenderAddTodoForm(width, height int, ti textarea.Model, statusMsg string) string {
+func RenderAddTodoForm(width, height int, ti textarea.Model, statusMsg string, hasUnsaved bool) string {
 	// Header
 	header := RenderHeader(width, "enter", "save", "esc", "cancel")
 
-	// Footer
-	footer := RenderFooter(width, "Add Todo", statusMsg)
+	// Footer with unsaved indicator in statusMsg
+	footerTitle := "Add Todo"
+	footerStatus := statusMsg
+	if footerStatus == "" && hasUnsaved {
+		footerStatus = "Unsaved"
+	}
+	footer := RenderFooter(width, footerTitle, footerStatus)
 
 	// Calculate padding for content area
 	contentHeight := height - 2 // header + footer

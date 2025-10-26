@@ -36,18 +36,17 @@ make run
 - `/` - Filter by tags and/or date
 - `c` - Clear filter
 - `t` - Jump to todos
-- `esc` - Back to dashboard
 - `q` - Quit
 
 *Entry View (Read-Only):*
 - `n` - New Entry
 - `a` - Add Standalone Todo
 - `j/k` or `↑/↓` - Navigate between entries
-- `u/i` - Scroll up/down within long entries
+- `d/u` - Scroll down/up within long entries
 - Shows entry with inline todos
 - `e` - Jump to entries
 - `t` - Jump to todos
-- `esc` - Back to dashboard
+- `esc` - Back to entry list
 - `q` - Quit
 
 *Todo List:*
@@ -59,13 +58,12 @@ make run
 - `c` - Clear filter
 - `r` - Refresh (re-sort todos)
 - `e` - Jump to entries
-- `esc` - Back to dashboard
 - `q` - Quit
 
 *Add Todo Form:*
 - Type todo title (tags auto-extracted from @mentions)
 - `enter` - Save and start new todo (shows "saved" confirmation, power mode for rapid entry)
-- `esc` - Cancel and return to dashboard
+- `esc` - Cancel and return to todo list
 
 ## Development
 
@@ -128,7 +126,6 @@ air               # Run with auto-reload
   - Date filters: `today`, `yesterday`, `last N days`, `YYYY-MM-DD`, `YYYY-MM-DD to YYYY-MM-DD`
   - `/` opens filter with current values for easy editing
   - `c` clears filter
-- Manual priority with u/i keys (move up/down)
 - Sort: open first → position → newest
 - View todos by entry or all together
 - Cross-navigation: jump between todos/entries with `t`/`e` keys
@@ -136,9 +133,9 @@ air               # Run with auto-reload
 - Save confirmation: add todo form shows "saved" toast message
 
 ✅ **Navigation**
-- Explicit navigation: `e` (entries), `t` (todos) work from all views
+- Peer navigation: `e` (entries), `t` (todos) work from all views - no hierarchy
 - Global shortcuts: `n` (new entry) and `a` (add todo) work from any read-only view
-- `esc` to go back to dashboard (universal cancel/back key)
+- `esc` exits forms to their natural home: entry form → entry list, add todo → todo list
 - Immediate writes (no hidden pending state)
 - Full context visible (todos show in entry view)
 - No unnecessary features or decorations
@@ -146,7 +143,7 @@ air               # Run with auto-reload
 - **Monochrome design**: Pure black/white/gray palette
 - **Anchored help text**: Footer stays at bottom (no bouncing)
 - **Viewport windowing**: Long lists show 20-30 items with scroll indicators
-- **Entry scrolling**: Navigate long entries with `u/i` keys (u=down, i=up)
+- **Entry scrolling**: Navigate long entries with `d/u` keys (d=down, u=up)
 
 ## Project Structure
 
@@ -157,7 +154,6 @@ air               # Run with auto-reload
 ├── messages.go             # Message types for async operations
 ├── commands.go             # tea.Cmd functions (side effects)
 ├── update_*.go             # Key handlers per view
-│   ├── update_dashboard.go
 │   ├── update_entry.go
 │   ├── update_entries.go
 │   ├── update_entry_view.go
@@ -165,7 +161,6 @@ air               # Run with auto-reload
 │   ├── update_todos.go
 │   └── update_add_todo.go
 ├── ui/                     # View renderers (pure functions)
-│   ├── dashboard.go
 │   ├── entry_form.go
 │   ├── entry_list.go
 │   ├── entry_view.go
@@ -251,9 +246,9 @@ make build
 3. **No hidden state** - What you see is what's saved
 4. **Simple is better** - Normalize positions every move vs complex tracking
 5. **One action = one effect** - No multi-step workflows
-6. **Universal back** - `esc` returns to dashboard from all views
+6. **Peer navigation** - Entry list and todo list are peers, no hierarchy or back button
 7. **Global actions** - `n` and `a` keys work from any read-only view for fast creation
-8. **Monument aesthetics** - Dashboard has massive centered ASCII art, utility views are honest left-aligned workspaces
+8. **Honest workspaces** - All views are functional workspaces with left-aligned honest UI
 9. **Monochrome palette** - Pure black/white/gray, no colors
 10. **Anchored UI** - Help text stays at bottom (no bouncing during navigation)
 11. **Consistent ordering** - Keys appear in same logical order across all views
@@ -266,8 +261,7 @@ make build
 - `!todo Task description @tag` → creates linked todo
 
 **Position System:**
-- Todos have position field for manual priority
+- Todos have position field for priority
 - Lower position = higher priority
 - Sorted: open first → position → newest
-- u/i keys move todos up/down (renumbers all positions)
 

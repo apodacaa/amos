@@ -98,7 +98,7 @@ func RenderEntryList(width, height int, entries []models.Entry, selectedIdx int,
 				selectedStyle := lipgloss.NewStyle().
 					Foreground(accentColor).
 					Reverse(true).
-					Width(width - 4)
+					Width(width)
 				styled = selectedStyle.Render(line)
 			} else {
 				normalStyle := lipgloss.NewStyle().Foreground(accentColor)
@@ -112,7 +112,7 @@ func RenderEntryList(width, height int, entries []models.Entry, selectedIdx int,
 	list := strings.Join(listItems, "\n")
 
 	// Header
-	header := RenderHeader(width, "n", "new", "a", "todo", "j/k", "nav", "enter", "view", "/", "filter", "c", "clear", "t", "todos", "esc", "cancel", "q", "quit")
+	header := RenderHeader(width, "n", "new", "a", "todo", "j/k", "nav", "enter", "view", "/", "filter", "c", "clear", "t", "todos", "q", "quit")
 
 	// Footer
 	footerTitle := "Entries"

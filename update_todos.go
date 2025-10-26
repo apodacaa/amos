@@ -14,11 +14,6 @@ func (m Model) handleTodosListKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch msg.String() {
 	case "q", "ctrl+c":
 		return m, tea.Quit
-	case "esc":
-		// Go back to dashboard
-		m.view = "dashboard"
-		m.statusMsg = "" // Clear status message when changing views
-		return m, nil
 	case "n":
 		// Create new entry (using shared helper)
 		return m.handleNewEntry()

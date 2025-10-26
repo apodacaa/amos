@@ -121,7 +121,6 @@ model.go                 # Model struct + Init/Update/View (Elm core)
 messages.go              # All message types (saveCompleteMsg, entriesLoadedMsg, etc.)
 commands.go              # All tea.Cmd functions (side effects: save, load, etc.)
 update_*.go              # Key handlers per view (domain separation)
-  update_dashboard.go    # Dashboard navigation
   update_entry.go        # Entry form (create/edit)
   update_entries.go      # Entry list navigation
   update_entry_view.go   # Read-only entry view
@@ -129,7 +128,6 @@ update_*.go              # Key handlers per view (domain separation)
   update_unified_filter.go  # Unified filtering (tags + dates)
   update_add_todo.go     # Standalone todo form
 ui/                      # Pure view renderers
-  dashboard.go
   entry_form.go
   entry_list.go
   entry_view.go
@@ -155,9 +153,10 @@ internal/
 
 **State Management**:
 - All state lives in the `Model` struct (model.go:17-42)
-- View routing via `m.view` string field ("dashboard", "entry", "entries", "view_entry", "todos", "tag_filter", "add_todo")
-- Filter context via `m.filterContext` ("entries" or "todos") - determines return view from tag filter
+- View routing via `m.view` string field ("entry", "entries", "view_entry", "todos", "unified_filter", "add_todo")
+- Filter context via `m.filterContext` ("entries" or "todos") - determines return view from filter
 - No hidden previousView tracking - explicit navigation only
+- App opens to "entries" view (entry list as default)
 
 **Message Flow**:
 1. User input → tea.KeyMsg
@@ -209,16 +208,15 @@ internal/
 The app follows strict brutalist principles:
 
 **Navigation**:
-- `esc` - Universal back to dashboard from all views
+- Entry list and todo list are peer views (no hierarchy, no back button)
+- `e` / `t` - Jump between entry list and todo list from any view
+- `esc` - Exits forms to natural home: entry form → entry list, add todo → todo list, entry view → entry list
 - `n` - New entry (works from any read-only view)
 - `a` - Add standalone todo (works from any read-only view)
-- `e` - Jump to entries list
-- `t` - Jump to todos list
 - No hidden navigation state - explicit view switching only
 
 **Visual Design**:
-- **Dashboard**: Monument aesthetic with massive centered ASCII "AMOS" title
-- **Other views**: Honest workspaces with left-aligned help text anchored to bottom
+- **All views**: Honest workspaces with left-aligned help text anchored to bottom
 - **Monochrome palette**: Pure black/white/gray (no colors)
 - **No decorations**: No italics, no Unicode bullets (use `>` not `►`), just ASCII
 - Help text uses inverted black/white for maximum contrast
@@ -234,7 +232,7 @@ The app follows strict brutalist principles:
 
 **Viewport & Scrolling**:
 - Lists (entries, todos) use viewport windowing: show 20-30 items with scroll indicators
-- Entry view: long entries scrollable with `u` (down) / `i` (up) keys
+- Entry view: long entries scrollable with `d` (down) / `u` (up) keys
 
 ## Common Patterns
 
@@ -311,7 +309,6 @@ Todos stored in `~/.amos/todos.json`:
 
 - Entries are append-only (no delete operation by design)
 - Todo status: "open", "next", or "done" (cycle with space key)
-- Position normalization: when reordering todos, all positions are renumbered sequentially
 - Tag syntax: `@tagname` in entry body or todo title auto-extracts to Tags array
 - Todo syntax: `!todo Task description @tag` creates linked todo with extracted tags
 - Unified filtering: Works identically for both entries and todos views

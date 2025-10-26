@@ -16,6 +16,14 @@ var (
 
 	// Muted/help text - Mid gray
 	mutedColor = lipgloss.AdaptiveColor{Light: "#808080", Dark: "#666666"}
+
+	// Header/footer bar colors (full-width top/bottom bars)
+	barFg = lipgloss.AdaptiveColor{Light: "#FFFFFF", Dark: "#000000"}
+	barBg = lipgloss.AdaptiveColor{Light: "#000000", Dark: "#FFFFFF"}
+
+	// Key highlight colors (help text badges)
+	highlightFg = lipgloss.AdaptiveColor{Light: "#FFFFFF", Dark: "#000000"}
+	highlightBg = lipgloss.AdaptiveColor{Light: "#000000", Dark: "#FFFFFF"}
 )
 
 // GetFullScreenBox returns a box that fills most of the terminal with consistent styling
@@ -54,8 +62,17 @@ func GetTextStyle() lipgloss.Style {
 	return lipgloss.NewStyle().Foreground(subtleColor)
 }
 
+// getBarStyle returns the shared full-width inverted bar style
+func getBarStyle(width int) lipgloss.Style {
+	return lipgloss.NewStyle().
+		Foreground(barFg).
+		Background(barBg).
+		Width(width).
+		Bold(true)
+}
+
 // FormatHelp formats help text with bold keys (reverse colors for impact)
-// Centered alignment for dashboard monument aesthetics
+// Centered alignment
 // Example: FormatHelp(width, "n", "new entry", "a", "add todo")
 func FormatHelp(width int, keyDescPairs ...string) string {
 	return formatHelpWithAlign(width, lipgloss.Center, keyDescPairs...)
@@ -72,13 +89,9 @@ func FormatHelpLeft(width int, keyDescPairs ...string) string {
 func formatHelpWithAlign(width int, align lipgloss.Position, keyDescPairs ...string) string {
 	var parts []string
 
-	// Maximum contrast: invert accent colors (white on black / black on white)
-	keyFg := lipgloss.AdaptiveColor{Light: "#FFFFFF", Dark: "#000000"}
-	keyBg := lipgloss.AdaptiveColor{Light: "#000000", Dark: "#FFFFFF"}
-
 	keyStyle := lipgloss.NewStyle().
-		Foreground(keyFg).
-		Background(keyBg).
+		Foreground(highlightFg).
+		Background(highlightBg).
 		Bold(true).
 		Padding(0, 1). // Add small padding for readability
 		Inline(true)   // Keep inline to prevent breaking
@@ -123,7 +136,7 @@ func formatHelpWithAlign(width int, align lipgloss.Position, keyDescPairs ...str
 }
 
 // RenderHeader renders the top bar with app name and help shortcuts
-// Format: "AMOS  n:new  a:todo  esc:cancel  q:quit"
+// Format: "n:new  a:todo  q:quit"
 func RenderHeader(width int, keyDescPairs ...string) string {
 	// Build shortcuts string
 	var shortcuts []string
@@ -140,18 +153,7 @@ func RenderHeader(width int, keyDescPairs ...string) string {
 		content = content[:width]
 	}
 
-	// Maximum contrast: inverted accent colors (black bg/white text in dark, white bg/black text in light)
-	headerFg := lipgloss.AdaptiveColor{Light: "#FFFFFF", Dark: "#000000"}
-	headerBg := lipgloss.AdaptiveColor{Light: "#000000", Dark: "#FFFFFF"}
-
-	// Pad to full width and highlight
-	headerStyle := lipgloss.NewStyle().
-		Foreground(headerFg).
-		Background(headerBg).
-		Width(width).
-		Bold(true)
-
-	return headerStyle.Render(content)
+	return getBarStyle(width).Render(content)
 }
 
 // RenderFooter renders the bottom bar with view context and stats
@@ -167,16 +169,5 @@ func RenderFooter(width int, title string, stats string) string {
 		content = content[:width]
 	}
 
-	// Maximum contrast: inverted accent colors (black bg/white text in dark, white bg/black text in light)
-	footerFg := lipgloss.AdaptiveColor{Light: "#FFFFFF", Dark: "#000000"}
-	footerBg := lipgloss.AdaptiveColor{Light: "#000000", Dark: "#FFFFFF"}
-
-	// Pad to full width and highlight
-	footerStyle := lipgloss.NewStyle().
-		Foreground(footerFg).
-		Background(footerBg).
-		Width(width).
-		Bold(true)
-
-	return footerStyle.Render(content)
+	return getBarStyle(width).Render(content)
 }

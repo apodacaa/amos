@@ -11,8 +11,8 @@ func (m Model) handleViewEntryKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "q", "ctrl+c":
 		return m, tea.Quit
 	case "esc":
-		// Go back to dashboard
-		m.view = "dashboard"
+		// Go back to entry list
+		m.view = "entries"
 		m.statusMsg = "" // Clear status message when changing views
 		return m, nil
 	case "n":
@@ -83,12 +83,12 @@ func (m Model) handleViewEntryKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			}
 		}
 		return m, nil
-	case "u":
-		// Scroll down in current entry (u is above j, j goes down)
+	case "d":
+		// Scroll down in current entry (d = down, standard TUI convention)
 		m.scrollOffset++
 		return m, nil
-	case "i":
-		// Scroll up in current entry (i is above k, k goes up)
+	case "u":
+		// Scroll up in current entry (u = up, standard TUI convention)
 		if m.scrollOffset > 0 {
 			m.scrollOffset--
 		}

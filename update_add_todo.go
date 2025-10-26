@@ -15,19 +15,37 @@ func (m Model) handleAddTodoKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "ctrl+c":
 		return m, tea.Quit
 	case "esc":
-		// Exit to dashboard (discard any unsaved input)
-		m.view = "dashboard"
+		// Check if showing confirmation
+		if m.confirmingExit {
+			// User pressed Esc again - discard changes and exit to todo list
+			m.view = "todos"
+			m.todoInput.Blur()
+			m.confirmingExit = false
+			m.statusMsg = ""
+			m.hasUnsaved = false
+			return m, nil
+		}
+
+		// Check for unsaved changes (any content in input)
+		currentContent := strings.TrimSpace(m.todoInput.Value())
+		if currentContent != "" {
+			// Show confirmation prompt
+			m.confirmingExit = true
+			m.statusMsg = "Unsaved changes - Press Esc again to discard or Enter to save"
+			return m, nil
+		}
+
+		// No content, safe to exit to todo list
+		m.view = "todos"
 		m.todoInput.Blur()
 		m.confirmingExit = false
-		m.statusMsg = ""
-		m.hasUnsaved = false
 		return m, nil
 
 	case "enter":
 		// Save todo and start a new one (power mode - rapid entry)
 		title := strings.TrimSpace(m.todoInput.Value())
 		if title == "" {
-			m.statusMsg = "⚠ Todo title cannot be empty"
+			m.statusMsg = "Todo title cannot be empty"
 			return m, nil
 		}
 

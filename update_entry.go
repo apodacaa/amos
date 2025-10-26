@@ -13,8 +13,8 @@ func (m Model) handleEntryKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "esc":
 		// Check if showing confirmation
 		if m.confirmingExit {
-			// User pressed Esc again - discard changes and exit to dashboard
-			m.view = "dashboard"
+			// User pressed Esc again - discard changes and exit to entry list
+			m.view = "entries"
 			m.textarea.Blur()
 			m.confirmingExit = false
 			m.statusMsg = ""
@@ -27,12 +27,12 @@ func (m Model) handleEntryKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		if m.hasUnsaved && currentContent != m.savedContent {
 			// Show confirmation prompt
 			m.confirmingExit = true
-			m.statusMsg = "⚠ Unsaved changes! Press Esc again to discard, or Ctrl+S to save"
+			m.statusMsg = "Unsaved changes - Press Esc again to discard or Ctrl+S to save"
 			return m, nil
 		}
 
-		// No unsaved changes, safe to exit to dashboard
-		m.view = "dashboard"
+		// No unsaved changes, safe to exit to entry list
+		m.view = "entries"
 		m.textarea.Blur()
 		m.confirmingExit = false
 		return m, nil

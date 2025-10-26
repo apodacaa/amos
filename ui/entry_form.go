@@ -8,12 +8,17 @@ import (
 )
 
 // RenderEntryForm renders the entry editing form
-func RenderEntryForm(width, height int, ta textarea.Model, statusMsg string) string {
+func RenderEntryForm(width, height int, ta textarea.Model, statusMsg string, hasUnsaved bool) string {
 	// Header
 	header := RenderHeader(width, "ctrl+s", "save", "esc", "cancel")
 
-	// Footer
-	footer := RenderFooter(width, "New Entry", statusMsg)
+	// Footer with unsaved indicator in statusMsg
+	footerTitle := "New Entry"
+	footerStatus := statusMsg
+	if footerStatus == "" && hasUnsaved {
+		footerStatus = "Unsaved"
+	}
+	footer := RenderFooter(width, footerTitle, footerStatus)
 
 	// Calculate padding for content area
 	contentHeight := height - 2 // header + footer

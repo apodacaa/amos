@@ -112,13 +112,13 @@ func RenderTodoList(width, height int, todos []models.Todo, entries []models.Ent
 					selectedStyle := lipgloss.NewStyle().
 						Foreground(mutedColor).
 						Reverse(true).
-						Width(width - 4)
+						Width(width)
 					styled = selectedStyle.Render(line)
 				} else {
 					selectedStyle := lipgloss.NewStyle().
 						Foreground(accentColor).
 						Reverse(true).
-						Width(width - 4)
+						Width(width)
 					styled = selectedStyle.Render(line)
 				}
 			} else {
@@ -139,7 +139,7 @@ func RenderTodoList(width, height int, todos []models.Todo, entries []models.Ent
 	list := strings.Join(listItems, "\n")
 
 	// Header
-	header := RenderHeader(width, "n", "new", "a", "todo", "j/k", "nav", "space", "cycle", "/", "filter", "c", "clear", "e", "entries", "esc", "cancel", "q", "quit")
+	header := RenderHeader(width, "n", "new", "a", "todo", "j/k", "nav", "space", "cycle", "/", "filter", "c", "clear", "e", "entries", "q", "quit")
 
 	// Footer
 	footerTitle := "Todos"
