@@ -6,7 +6,6 @@ import (
 
 	"github.com/apodacaa/amos/internal/helpers"
 	"github.com/apodacaa/amos/internal/models"
-	"github.com/charmbracelet/lipgloss"
 )
 
 // RenderEntryList renders the entry list view
@@ -22,43 +21,10 @@ func RenderEntryList(width, height int, entries []models.Entry, selectedIdx int,
 	var listItems []string
 
 	if len(sorted) == 0 {
-		emptyStyle := lipgloss.NewStyle().
-			Foreground(mutedColor).
-			Width(width - 4).
-			Align(lipgloss.Center)
-		listItems = append(listItems, emptyStyle.Render("No entries yet"))
+		listItems = append(listItems, GetEmptyStateStyle(width).Render("No entries yet"))
 	} else {
 		// Calculate viewport (visible window of items)
-		availableHeight := height - 2 // header + footer
-		if availableHeight < 5 {
-			availableHeight = 5
-		}
-
-		// Calculate window start and end to keep selected item visible
-		start := 0
-		end := len(sorted)
-
-		if len(sorted) > availableHeight {
-			// Center selected item in viewport
-			half := availableHeight / 2
-			start = selectedIdx - half
-			end = selectedIdx + half + 1
-
-			// Adjust if near beginning
-			if start < 0 {
-				start = 0
-				end = availableHeight
-			}
-
-			// Adjust if near end
-			if end > len(sorted) {
-				end = len(sorted)
-				start = end - availableHeight
-				if start < 0 {
-					start = 0
-				}
-			}
-		}
+		start, end := CalculateViewport(len(sorted), selectedIdx, height)
 
 		// Render visible items
 		for i := start; i < end; i++ {
@@ -95,14 +61,9 @@ func RenderEntryList(width, height int, entries []models.Entry, selectedIdx int,
 			// Style selected item with inverted colors (brutalist full-width bar)
 			var styled string
 			if i == selectedIdx {
-				selectedStyle := lipgloss.NewStyle().
-					Foreground(accentColor).
-					Reverse(true).
-					Width(width)
-				styled = selectedStyle.Render(line)
+				styled = GetSelectedItemStyle(width).Render(line)
 			} else {
-				normalStyle := lipgloss.NewStyle().Foreground(accentColor)
-				styled = normalStyle.Render(line)
+				styled = GetNormalItemStyle().Render(line)
 			}
 
 			listItems = append(listItems, styled)
@@ -126,31 +87,8 @@ func RenderEntryList(width, height int, entries []models.Entry, selectedIdx int,
 	// Build stats with scroll info if needed
 	var stats string
 	if len(sorted) > 0 {
-		// Calculate viewport info
-		availableHeight := height - 2
-		if availableHeight < 5 {
-			availableHeight = 5
-		}
-
-		if len(sorted) > availableHeight {
-			// Showing windowed view - calculate same viewport as rendering
-			half := availableHeight / 2
-			start := selectedIdx - half
-			end := selectedIdx + half + 1
-
-			if start < 0 {
-				start = 0
-				end = availableHeight
-			}
-
-			if end > len(sorted) {
-				end = len(sorted)
-				start = end - availableHeight
-				if start < 0 {
-					start = 0
-				}
-			}
-
+		start, end := CalculateViewport(len(sorted), selectedIdx, height)
+		if end-start < len(sorted) {
 			stats = fmt.Sprintf("%d-%d of %d items", start+1, end, len(sorted))
 		} else {
 			stats = fmt.Sprintf("%d items", len(sorted))
@@ -159,27 +97,5 @@ func RenderEntryList(width, height int, entries []models.Entry, selectedIdx int,
 
 	footer := RenderFooter(width, footerTitle, stats)
 
-	// Build full view with guaranteed header and footer
-	// Content area is strictly limited to avoid pushing header/footer off screen
-	contentHeight := height - 2 // Reserve space for header + footer
-
-	// Ensure list fits within content area
-	listLines := strings.Split(list, "\n")
-	if len(listLines) > contentHeight {
-		listLines = listLines[:contentHeight]
-	}
-
-	// Add padding to fill remaining space
-	padding := contentHeight - len(listLines)
-	if padding < 0 {
-		padding = 0
-	}
-
-	content := header + "\n" + strings.Join(listLines, "\n")
-	if padding > 0 {
-		content += strings.Repeat("\n", padding)
-	}
-	content += "\n" + footer
-
-	return content
+	return AssembleView(header, list, footer, height)
 }
