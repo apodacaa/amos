@@ -18,7 +18,6 @@ make run
 **Keyboard Shortcuts:**
 
 *Dashboard:*
-- Massive ASCII "AMOS" title
 - `n` - New Entry
 - `a` - Add Standalone Todo
 - `t` - View Todos List
@@ -26,7 +25,7 @@ make run
 - `q` or `Ctrl+C` - Quit
 
 *Entry Form:*
-- `Ctrl+S` - Save entry (shows "saved" confirmation)
+- `Ctrl+S` - Save entry
 - `esc` - Cancel
 
 *Entry List:*
@@ -34,7 +33,7 @@ make run
 - `a` - Add Standalone Todo
 - `j/k` or `↑/↓` - Navigate
 - `enter` - View entry detail
-- `/` - Filter by tags and/or date (opens filter with current values for editing)
+- `/` - Filter by tags and/or date
 - `c` - Clear filter
 - `t` - Jump to todos
 - `esc` - Back to dashboard
@@ -56,7 +55,7 @@ make run
 - `a` - Add Standalone Todo
 - `j/k` or `↑/↓` - Navigate
 - `space` - Toggle todo status (saves immediately)
-- `/` - Filter by tags and/or date (opens filter with current values for editing)
+- `/` - Filter by tags and/or date
 - `c` - Clear filter
 - `r` - Refresh (re-sort todos)
 - `e` - Jump to entries
@@ -136,7 +135,7 @@ air               # Run with auto-reload
 - Global create: `n` (new entry) and `a` (add todo) work from any read-only view
 - Save confirmation: add todo form shows "saved" toast message
 
-✅ **Brutalist Navigation**
+✅ **Navigation**
 - Explicit navigation: `e` (entries), `t` (todos) work from all views
 - Global shortcuts: `n` (new entry) and `a` (add todo) work from any read-only view
 - `esc` to go back to dashboard (universal cancel/back key)
