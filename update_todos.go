@@ -91,6 +91,20 @@ func (m Model) handleTodosListKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			return m, tea.Batch(m.toggleTodoImmediate(todo), clearStatusAfterDelay())
 		}
 		return m, nil
+	case "enter":
+		// Open selected todo for read-only viewing
+		// Apply filters (same logic as UI)
+		filtered := helpers.FilterTodosByDateRange(m.displayTodos, m.filterDate)
+		filtered = helpers.FilterTodosByTags(filtered, m.filterTags)
+
+		if m.selectedTodo >= 0 && m.selectedTodo < len(filtered) {
+			m.viewingTodo = filtered[m.selectedTodo]
+			m.scrollOffset = 0 // Reset scroll when opening todo
+			m.view = "view_todo"
+			// Entries already loaded for linked entry display
+			return m, nil
+		}
+		return m, nil
 	}
 	return m, nil
 }

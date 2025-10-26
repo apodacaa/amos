@@ -23,7 +23,7 @@ func (m Model) handleAddTodoKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.confirmingExit = false
 			m.statusMsg = ""
 			m.hasUnsaved = false
-			return m, nil
+			return m, m.loadEntriesAndTodos() // Reload to show any changes
 		}
 
 		// Check for unsaved changes (any content in input)
@@ -39,7 +39,7 @@ func (m Model) handleAddTodoKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.view = "todos"
 		m.todoInput.Blur()
 		m.confirmingExit = false
-		return m, nil
+		return m, m.loadEntriesAndTodos() // Reload to show any changes
 
 	case "enter":
 		// Save todo and start a new one (power mode - rapid entry)

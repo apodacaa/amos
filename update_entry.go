@@ -19,7 +19,7 @@ func (m Model) handleEntryKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.confirmingExit = false
 			m.statusMsg = ""
 			m.hasUnsaved = false
-			return m, nil
+			return m, m.loadEntriesAndTodos() // Reload to show any changes
 		}
 
 		// Check for unsaved changes
@@ -35,7 +35,7 @@ func (m Model) handleEntryKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.view = "entries"
 		m.textarea.Blur()
 		m.confirmingExit = false
-		return m, nil
+		return m, m.loadEntriesAndTodos() // Reload to show any changes
 
 	case "ctrl+s":
 		// Save entry

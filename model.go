@@ -14,7 +14,7 @@ import (
 
 // Model holds the application state
 type Model struct {
-	view               string         // Current view: "dashboard", "entry", "entries", "view_entry", "todos", "unified_filter", or "add_todo"
+	view               string         // Current view: "entry", "entries", "view_entry", "todos", "view_todo", "unified_filter", or "add_todo"
 	width              int            // Terminal width
 	height             int            // Terminal height
 	textarea           textarea.Model // Textarea for entry input
@@ -23,6 +23,7 @@ type Model struct {
 	currentEntry       models.Entry   // Entry being edited
 	currentTodo        models.Todo    // Standalone todo being created
 	viewingEntry       models.Entry   // Entry being viewed (read-only)
+	viewingTodo        models.Todo    // Todo being viewed (read-only)
 	scrollOffset       int            // Scroll offset for long entry view
 	statusMsg          string         // Status message to display
 	statusTime         time.Time      // When status message was set
@@ -101,6 +102,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m.handleViewEntryKeys(msg)
 		case "todos":
 			return m.handleTodosListKeys(msg)
+		case "view_todo":
+			return m.handleViewTodoKeys(msg)
 		case "unified_filter":
 			return m.handleUnifiedFilterKeys(msg)
 		case "add_todo":
@@ -196,6 +199,8 @@ func (m Model) View() string {
 		return ui.RenderEntryView(m.width, m.height, m.viewingEntry, m.todos, m.scrollOffset)
 	case "todos":
 		return ui.RenderTodoList(m.width, m.height, m.displayTodos, m.entries, m.selectedTodo, m.filterTags, m.filterDate)
+	case "view_todo":
+		return ui.RenderTodoView(m.width, m.height, m.viewingTodo, m.entries, m.scrollOffset)
 	case "unified_filter":
 		return ui.RenderUnifiedFilter(m.width, m.height, m.unifiedFilterInput, m.availableTags, m.autocompleteTag, m.statusMsg)
 	case "add_todo":
