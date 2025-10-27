@@ -55,15 +55,6 @@ func RenderTodoList(width, height int, todos []models.Todo, entries []models.Ent
 
 			line := fmt.Sprintf("%s %s  %s", checkbox, dateStr, paddedTitle)
 
-			// Add tags if present (aligned after padded title)
-			if len(todo.Tags) > 0 {
-				tagStr := ""
-				for _, tag := range todo.Tags {
-					tagStr += " @" + tag
-				}
-				line += tagStr
-			}
-
 			// Truncate if too long
 			maxLen := width - 6
 			if len(line) > maxLen {
@@ -95,7 +86,7 @@ func RenderTodoList(width, height int, todos []models.Todo, entries []models.Ent
 	list := strings.Join(listItems, "\n")
 
 	// Header
-	header := RenderHeader(width, "n", "new", "a", "todo", "j/k", "nav", "space", "cycle", "/", "filter", "c", "clear", "e", "entries", "q", "quit")
+	header := RenderHeader(width, "n", "new", "a", "todo", "enter", "view", "j/k", "nav", "space", "cycle", "/", "filter", "c", "clear", "e", "entries", "q", "quit")
 
 	// Footer
 	footerTitle := "Todos"
