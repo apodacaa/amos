@@ -8,6 +8,30 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
+// highlightTodoInText highlights the todo title in the entry body
+func highlightTodoInText(body, todoTitle string) string {
+	// Find "!todo [title]" pattern
+	todoPattern := "!todo " + todoTitle
+
+	// Split by the todo, highlight the todo part
+	parts := strings.Split(body, todoPattern)
+	if len(parts) <= 1 {
+		// Not found, return as-is in muted
+		return lipgloss.NewStyle().Foreground(mutedColor).Render(body)
+	}
+
+	// Build styled string: dimmed text + highlighted todo + dimmed text
+	var result strings.Builder
+	for i, part := range parts {
+		result.WriteString(lipgloss.NewStyle().Foreground(mutedColor).Render(part))
+		if i < len(parts)-1 {
+			// Add highlighted todo between parts
+			result.WriteString(lipgloss.NewStyle().Foreground(subtleColor).Render(todoPattern))
+		}
+	}
+	return result.String()
+}
+
 // RenderTodoView renders a read-only view of a todo
 func RenderTodoView(width, height int, todo models.Todo, allEntries []models.Entry, scrollOffset int) string {
 	// Todo title (wrappable)
@@ -57,20 +81,21 @@ func RenderTodoView(width, height int, todo models.Todo, allEntries []models.Ent
 				Foreground(mutedColor).
 				Render(metaLine))
 
-			// Body (full text)
+			// Body (full text) - highlight the todo reference
 			if linkedEntry.Body != "" {
-				bodyStyle := lipgloss.NewStyle().
-					Foreground(mutedColor).
-					Width(width - 8)
-				linkedParts = append(linkedParts, bodyStyle.Render(linkedEntry.Body))
+				styledBody := highlightTodoInText(linkedEntry.Body, todo.Title)
+				linkedParts = append(linkedParts, styledBody)
 			}
 
-			linkedSection = "\n\n" + strings.Join(linkedParts, "\n")
+			linkedSection = "\n\n" + strings.Join(linkedParts, "\n\n")
 
-			// Count lines (header + meta + body lines)
-			linkedLineCount = 2  // blank lines before section
-			linkedLineCount += 2 // header + meta
+			// Count lines (header + meta + body lines + blank lines)
+			linkedLineCount = 2  // blank lines before section (\n\n prefix)
+			linkedLineCount += 1 // header line
+			linkedLineCount += 1 // blank line after header (\n\n in join)
+			linkedLineCount += 1 // meta line
 			if linkedEntry.Body != "" {
+				linkedLineCount += 1 // blank line after meta (\n\n in join)
 				bodyLines := strings.Split(linkedEntry.Body, "\n")
 				linkedLineCount += len(bodyLines)
 			}
