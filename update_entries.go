@@ -1,11 +1,7 @@
 package main
 
 import (
-	"strings"
-	"time"
-
 	"github.com/apodacaa/amos/internal/helpers"
-	"github.com/charmbracelet/bubbles/textarea"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -30,36 +26,10 @@ func (m Model) handleEntriesListKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m.handleAddTodo()
 	case "/":
 		// Open unified filter input with current filter pre-populated
-		m.filterContext = "entries"
-		m.availableTags = helpers.ExtractUniqueTagsFromAll(m.entries, m.todos)
-
-		// Reconstruct current filter string from tags and date
-		var filterParts []string
-		filterParts = append(filterParts, m.filterTags...)
-		if m.filterDate != "" {
-			filterParts = append(filterParts, m.filterDate)
-		}
-		currentFilter := strings.Join(filterParts, " ")
-
-		// Set the input with current filter
-		m.unifiedFilterInput.Reset()
-		m.unifiedFilterInput.SetValue(currentFilter)
-		m.unifiedFilterInput.Focus()
-		m.autocompleteTag = ""
-		m.view = "unified_filter"
-		m.statusMsg = ""
-		return m, textarea.Blink
+		return m.openUnifiedFilter("entries")
 	case "c":
 		// Clear all filters
-		if len(m.filterTags) > 0 || m.filterDate != "" {
-			m.filterTags = []string{}
-			m.filterDate = ""
-			m.selectedEntry = 0
-			m.statusMsg = "Filter cleared"
-			m.statusTime = time.Now()
-			return m, clearStatusAfterDelay()
-		}
-		return m, nil
+		return m.clearFilters()
 	case "j", "down":
 		// Apply filters to get displayed list
 		filtered := helpers.FilterEntriesByDateRange(m.entries, m.filterDate)

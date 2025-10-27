@@ -6,7 +6,6 @@ import (
 
 	"github.com/apodacaa/amos/internal/helpers"
 	"github.com/apodacaa/amos/internal/models"
-	"github.com/charmbracelet/lipgloss"
 )
 
 // RenderTodoList renders the todo list view
@@ -19,50 +18,17 @@ func RenderTodoList(width, height int, todos []models.Todo, entries []models.Ent
 	var listItems []string
 
 	if len(filtered) == 0 {
-		emptyStyle := lipgloss.NewStyle().
-			Foreground(mutedColor).
-			Width(width - 4).
-			Align(lipgloss.Center)
 		if len(filterTags) > 0 {
-			listItems = append(listItems, emptyStyle.Render("No todos match the filter."))
+			listItems = append(listItems, GetEmptyStateStyle(width).Render("No todos match the filter."))
 		} else {
-			listItems = append(listItems, emptyStyle.Render("No todos yet. Create an entry with !todo lines."))
+			listItems = append(listItems, GetEmptyStateStyle(width).Render("No todos yet. Create an entry with !todo lines."))
 		}
 	} else {
 		// Todos are pre-sorted (displayTodos from model) and filtered
 		sorted := filtered
 
 		// Calculate viewport (visible window of items)
-		availableHeight := height - 2 // header + footer
-		if availableHeight < 5 {
-			availableHeight = 5
-		}
-
-		// Calculate window start and end to keep selected item visible
-		start := 0
-		end := len(sorted)
-
-		if len(sorted) > availableHeight {
-			// Center selected item in viewport
-			half := availableHeight / 2
-			start = selectedIdx - half
-			end = selectedIdx + half + 1
-
-			// Adjust if near beginning
-			if start < 0 {
-				start = 0
-				end = availableHeight
-			}
-
-			// Adjust if near end
-			if end > len(sorted) {
-				end = len(sorted)
-				start = end - availableHeight
-				if start < 0 {
-					start = 0
-				}
-			}
-		}
+		start, end := CalculateViewport(len(sorted), selectedIdx, height)
 
 		// Render visible todos
 		for i := start; i < end; i++ {
@@ -109,26 +75,16 @@ func RenderTodoList(width, height int, todos []models.Todo, entries []models.Ent
 			if i == selectedIdx {
 				// Selected items with inverted colors - full width bar
 				if todo.Status == "done" {
-					selectedStyle := lipgloss.NewStyle().
-						Foreground(mutedColor).
-						Reverse(true).
-						Width(width)
-					styled = selectedStyle.Render(line)
+					styled = GetSelectedDoneStyle(width).Render(line)
 				} else {
-					selectedStyle := lipgloss.NewStyle().
-						Foreground(accentColor).
-						Reverse(true).
-						Width(width)
-					styled = selectedStyle.Render(line)
+					styled = GetSelectedItemStyle(width).Render(line)
 				}
 			} else {
 				// Dim completed todos, normal color for open
 				if todo.Status == "done" {
-					dimStyle := lipgloss.NewStyle().Foreground(mutedColor)
-					styled = dimStyle.Render(line)
+					styled = GetDimmedStyle().Render(line)
 				} else {
-					normalStyle := lipgloss.NewStyle().Foreground(accentColor)
-					styled = normalStyle.Render(line)
+					styled = GetNormalItemStyle().Render(line)
 				}
 			}
 
@@ -168,31 +124,8 @@ func RenderTodoList(width, height int, todos []models.Todo, entries []models.Ent
 	// Build stats with scroll info if needed
 	var stats string
 	if len(filtered) > 0 {
-		// Calculate viewport info
-		availableHeight := height - 2
-		if availableHeight < 5 {
-			availableHeight = 5
-		}
-
-		if len(filtered) > availableHeight {
-			// Showing windowed view - calculate same viewport as rendering
-			half := availableHeight / 2
-			start := selectedIdx - half
-			end := selectedIdx + half + 1
-
-			if start < 0 {
-				start = 0
-				end = availableHeight
-			}
-
-			if end > len(filtered) {
-				end = len(filtered)
-				start = end - availableHeight
-				if start < 0 {
-					start = 0
-				}
-			}
-
+		start, end := CalculateViewport(len(filtered), selectedIdx, height)
+		if end-start < len(filtered) {
 			stats = fmt.Sprintf("%d-%d of %d | %d open, %d next, %d done", start+1, end, len(filtered), openCount, nextCount, doneCount)
 		} else {
 			stats = fmt.Sprintf("%d open, %d next, %d done", openCount, nextCount, doneCount)
@@ -201,27 +134,5 @@ func RenderTodoList(width, height int, todos []models.Todo, entries []models.Ent
 
 	footer := RenderFooter(width, footerTitle, stats)
 
-	// Build full view with guaranteed header and footer
-	// Content area is strictly limited to avoid pushing header/footer off screen
-	contentHeight := height - 2 // Reserve space for header + footer
-
-	// Ensure list fits within content area
-	listLines := strings.Split(list, "\n")
-	if len(listLines) > contentHeight {
-		listLines = listLines[:contentHeight]
-	}
-
-	// Add padding to fill remaining space
-	padding := contentHeight - len(listLines)
-	if padding < 0 {
-		padding = 0
-	}
-
-	content := header + "\n" + strings.Join(listLines, "\n")
-	if padding > 0 {
-		content += strings.Repeat("\n", padding)
-	}
-	content += "\n" + footer
-
-	return content
+	return AssembleView(header, list, footer, height)
 }

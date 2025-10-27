@@ -9,6 +9,35 @@ import (
 	"github.com/apodacaa/amos/internal/models"
 )
 
+// Timestamped is an interface for items that have timestamps
+type Timestamped interface {
+	GetTimestamp() time.Time
+}
+
+// filterByDateRange is a generic function that filters items by date range
+// Returns filtered list or original list if date string is empty or invalid
+func filterByDateRange[T Timestamped](items []T, dateFilter string) []T {
+	if dateFilter == "" {
+		return items
+	}
+
+	start, end := ParseDateFilter(dateFilter)
+	if start.IsZero() || end.IsZero() {
+		return items
+	}
+
+	filtered := []T{}
+	for _, item := range items {
+		ts := item.GetTimestamp()
+		if (ts.Equal(start) || ts.After(start)) &&
+			(ts.Equal(end) || ts.Before(end)) {
+			filtered = append(filtered, item)
+		}
+	}
+
+	return filtered
+}
+
 // ParseDateFilter parses date filter strings and returns start/end times
 // Supported formats:
 // - "today" - today's entries (00:00:00 to 23:59:59)
@@ -85,45 +114,11 @@ func ParseDateFilter(input string) (start time.Time, end time.Time) {
 // FilterEntriesByDateRange filters entries by date string
 // Returns filtered list or original list if date string is empty or invalid
 func FilterEntriesByDateRange(entries []models.Entry, dateFilter string) []models.Entry {
-	if dateFilter == "" {
-		return entries
-	}
-
-	start, end := ParseDateFilter(dateFilter)
-	if start.IsZero() || end.IsZero() {
-		return entries
-	}
-
-	filtered := []models.Entry{}
-	for _, entry := range entries {
-		if (entry.Timestamp.Equal(start) || entry.Timestamp.After(start)) &&
-			(entry.Timestamp.Equal(end) || entry.Timestamp.Before(end)) {
-			filtered = append(filtered, entry)
-		}
-	}
-
-	return filtered
+	return filterByDateRange(entries, dateFilter)
 }
 
 // FilterTodosByDateRange filters todos by date string
 // Returns filtered list or original list if date string is empty or invalid
 func FilterTodosByDateRange(todos []models.Todo, dateFilter string) []models.Todo {
-	if dateFilter == "" {
-		return todos
-	}
-
-	start, end := ParseDateFilter(dateFilter)
-	if start.IsZero() || end.IsZero() {
-		return todos
-	}
-
-	filtered := []models.Todo{}
-	for _, todo := range todos {
-		if (todo.CreatedAt.Equal(start) || todo.CreatedAt.After(start)) &&
-			(todo.CreatedAt.Equal(end) || todo.CreatedAt.Before(end)) {
-			filtered = append(filtered, todo)
-		}
-	}
-
-	return filtered
+	return filterByDateRange(todos, dateFilter)
 }

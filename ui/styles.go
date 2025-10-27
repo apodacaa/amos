@@ -3,6 +3,7 @@ package ui
 import (
 	"strings"
 
+	"github.com/charmbracelet/bubbles/textarea"
 	"github.com/charmbracelet/lipgloss"
 )
 
@@ -69,6 +70,144 @@ func getBarStyle(width int) lipgloss.Style {
 		Background(barBg).
 		Width(width).
 		Bold(true)
+}
+
+// GetEmptyStateStyle returns centered muted style for empty lists
+func GetEmptyStateStyle(width int) lipgloss.Style {
+	return lipgloss.NewStyle().
+		Foreground(mutedColor).
+		Width(width - 4).
+		Align(lipgloss.Center)
+}
+
+// GetSelectedItemStyle returns inverted accent style for selected list items
+func GetSelectedItemStyle(width int) lipgloss.Style {
+	return lipgloss.NewStyle().
+		Foreground(accentColor).
+		Reverse(true).
+		Width(width)
+}
+
+// GetSelectedDoneStyle returns inverted muted style for selected completed items
+func GetSelectedDoneStyle(width int) lipgloss.Style {
+	return lipgloss.NewStyle().
+		Foreground(mutedColor).
+		Reverse(true).
+		Width(width)
+}
+
+// GetNormalItemStyle returns normal accent foreground for list items
+func GetNormalItemStyle() lipgloss.Style {
+	return lipgloss.NewStyle().Foreground(accentColor)
+}
+
+// GetDimmedStyle returns muted foreground for completed items
+func GetDimmedStyle() lipgloss.Style {
+	return lipgloss.NewStyle().Foreground(mutedColor)
+}
+
+// ApplyTextareaStyle applies consistent styling to a textarea
+func ApplyTextareaStyle(ta *textarea.Model) {
+	ta.FocusedStyle.CursorLine = GetTextareaStyle()
+	ta.BlurredStyle.CursorLine = GetTextareaStyle()
+	ta.FocusedStyle.Placeholder = GetPlaceholderStyle()
+	ta.BlurredStyle.Placeholder = GetPlaceholderStyle()
+	ta.FocusedStyle.Prompt = GetPromptStyle()
+	ta.BlurredStyle.Prompt = GetPromptStyle()
+	ta.FocusedStyle.Text = GetTextStyle()
+	ta.BlurredStyle.Text = GetTextStyle()
+}
+
+// CalculateViewport calculates start/end indices for viewport windowing
+// Centers selectedIdx in available height, handles boundary conditions
+func CalculateViewport(totalItems, selectedIdx, height int) (start, end int) {
+	availableHeight := height - 2 // Reserve space for header + footer
+	if availableHeight < 5 {
+		availableHeight = 5
+	}
+
+	start = 0
+	end = totalItems
+
+	if totalItems > availableHeight {
+		// Center selected item in viewport
+		half := availableHeight / 2
+		start = selectedIdx - half
+		end = selectedIdx + half + 1
+
+		// Adjust if near beginning
+		if start < 0 {
+			start = 0
+			end = availableHeight
+		}
+
+		// Adjust if near end
+		if end > totalItems {
+			end = totalItems
+			start = end - availableHeight
+			if start < 0 {
+				start = 0
+			}
+		}
+	}
+
+	return start, end
+}
+
+// AssembleView builds full view with header, content, footer and padding
+func AssembleView(header, content, footer string, height int) string {
+	contentHeight := height - 2 // Reserve space for header + footer
+
+	// Ensure content fits within available space
+	listLines := strings.Split(content, "\n")
+	if len(listLines) > contentHeight {
+		listLines = listLines[:contentHeight]
+	}
+
+	// Calculate padding to fill remaining space
+	padding := contentHeight - len(listLines)
+	if padding < 0 {
+		padding = 0
+	}
+
+	// Assemble full view
+	result := header + "\n" + strings.Join(listLines, "\n")
+	if padding > 0 {
+		result += strings.Repeat("\n", padding)
+	}
+	result += "\n" + footer
+
+	return result
+}
+
+// RenderFormView renders a form with header, input, footer, and unsaved indicator
+func RenderFormView(width, height int, inputView, footerTitle, statusMsg string, hasUnsaved bool, headerKeys ...string) string {
+	// Build header with provided keys
+	header := RenderHeader(width, headerKeys...)
+
+	// Build footer with unsaved indicator in statusMsg
+	footerStatus := statusMsg
+	if footerStatus == "" && hasUnsaved {
+		footerStatus = "Unsaved"
+	}
+	footer := RenderFooter(width, footerTitle, footerStatus)
+
+	// Calculate padding for content area
+	contentHeight := height - 2 // header + footer
+	inputLines := lipgloss.Height(inputView)
+	padding := contentHeight - inputLines
+	if padding < 0 {
+		padding = 0
+	}
+
+	// Build full view
+	result := header + "\n" + inputView
+	if padding > 0 {
+		result += strings.Repeat("\n", padding)
+	}
+	result += "\n" + footer
+
+	return result
 }
 
 // FormatHelp formats help text with bold keys (reverse colors for impact)
