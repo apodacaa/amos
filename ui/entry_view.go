@@ -15,8 +15,7 @@ func RenderEntryView(width, height int, entry models.Entry, allTodos []models.To
 	title := GetNormalItemStyle().Render(entry.Title)
 
 	// Body
-	bodyStyle := lipgloss.NewStyle().
-		Foreground(subtleColor).
+	bodyStyle := GetNormalItemStyle().
 		Width(width - 8)
 
 	// Todos section (if any)
@@ -48,9 +47,7 @@ func RenderEntryView(width, height int, entry models.Entry, allTodos []models.To
 					for _, tag := range todo.Tags {
 						tagStr += " @" + tag
 					}
-					todoLine += lipgloss.NewStyle().
-						Foreground(mutedColor).
-						Render(tagStr)
+					todoLine += GetDimmedStyle().Render(tagStr)
 				}
 
 				// Dim completed todos

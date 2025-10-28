@@ -7,31 +7,12 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-// Brutalist color palette - Pure monochrome concrete
-var (
-	// Primary text and borders - Dark gray (light) / Light gray (dark)
-	subtleColor = lipgloss.AdaptiveColor{Light: "#404040", Dark: "#CCCCCC"}
-
-	// Accent/highlight - Pure black/white for maximum contrast
-	accentColor = lipgloss.AdaptiveColor{Light: "#000000", Dark: "#FFFFFF"}
-
-	// Muted/help text - Mid gray
-	mutedColor = lipgloss.AdaptiveColor{Light: "#808080", Dark: "#666666"}
-
-	// Header/footer bar colors (full-width top/bottom bars)
-	barFg = lipgloss.AdaptiveColor{Light: "#FFFFFF", Dark: "#000000"}
-	barBg = lipgloss.AdaptiveColor{Light: "#000000", Dark: "#FFFFFF"}
-
-	// Key highlight colors (help text badges)
-	highlightFg = lipgloss.AdaptiveColor{Light: "#FFFFFF", Dark: "#000000"}
-	highlightBg = lipgloss.AdaptiveColor{Light: "#000000", Dark: "#FFFFFF"}
-)
+// Brutalist design: use terminal defaults, no explicit colors
 
 // GetFullScreenBox returns a box that fills most of the terminal with consistent styling
 func GetFullScreenBox(width, height int) lipgloss.Style {
 	return lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
-		BorderForeground(accentColor).
 		Padding(1, 2).
 		Width(width - 2).  // Minimal margin for border
 		Height(height - 3) // Adjust to prevent top border clipping
@@ -40,82 +21,75 @@ func GetFullScreenBox(width, height int) lipgloss.Style {
 // GetTitleStyle returns a title style sized to container width
 func GetTitleStyle(width int) lipgloss.Style {
 	return lipgloss.NewStyle().
-		Bold(true).
-		Foreground(accentColor).
 		Width(width - 8).
 		Align(lipgloss.Center)
 }
 
-// Textarea style helpers
+// Textarea style helpers - use terminal defaults
 func GetTextareaStyle() lipgloss.Style {
-	return lipgloss.NewStyle().Foreground(subtleColor)
+	return lipgloss.NewStyle()
 }
 
 func GetPlaceholderStyle() lipgloss.Style {
-	return lipgloss.NewStyle().Foreground(mutedColor)
+	return lipgloss.NewStyle().Faint(true)
 }
 
 func GetPromptStyle() lipgloss.Style {
-	return lipgloss.NewStyle().Foreground(accentColor)
+	return lipgloss.NewStyle()
 }
 
 func GetTextStyle() lipgloss.Style {
-	return lipgloss.NewStyle().Foreground(subtleColor)
+	return lipgloss.NewStyle()
 }
 
 // getBarStyle returns the shared full-width inverted bar style
 func getBarStyle(width int) lipgloss.Style {
 	return lipgloss.NewStyle().
-		Foreground(barFg).
-		Background(barBg).
-		Width(width).
-		Bold(true)
+		Reverse(true).
+		Width(width)
 }
 
-// GetEmptyStateStyle returns centered muted style for empty lists
+// GetEmptyStateStyle returns centered faint style for empty lists
 func GetEmptyStateStyle(width int) lipgloss.Style {
 	return lipgloss.NewStyle().
-		Foreground(mutedColor).
+		Faint(true).
 		Width(width - 4).
 		Align(lipgloss.Center)
 }
 
-// GetSelectedItemStyle returns inverted accent style for selected list items
+// GetSelectedItemStyle returns normal style for selected list items (uses > prefix)
 func GetSelectedItemStyle(width int) lipgloss.Style {
 	return lipgloss.NewStyle().
-		Foreground(accentColor).
-		Reverse(true).
 		Width(width)
 }
 
-// GetSelectedDoneStyle returns inverted muted style for selected completed items
+// GetSelectedDoneStyle returns faint style for selected completed items (uses > prefix)
 func GetSelectedDoneStyle(width int) lipgloss.Style {
 	return lipgloss.NewStyle().
-		Foreground(mutedColor).
-		Reverse(true).
+		Faint(true).
 		Width(width)
 }
 
-// GetNormalItemStyle returns normal accent foreground for list items
+// GetNormalItemStyle returns terminal default foreground for list items
 func GetNormalItemStyle() lipgloss.Style {
-	return lipgloss.NewStyle().Foreground(accentColor)
+	return lipgloss.NewStyle()
 }
 
-// GetDimmedStyle returns muted foreground for completed items
+// GetDimmedStyle returns faint style for completed items
 func GetDimmedStyle() lipgloss.Style {
-	return lipgloss.NewStyle().Foreground(mutedColor)
+	return lipgloss.NewStyle().Faint(true)
 }
 
 // ApplyTextareaStyle applies consistent styling to a textarea
 func ApplyTextareaStyle(ta *textarea.Model) {
-	ta.FocusedStyle.CursorLine = GetTextareaStyle()
-	ta.BlurredStyle.CursorLine = GetTextareaStyle()
-	ta.FocusedStyle.Placeholder = GetPlaceholderStyle()
-	ta.BlurredStyle.Placeholder = GetPlaceholderStyle()
-	ta.FocusedStyle.Prompt = GetPromptStyle()
-	ta.BlurredStyle.Prompt = GetPromptStyle()
-	ta.FocusedStyle.Text = GetTextStyle()
-	ta.BlurredStyle.Text = GetTextStyle()
+	ta.FocusedStyle.CursorLine = lipgloss.NewStyle()
+	ta.BlurredStyle.CursorLine = lipgloss.NewStyle()
+	ta.FocusedStyle.Placeholder = lipgloss.NewStyle().Faint(true)
+	ta.BlurredStyle.Placeholder = lipgloss.NewStyle().Faint(true)
+	ta.FocusedStyle.Prompt = lipgloss.NewStyle()
+	ta.BlurredStyle.Prompt = lipgloss.NewStyle()
+	ta.FocusedStyle.Text = lipgloss.NewStyle()
+	ta.BlurredStyle.Text = lipgloss.NewStyle()
 }
 
 // CalculateViewport calculates start/end indices for viewport windowing
@@ -210,14 +184,14 @@ func RenderFormView(width, height int, inputView, footerTitle, statusMsg string,
 	return result
 }
 
-// FormatHelp formats help text with bold keys (reverse colors for impact)
+// FormatHelp formats help text with reverse keys
 // Centered alignment
 // Example: FormatHelp(width, "n", "new entry", "a", "add todo")
 func FormatHelp(width int, keyDescPairs ...string) string {
 	return formatHelpWithAlign(width, lipgloss.Center, keyDescPairs...)
 }
 
-// FormatHelpLeft formats help text with bold keys (reverse colors for impact)
+// FormatHelpLeft formats help text with reverse keys
 // Left-aligned for utility views (honest functional UI)
 // Example: FormatHelpLeft(width, "n", "new entry", "a", "add todo")
 func FormatHelpLeft(width int, keyDescPairs ...string) string {
@@ -229,14 +203,11 @@ func formatHelpWithAlign(width int, align lipgloss.Position, keyDescPairs ...str
 	var parts []string
 
 	keyStyle := lipgloss.NewStyle().
-		Foreground(highlightFg).
-		Background(highlightBg).
-		Bold(true).
+		Reverse(true).
 		Padding(0, 1). // Add small padding for readability
 		Inline(true)   // Keep inline to prevent breaking
 
 	descStyle := lipgloss.NewStyle().
-		Foreground(subtleColor).
 		Inline(true) // Keep inline to prevent breaking
 
 	for i := 0; i < len(keyDescPairs); i += 2 {
@@ -260,7 +231,7 @@ func formatHelpWithAlign(width int, align lipgloss.Position, keyDescPairs ...str
 
 	// Render with lipgloss (which may wrap based on width)
 	rendered := lipgloss.NewStyle().
-		Foreground(mutedColor).
+		Faint(true).
 		Width(width - 8).
 		Align(align).
 		Render(result)

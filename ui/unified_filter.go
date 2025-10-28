@@ -28,10 +28,7 @@ func RenderUnifiedFilter(width, height int, ti textarea.Model, availableTags []s
 	// Autocomplete hint (if available)
 	autocompleteHint := ""
 	if autocompleteTag != "" {
-		hintStyle := lipgloss.NewStyle().
-			Foreground(mutedColor).
-			Italic(false) // Brutalist: no italics
-		autocompleteHint = hintStyle.Render(fmt.Sprintf("Tab: %s", autocompleteTag))
+		autocompleteHint = GetDimmedStyle().Render(fmt.Sprintf("Tab: %s", autocompleteTag))
 	}
 
 	// Suggestions section - show both tags and dates
@@ -55,14 +52,8 @@ func RenderUnifiedFilter(width, height int, ti textarea.Model, availableTags []s
 		}
 
 		if len(matches) > 0 {
-			labelStyle := lipgloss.NewStyle().
-				Foreground(subtleColor).
-				Bold(true)
-			matchesLabel := labelStyle.Render("Suggestions:")
-
-			matchesStyle := lipgloss.NewStyle().
-				Foreground(mutedColor)
-			matchesList := matchesStyle.Render(strings.Join(matches, ", "))
+			matchesLabel := GetDimmedStyle().Render("Suggestions:")
+			matchesList := GetDimmedStyle().Render(strings.Join(matches, ", "))
 
 			suggestionsSection = lipgloss.JoinVertical(
 				lipgloss.Left,

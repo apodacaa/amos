@@ -55,16 +55,25 @@ func RenderTodoList(width, height int, todos []models.Todo, entries []models.Ent
 
 			line := fmt.Sprintf("%s %s  %s", checkbox, dateStr, paddedTitle)
 
+			// Add selection marker
+			var prefix string
+			if i == selectedIdx {
+				prefix = "> "
+			} else {
+				prefix = "  " // Indent for alignment
+			}
+			line = prefix + line
+
 			// Truncate if too long
 			maxLen := width - 6
 			if len(line) > maxLen {
 				line = line[:maxLen-3] + "..."
 			}
 
-			// Apply selection and completion styling with inverted colors (brutalist full-width bar)
+			// Apply selection and completion styling
 			var styled string
 			if i == selectedIdx {
-				// Selected items with inverted colors - full width bar
+				// Selected items
 				if todo.Status == "done" {
 					styled = GetSelectedDoneStyle(width).Render(line)
 				} else {
