@@ -12,10 +12,7 @@ import (
 // RenderEntryView renders a read-only view of an entry
 func RenderEntryView(width, height int, entry models.Entry, allTodos []models.Todo, scrollOffset int) string {
 	// Title at top
-	titleStyle := lipgloss.NewStyle().
-		Bold(true).
-		Foreground(accentColor)
-	title := titleStyle.Render(entry.Title)
+	title := GetNormalItemStyle().Render(entry.Title)
 
 	// Body
 	bodyStyle := lipgloss.NewStyle().
@@ -33,10 +30,7 @@ func RenderEntryView(width, height int, entry models.Entry, allTodos []models.To
 			// Count open todos
 			openCount, totalCount := helpers.CountTodoStats(entryTodos)
 
-			todosTitle := lipgloss.NewStyle().
-				Bold(true).
-				Foreground(accentColor).
-				Render(fmt.Sprintf("Todos (%d open, %d total)", openCount, totalCount))
+			todosTitle := GetNormalItemStyle().Render(fmt.Sprintf("Todos (%d open, %d total)", openCount, totalCount))
 
 			// Render each todo
 			var todoLines []string
@@ -61,13 +55,9 @@ func RenderEntryView(width, height int, entry models.Entry, allTodos []models.To
 
 				// Dim completed todos
 				if todo.Status == "done" {
-					todoLine = lipgloss.NewStyle().
-						Foreground(mutedColor).
-						Render(todoLine)
+					todoLine = GetDimmedStyle().Render(todoLine)
 				} else {
-					todoLine = lipgloss.NewStyle().
-						Foreground(subtleColor).
-						Render(todoLine)
+					todoLine = GetNormalItemStyle().Render(todoLine)
 				}
 
 				todoLines = append(todoLines, "  "+todoLine)
