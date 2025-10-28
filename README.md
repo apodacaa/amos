@@ -2,17 +2,29 @@
 
 Minimal Bubble Tea (Go) TUI for journal + todo management. Brutalist design, fast iteration.
 
-## Quick Start
+## Installation
+
+### Homebrew (macOS/Linux)
 
 ```bash
-# Install dependencies
-go mod download
+brew tap apodacaa/amos
+brew install amos
+```
 
-# Install git hooks (recommended for development)
-./scripts/install-hooks.sh
+Run the app:
+```bash
+amos
+```
 
-# Run the app
-make run
+### From Source
+
+Requires Go 1.24+
+
+```bash
+git clone https://github.com/apodacaa/amos.git
+cd amos
+make build
+./amos
 ```
 
 **Keyboard Shortcuts:**
@@ -66,6 +78,21 @@ make run
 - `esc` - Cancel and return to todo list
 
 ## Development
+
+### Quick Start
+
+```bash
+# Clone and setup
+git clone https://github.com/apodacaa/amos.git
+cd amos
+go mod download
+
+# Install git hooks (recommended)
+./scripts/install-hooks.sh
+
+# Run the app
+make run
+```
 
 ### Common Commands
 
