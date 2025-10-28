@@ -52,13 +52,22 @@ func RenderEntryList(width, height int, entries []models.Entry, selectedIdx int,
 				line += tagStr
 			}
 
+			// Add selection marker
+			var prefix string
+			if i == selectedIdx {
+				prefix = "> "
+			} else {
+				prefix = "  " // Indent for alignment
+			}
+			line = prefix + line
+
 			// Truncate if too long
 			maxLen := width - 6
 			if len(line) > maxLen {
 				line = line[:maxLen-3] + "..."
 			}
 
-			// Style selected item with inverted colors (brutalist full-width bar)
+			// Style selected item
 			var styled string
 			if i == selectedIdx {
 				styled = GetSelectedItemStyle(width).Render(line)

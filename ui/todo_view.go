@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/apodacaa/amos/internal/models"
-	"github.com/charmbracelet/lipgloss"
 )
 
 // highlightTodoInText highlights the todo title in the entry body
@@ -16,17 +15,17 @@ func highlightTodoInText(body, todoTitle string) string {
 	// Split by the todo, highlight the todo part
 	parts := strings.Split(body, todoPattern)
 	if len(parts) <= 1 {
-		// Not found, return as-is in muted
-		return lipgloss.NewStyle().Foreground(mutedColor).Render(body)
+		// Not found, return as-is in normal style
+		return GetNormalItemStyle().Render(body)
 	}
 
-	// Build styled string: dimmed text + highlighted todo + dimmed text
+	// Build styled string: body text + highlighted todo
 	var result strings.Builder
 	for i, part := range parts {
-		result.WriteString(lipgloss.NewStyle().Foreground(mutedColor).Render(part))
+		result.WriteString(GetNormalItemStyle().Render(part))
 		if i < len(parts)-1 {
 			// Add highlighted todo between parts
-			result.WriteString(lipgloss.NewStyle().Foreground(subtleColor).Render(todoPattern))
+			result.WriteString(GetNormalItemStyle().Render(todoPattern))
 		}
 	}
 	return result.String()
@@ -35,8 +34,7 @@ func highlightTodoInText(body, todoTitle string) string {
 // RenderTodoView renders a read-only view of a todo
 func RenderTodoView(width, height int, todo models.Todo, allEntries []models.Entry, scrollOffset int) string {
 	// Todo title (wrappable)
-	titleStyle := lipgloss.NewStyle().
-		Foreground(subtleColor).
+	titleStyle := GetNormalItemStyle().
 		Width(width - 8)
 
 	// Wrap title if long
@@ -61,9 +59,7 @@ func RenderTodoView(width, height int, todo models.Todo, allEntries []models.Ent
 			var linkedParts []string
 
 			// Header line: "From the following entry..."
-			linkedParts = append(linkedParts, lipgloss.NewStyle().
-				Foreground(mutedColor).
-				Render("From the following entry..."))
+			linkedParts = append(linkedParts, GetDimmedStyle().Render("From entry..."))
 
 			// Date, title, tags line
 			dateStr := linkedEntry.Timestamp.Format("2006-01-02")
@@ -77,9 +73,7 @@ func RenderTodoView(width, height int, todo models.Todo, allEntries []models.Ent
 			}
 
 			metaLine := fmt.Sprintf("%s %s%s", dateStr, linkedEntry.Title, tagStr)
-			linkedParts = append(linkedParts, lipgloss.NewStyle().
-				Foreground(mutedColor).
-				Render(metaLine))
+			linkedParts = append(linkedParts, GetNormalItemStyle().Render(metaLine))
 
 			// Body (full text) - highlight the todo reference
 			if linkedEntry.Body != "" {
