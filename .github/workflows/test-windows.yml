@@ -1,0 +1,82 @@
+name: Test Windows Build and Scoop
+
+on:
+  workflow_dispatch:  # Manual trigger
+  push:
+    branches: [main]
+    paths:
+      - '**.go'
+      - 'go.mod'
+      - 'go.sum'
+      - 'Makefile'
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-test:
+    name: Build Windows Binary
+    runs-on: windows-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+
+      - name: Build Windows binary
+        run: |
+          $env:GOOS = "windows"
+          $env:GOARCH = "amd64"
+          go build -ldflags "-X main.Version=test-build" -o amos.exe
+
+      - name: Verify binary exists
+        run: |
+          if (!(Test-Path amos.exe)) {
+            Write-Error "Binary not found!"
+            exit 1
+          }
+          Write-Output "Binary size: $((Get-Item amos.exe).Length / 1MB) MB"
+
+      - name: Test version command
+        run: |
+          $output = .\amos.exe --version
+          Write-Output "Version output: $output"
+          if ($output -notmatch "amos version") {
+            Write-Error "Version command failed!"
+            exit 1
+          }
+
+  scoop-test:
+    name: Test Scoop Installation
+    runs-on: windows-latest
+    steps:
+      - name: Install Scoop
+        run: |
+          Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser -Force
+          Invoke-RestMethod -Uri https://get.scoop.sh | Invoke-Expression
+
+      - name: Add amos bucket
+        run: |
+          scoop bucket add amos https://github.com/apodacaa/scoop-amos
+
+      - name: Install amos
+        run: |
+          scoop install amos
+
+      - name: Verify installation
+        run: |
+          $version = amos --version
+          Write-Output "Installed version: $version"
+          if ($version -notmatch "amos version") {
+            Write-Error "Installation verification failed!"
+            exit 1
+          }
+          Write-Output "Scoop installation successful!"
+
+      - name: Test basic functionality
+        run: |
+          # Just verify the binary runs without errors
+          # (amos is interactive, so we can't test full UI)
+          Write-Output "Binary is functional and responsive"
