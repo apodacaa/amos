@@ -11,6 +11,13 @@ brew tap apodacaa/amos
 brew install amos
 ```
 
+### Scoop (Windows)
+
+```powershell
+scoop bucket add amos https://github.com/apodacaa/scoop-amos
+scoop install amos
+```
+
 Run the app:
 ```bash
 amos
