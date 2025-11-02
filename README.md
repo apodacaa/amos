@@ -29,13 +29,6 @@ make build
 
 **Keyboard Shortcuts:**
 
-*Dashboard:*
-- `n` - New Entry
-- `a` - Add Standalone Todo
-- `t` - View Todos List
-- `e` - View Entries List
-- `q` or `Ctrl+C` - Quit
-
 *Entry Form:*
 - `Ctrl+S` - Save entry
 - `esc` - Cancel
