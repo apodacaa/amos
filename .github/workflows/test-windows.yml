@@ -9,6 +9,7 @@ on:
       - 'go.mod'
       - 'go.sum'
       - 'Makefile'
+      - '.github/workflows/**'
   pull_request:
     branches: [main]
 
