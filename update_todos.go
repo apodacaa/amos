@@ -1,6 +1,9 @@
 package main
 
 import (
+	"strconv"
+	"time"
+
 	"github.com/apodacaa/amos/internal/helpers"
 	tea "github.com/charmbracelet/bubbletea"
 )
@@ -11,6 +14,13 @@ func (m Model) handleTodosListKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "q", "ctrl+c":
 		return m, tea.Quit
 	case "n":
+		// Check if cancelling deletion first
+		if m.deleteConfirmPending {
+			m.deleteConfirmPending = false
+			m.statusMsg = "Cancelled"
+			m.statusTime = time.Now()
+			return m, clearStatusAfterDelay()
+		}
 		// Create new entry (using shared helper)
 		return m.handleNewEntry()
 	case "e":
@@ -45,6 +55,104 @@ func (m Model) handleTodosListKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "r":
 		// Refresh - reload todos to re-sort
 		return m, m.loadTodos()
+	case "d":
+		// Toggle mark for deletion
+		filtered := helpers.FilterTodosByDateRange(m.displayTodos, m.filterDate)
+		filtered = helpers.FilterTodosByTags(filtered, m.filterTags)
+
+		if m.selectedTodo >= 0 && m.selectedTodo < len(filtered) {
+			selectedTodo := filtered[m.selectedTodo]
+
+			// Toggle mark
+			if _, marked := m.markedForDeletion[selectedTodo.ID]; marked {
+				// Unmark
+				delete(m.markedForDeletion, selectedTodo.ID)
+				m.statusMsg = "Unmarked"
+			} else {
+				// Mark (allow marking even entry-linked todos - they won't be deleted)
+				m.markedForDeletion[selectedTodo.ID] = "todo"
+				// Count total marked items
+				entryCount := 0
+				todoCount := 0
+				for _, itemType := range m.markedForDeletion {
+					if itemType == "entry" {
+						entryCount++
+					} else {
+						todoCount++
+					}
+				}
+				if entryCount > 0 && todoCount > 0 {
+					m.statusMsg = strconv.Itoa(entryCount) + " entries, " + strconv.Itoa(todoCount) + " todos marked. Press $ to delete."
+				} else if entryCount > 0 {
+					m.statusMsg = strconv.Itoa(entryCount) + " entries marked. Press $ to delete."
+				} else {
+					m.statusMsg = strconv.Itoa(todoCount) + " todos marked. Press $ to delete."
+				}
+			}
+			m.statusTime = time.Now()
+			return m, clearStatusAfterDelay()
+		}
+		return m, nil
+	case "y":
+		// Confirm deletion (if pending)
+		if m.deleteConfirmPending {
+			m.deleteConfirmPending = false
+			m.statusMsg = ""
+			return m, m.deleteMarkedCmd()
+		}
+
+	case "$":
+		// Execute deletion of marked items (same logic as entries list)
+		if len(m.markedForDeletion) == 0 {
+			m.statusMsg = "No items marked for deletion"
+			m.statusTime = time.Now()
+			return m, clearStatusAfterDelay()
+		}
+
+		// Show confirmation with y/n prompt
+		// Count entries, todos, and affected linked todos
+		entryCount := 0
+		todoCount := 0
+		linkedTodoCount := 0
+
+		for id, itemType := range m.markedForDeletion {
+			if itemType == "entry" {
+				entryCount++
+				// Find the entry and count its linked todos
+				for _, e := range m.entries {
+					if e.ID == id {
+						linkedTodoCount += len(e.TodoIDs)
+						break
+					}
+				}
+			} else {
+				todoCount++
+			}
+		}
+
+		// Build confirmation message
+		var msg string
+		if entryCount > 0 && todoCount > 0 {
+			msg = "Delete " + strconv.Itoa(entryCount) + " entries"
+			if linkedTodoCount > 0 {
+				msg += " (" + strconv.Itoa(linkedTodoCount) + " linked todos)"
+			}
+			msg += " and " + strconv.Itoa(todoCount) + " todos? ([yes]/no)"
+		} else if entryCount > 0 {
+			msg = "Delete " + strconv.Itoa(entryCount) + " entries"
+			if linkedTodoCount > 0 {
+				msg += " (" + strconv.Itoa(linkedTodoCount) + " linked todos)"
+			}
+			msg += "? ([yes]/no)"
+		} else {
+			msg = "Delete " + strconv.Itoa(todoCount) + " todos? ([yes]/no)"
+		}
+
+		m.deleteConfirmPending = true
+		m.statusMsg = msg
+		m.statusTime = time.Now()
+		return m, nil
+
 	case " ":
 		// Cycle todo status: open → next → done → open (save immediately, no re-sort)
 		// Use filtered displayTodos to keep selection stable
@@ -92,6 +200,13 @@ func (m Model) handleTodosListKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 	case "enter":
+		// Check if confirming deletion first
+		if m.deleteConfirmPending {
+			m.deleteConfirmPending = false
+			m.statusMsg = ""
+			return m, m.deleteMarkedCmd()
+		}
+
 		// Open selected todo for read-only viewing
 		// Apply filters (same logic as UI)
 		filtered := helpers.FilterTodosByDateRange(m.displayTodos, m.filterDate)

@@ -38,8 +38,10 @@ make build
 - `a` - Add Standalone Todo
 - `j/k` or `↑/↓` - Navigate
 - `enter` - View entry detail
+- `d` - Mark/unmark entry for deletion (shows "D" prefix, persists across navigation)
+- `$` - Delete all marked items (shown in status message after marking, y/n confirmation, cascades to linked todos)
 - `/` - Filter by tags and/or date
-- `c` - Clear filter
+- `c` - Clear filter (shown in status message when filter is active)
 - `t` - Jump to todos
 - `q` - Quit
 
@@ -47,7 +49,8 @@ make build
 - `n` - New Entry
 - `a` - Add Standalone Todo
 - `j/k` or `↑/↓` - Navigate between entries
-- `d/u` - Scroll down/up within long entries
+- `d` - Mark/unmark current entry for deletion (shows "[MARKED FOR DELETION]" in footer)
+- `$` - Delete all marked items (shown in status message after marking, y/n confirmation, cascades to linked todos)
 - Shows entry with inline todos
 - `e` - Jump to entries
 - `t` - Jump to todos
@@ -59,10 +62,24 @@ make build
 - `a` - Add Standalone Todo
 - `j/k` or `↑/↓` - Navigate
 - `space` - Toggle todo status (saves immediately)
+- `d` - Mark/unmark todo for deletion (shows "D" prefix, can mark entry-linked todos too)
+- `$` - Delete all marked items (shown in status message after marking, y/n confirmation, only standalone todos deleted)
 - `/` - Filter by tags and/or date
-- `c` - Clear filter
+- `c` - Clear filter (shown in status message when filter is active)
 - `r` - Refresh (re-sort todos)
 - `e` - Jump to entries
+- `q` - Quit
+
+*Todo View (Read-Only):*
+- `n` - New Entry
+- `a` - Add Standalone Todo
+- `space` - Cycle todo status: open → next → done (saves immediately)
+- `j/k` or `↑/↓` - Navigate between todos
+- `d` - Mark/unmark current todo for deletion (shows "[MARKED FOR DELETION]" in footer)
+- `$` - Delete all marked items (shown in status message after marking, y/n confirmation)
+- `e` - Jump to entries
+- `t` - Jump to todos
+- `esc` or `enter` - Back to todo list
 - `q` - Quit
 
 *Add Todo Form:*
@@ -130,9 +147,10 @@ air               # Run with auto-reload
   - Tag autocomplete (type `@` then tag name, press `tab` to complete)
   - Date filters: `today`, `yesterday`, `last N days`, `YYYY-MM-DD`, `YYYY-MM-DD to YYYY-MM-DD`
   - `/` opens filter with current values for easy editing
-  - `c` clears filter
+  - `c` clears filter (shown in status message when filter is active)
+  - Status message after applying filter: "Filter applied. Press c to clear"
 - View entries chronologically (newest first)
-- **Append-only**: No delete (journal is historical record)
+- **Deletion**: neomutt-style multi-select (mark with `d`, `$` shown in status message after marking, cascade deletes linked todos)
 - Cross-navigation: jump between todos/entries with `t`/`e` keys
 - Global create: `n` (new entry) and `a` (add todo) work from any read-only view
 - Save confirmation: entry form shows "saved" toast message
@@ -145,7 +163,8 @@ air               # Run with auto-reload
   - Tag autocomplete (type `@` then tag name, press `tab` to complete)
   - Date filters: `today`, `yesterday`, `last N days`, `YYYY-MM-DD`, `YYYY-MM-DD to YYYY-MM-DD`
   - `/` opens filter with current values for easy editing
-  - `c` clears filter
+  - `c` clears filter (shown in status message when filter is active)
+  - Status message after applying filter: "Filter applied. Press c to clear"
 - Sort: open first → position → newest
 - View todos by entry or all together
 - Cross-navigation: jump between todos/entries with `t`/`e` keys
@@ -274,7 +293,7 @@ make build
 11. **Consistent ordering** - Keys appear in same logical order across all views
 12. **No decorations** - No italics, no Unicode bullets, just ASCII
 13. **Viewport windowing** - Lists show manageable chunks with scroll position indicators
-14. **Predictable UI** - Help text always shows available keys (no conditional hiding)
+14. **Context-aware UI** - Headers show core navigation, status messages show context-dependent actions (`$` for deletion after marking, `c` for clearing active filters)
 
 **Tag Syntax:**
 - `@work` in entry content → auto-extracted to tags array

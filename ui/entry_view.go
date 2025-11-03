@@ -10,7 +10,7 @@ import (
 )
 
 // RenderEntryView renders a read-only view of an entry
-func RenderEntryView(width, height int, entry models.Entry, allTodos []models.Todo, scrollOffset int) string {
+func RenderEntryView(width, height int, entry models.Entry, allTodos []models.Todo, scrollOffset int, markedForDeletion map[string]string, statusMsg string) string {
 	// Title at top
 	title := GetNormalItemStyle().Render(entry.Title)
 
@@ -67,7 +67,7 @@ func RenderEntryView(width, height int, entry models.Entry, allTodos []models.To
 	}
 
 	// Calculate available height for content
-	availableHeight := height - 2 - todoLineCount // header + footer + todos
+	availableHeight := height - 3 - todoLineCount // header + footer + message line + todos
 	if availableHeight < 5 {
 		availableHeight = 5
 	}
@@ -106,10 +106,16 @@ func RenderEntryView(width, height int, entry models.Entry, allTodos []models.To
 	}
 
 	// Header
-	header := RenderHeader(width, "n", "new", "a", "todo", "j/k", "nav", "d/u", "scroll", "e", "entries", "t", "todos", "q", "quit")
+	header := RenderHeader(width, "n", "new", "a", "todo", "j/k", "nav", "d", "del", "e", "entries", "t", "todos", "q", "quit")
 
-	// Footer: date (no time) + tags + scroll info
+	// Footer: date (no time) + tags + marked indicator + scroll info
 	footerTitle := entry.Timestamp.Format("2006-01-02")
+
+	// Add marked indicator if entry is marked for deletion
+	if _, isMarked := markedForDeletion[entry.ID]; isMarked {
+		footerTitle += " [MARKED FOR DELETION]"
+	}
+
 	if len(entry.Tags) > 0 {
 		// Add @ prefix to tags for clarity
 		var tagStrings []string
@@ -119,6 +125,7 @@ func RenderEntryView(width, height int, entry models.Entry, allTodos []models.To
 		footerTitle += " " + strings.Join(tagStrings, " ")
 	}
 
+	// Footer stats (statusMsg now in message line, not footer)
 	footerStats := ""
 	if totalLines > availableHeight {
 		footerStats = fmt.Sprintf("lines %d-%d of %d", scrollStart+1, scrollEnd, totalLines)
@@ -136,19 +143,22 @@ func RenderEntryView(width, height int, entry models.Entry, allTodos []models.To
 	)
 
 	// Calculate padding for content area
-	contentHeight := height - 2 // header + footer
+	contentHeight := height - 3 // header + footer + message line
 	mainLines := strings.Count(mainContent, "\n") + 1
 	padding := contentHeight - mainLines
 	if padding < 0 {
 		padding = 0
 	}
 
+	// Build message line (neomutt-style)
+	messageLine := RenderMessageLine(width, statusMsg)
+
 	// Build full view
 	content := header + "\n" + mainContent
 	if padding > 0 {
 		content += strings.Repeat("\n", padding)
 	}
-	content += "\n" + footer
+	content += "\n" + footer + "\n" + messageLine
 
 	return content
 }

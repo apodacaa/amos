@@ -26,3 +26,16 @@ type todoToggledMsg struct {
 
 // statusTimeoutMsg is sent when status message should be cleared
 type statusTimeoutMsg struct{}
+
+// deleteCompleteMsg is sent when delete operation completes successfully
+type deleteCompleteMsg struct {
+	entryCount      int
+	todoCount       int
+	linkedTodoCount int
+}
+
+// deleteErrorMsg is sent when delete operation fails
+type deleteErrorMsg struct {
+	err     error
+	message string
+}

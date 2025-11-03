@@ -9,7 +9,7 @@ import (
 )
 
 // RenderEntryList renders the entry list view
-func RenderEntryList(width, height int, entries []models.Entry, selectedIdx int, todos []models.Todo, filterTags []string, filterDate string) string {
+func RenderEntryList(width, height int, entries []models.Entry, selectedIdx int, todos []models.Todo, filterTags []string, filterDate string, markedForDeletion map[string]string, statusMsg string) string {
 	// Apply filters: first date, then tags
 	filtered := helpers.FilterEntriesByDateRange(entries, filterDate)
 	filtered = helpers.FilterEntriesByTags(filtered, filterTags)
@@ -52,12 +52,18 @@ func RenderEntryList(width, height int, entries []models.Entry, selectedIdx int,
 				line += tagStr
 			}
 
-			// Add selection marker
+			// Add selection marker and deletion marker
 			var prefix string
-			if i == selectedIdx {
-				prefix = "> "
+			_, isMarked := markedForDeletion[entry.ID]
+
+			if i == selectedIdx && isMarked {
+				prefix = "> D "
+			} else if i == selectedIdx {
+				prefix = ">   "
+			} else if isMarked {
+				prefix = "  D "
 			} else {
-				prefix = "  " // Indent for alignment
+				prefix = "    " // Indent for alignment (4 spaces to match "> D ")
 			}
 			line = prefix + line
 
@@ -82,7 +88,7 @@ func RenderEntryList(width, height int, entries []models.Entry, selectedIdx int,
 	list := strings.Join(listItems, "\n")
 
 	// Header
-	header := RenderHeader(width, "n", "new", "a", "todo", "j/k", "nav", "enter", "view", "/", "filter", "c", "clear", "t", "todos", "q", "quit")
+	header := RenderHeader(width, "n", "new", "a", "todo", "j/k", "nav", "enter", "view", "d", "del", "/", "filter", "t", "todos", "q", "quit")
 
 	// Footer
 	footerTitle := "Entries"
@@ -93,7 +99,7 @@ func RenderEntryList(width, height int, entries []models.Entry, selectedIdx int,
 		footerTitle += " " + filterDate
 	}
 
-	// Build stats with scroll info if needed
+	// Build stats with scroll info (statusMsg now in message line, not footer)
 	var stats string
 	if len(sorted) > 0 {
 		start, end := CalculateViewport(len(sorted), selectedIdx, height)
@@ -106,5 +112,5 @@ func RenderEntryList(width, height int, entries []models.Entry, selectedIdx int,
 
 	footer := RenderFooter(width, footerTitle, stats)
 
-	return AssembleView(header, list, footer, height)
+	return AssembleView(header, list, footer, width, height, statusMsg)
 }

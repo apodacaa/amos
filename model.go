@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"strings"
 	"time"
 
@@ -14,32 +15,34 @@ import (
 
 // Model holds the application state
 type Model struct {
-	view               string         // Current view: "entry", "entries", "view_entry", "todos", "view_todo", "unified_filter", or "add_todo"
-	width              int            // Terminal width
-	height             int            // Terminal height
-	textarea           textarea.Model // Textarea for entry input
-	todoInput          textarea.Model // Single-line input for standalone todos
-	unifiedFilterInput textarea.Model // Single-line input for unified filtering (tags + dates)
-	currentEntry       models.Entry   // Entry being edited
-	currentTodo        models.Todo    // Standalone todo being created
-	viewingEntry       models.Entry   // Entry being viewed (read-only)
-	viewingTodo        models.Todo    // Todo being viewed (read-only)
-	scrollOffset       int            // Scroll offset for long entry view
-	statusMsg          string         // Status message to display
-	statusTime         time.Time      // When status message was set
-	hasUnsaved         bool           // Whether there are unsaved changes
-	savedContent       string         // Last saved content (to detect changes)
-	confirmingExit     bool           // Whether showing exit confirmation
-	entries            []models.Entry // All entries (for list view)
-	selectedEntry      int            // Selected entry index in list
-	todos              []models.Todo  // All todos (raw, unsorted)
-	displayTodos       []models.Todo  // Sorted todos for display (only updated on load/refresh)
-	selectedTodo       int            // Selected todo index in list
-	filterTags         []string       // Current tag filters (empty = no filter), supports multiple tags with AND logic
-	filterContext      string         // Context for filtering: "entries" or "todos" (which view to return to)
-	filterDate         string         // Current date filter preset (empty = no filter)
-	availableTags      []string       // All unique tags across entries
-	autocompleteTag    string         // Current autocomplete suggestion for tag input
+	view                 string            // Current view: "entry", "entries", "view_entry", "todos", "view_todo", "unified_filter", or "add_todo"
+	width                int               // Terminal width
+	height               int               // Terminal height
+	textarea             textarea.Model    // Textarea for entry input
+	todoInput            textarea.Model    // Single-line input for standalone todos
+	unifiedFilterInput   textarea.Model    // Single-line input for unified filtering (tags + dates)
+	currentEntry         models.Entry      // Entry being edited
+	currentTodo          models.Todo       // Standalone todo being created
+	viewingEntry         models.Entry      // Entry being viewed (read-only)
+	viewingTodo          models.Todo       // Todo being viewed (read-only)
+	scrollOffset         int               // Scroll offset for long entry view
+	statusMsg            string            // Status message to display
+	statusTime           time.Time         // When status message was set
+	hasUnsaved           bool              // Whether there are unsaved changes
+	savedContent         string            // Last saved content (to detect changes)
+	confirmingExit       bool              // Whether showing exit confirmation
+	entries              []models.Entry    // All entries (for list view)
+	selectedEntry        int               // Selected entry index in list
+	todos                []models.Todo     // All todos (raw, unsorted)
+	displayTodos         []models.Todo     // Sorted todos for display (only updated on load/refresh)
+	selectedTodo         int               // Selected todo index in list
+	filterTags           []string          // Current tag filters (empty = no filter), supports multiple tags with AND logic
+	filterContext        string            // Context for filtering: "entries" or "todos" (which view to return to)
+	filterDate           string            // Current date filter preset (empty = no filter)
+	availableTags        []string          // All unique tags across entries
+	autocompleteTag      string            // Current autocomplete suggestion for tag input
+	markedForDeletion    map[string]string // Map of ID to type ("entry" or "todo") for items marked for deletion
+	deleteConfirmPending bool              // Whether $ has been pressed once (waiting for second press)
 }
 
 // NewModel creates a new model with default values
@@ -77,6 +80,7 @@ func NewModel() Model {
 		textarea:           ta,
 		todoInput:          todoInput,
 		unifiedFilterInput: unifiedFilterInput,
+		markedForDeletion:  make(map[string]string),
 	}
 }
 
@@ -178,6 +182,62 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.statusMsg = ""
 		}
 		return m, nil
+
+	case deleteCompleteMsg:
+		// Delete successful - clear marked items and confirmation state, reload data
+		m.markedForDeletion = make(map[string]string)
+		m.deleteConfirmPending = false
+
+		// Build success message with counts
+		var successMsg string
+		if msg.entryCount > 0 && msg.todoCount > 0 {
+			// Both entries and todos deleted
+			entryWord := "entry"
+			if msg.entryCount > 1 {
+				entryWord = "entries"
+			}
+			todoWord := "todo"
+			if msg.todoCount > 1 {
+				todoWord = "todos"
+			}
+			successMsg = fmt.Sprintf("Deleted %d %s", msg.entryCount, entryWord)
+			if msg.linkedTodoCount > 0 {
+				successMsg += fmt.Sprintf(" (%d linked todos)", msg.linkedTodoCount)
+			}
+			successMsg += fmt.Sprintf(" and %d %s", msg.todoCount, todoWord)
+		} else if msg.entryCount > 0 {
+			// Only entries deleted
+			entryWord := "entry"
+			if msg.entryCount > 1 {
+				entryWord = "entries"
+			}
+			successMsg = fmt.Sprintf("Deleted %d %s", msg.entryCount, entryWord)
+			if msg.linkedTodoCount > 0 {
+				successMsg += fmt.Sprintf(" (%d linked todos)", msg.linkedTodoCount)
+			}
+		} else {
+			// Only todos deleted
+			todoWord := "todo"
+			if msg.todoCount > 1 {
+				todoWord = "todos"
+			}
+			successMsg = fmt.Sprintf("Deleted %d %s", msg.todoCount, todoWord)
+		}
+
+		m.statusMsg = successMsg
+		m.statusTime = time.Now()
+		// Reload entries and todos to refresh the view
+		return m, tea.Batch(m.loadEntriesAndTodos(), clearStatusAfterDelay())
+
+	case deleteErrorMsg:
+		// Delete failed - clear confirmation and show error
+		m.deleteConfirmPending = false
+		m.statusMsg = msg.message
+		if msg.err != nil {
+			m.statusMsg += ": " + msg.err.Error()
+		}
+		m.statusTime = time.Now()
+		return m, clearStatusAfterDelay()
 	}
 
 	// Update textarea if in entry view
@@ -194,19 +254,19 @@ func (m Model) View() string {
 	case "entry":
 		return ui.RenderEntryForm(m.width, m.height, m.textarea, m.statusMsg, m.hasUnsaved)
 	case "entries":
-		return ui.RenderEntryList(m.width, m.height, m.entries, m.selectedEntry, m.todos, m.filterTags, m.filterDate)
+		return ui.RenderEntryList(m.width, m.height, m.entries, m.selectedEntry, m.todos, m.filterTags, m.filterDate, m.markedForDeletion, m.statusMsg)
 	case "view_entry":
-		return ui.RenderEntryView(m.width, m.height, m.viewingEntry, m.todos, m.scrollOffset)
+		return ui.RenderEntryView(m.width, m.height, m.viewingEntry, m.todos, m.scrollOffset, m.markedForDeletion, m.statusMsg)
 	case "todos":
-		return ui.RenderTodoList(m.width, m.height, m.displayTodos, m.entries, m.selectedTodo, m.filterTags, m.filterDate)
+		return ui.RenderTodoList(m.width, m.height, m.displayTodos, m.entries, m.selectedTodo, m.filterTags, m.filterDate, m.markedForDeletion, m.statusMsg)
 	case "view_todo":
-		return ui.RenderTodoView(m.width, m.height, m.viewingTodo, m.entries, m.scrollOffset)
+		return ui.RenderTodoView(m.width, m.height, m.viewingTodo, m.entries, m.scrollOffset, m.markedForDeletion, m.statusMsg)
 	case "unified_filter":
 		return ui.RenderUnifiedFilter(m.width, m.height, m.unifiedFilterInput, m.availableTags, m.autocompleteTag, m.statusMsg)
 	case "add_todo":
 		return ui.RenderAddTodoForm(m.width, m.height, m.todoInput, m.statusMsg, m.hasUnsaved)
 	default:
-		return ui.RenderEntryList(m.width, m.height, m.entries, m.selectedEntry, m.todos, m.filterTags, m.filterDate)
+		return ui.RenderEntryList(m.width, m.height, m.entries, m.selectedEntry, m.todos, m.filterTags, m.filterDate, m.markedForDeletion, m.statusMsg)
 	}
 }
 

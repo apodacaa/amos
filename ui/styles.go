@@ -95,7 +95,7 @@ func ApplyTextareaStyle(ta *textarea.Model) {
 // CalculateViewport calculates start/end indices for viewport windowing
 // Centers selectedIdx in available height, handles boundary conditions
 func CalculateViewport(totalItems, selectedIdx, height int) (start, end int) {
-	availableHeight := height - 2 // Reserve space for header + footer
+	availableHeight := height - 3 // Reserve space for header + footer + message line
 	if availableHeight < 5 {
 		availableHeight = 5
 	}
@@ -128,9 +128,9 @@ func CalculateViewport(totalItems, selectedIdx, height int) (start, end int) {
 	return start, end
 }
 
-// AssembleView builds full view with header, content, footer and padding
-func AssembleView(header, content, footer string, height int) string {
-	contentHeight := height - 2 // Reserve space for header + footer
+// AssembleView builds full view with header, content, footer, message line and padding
+func AssembleView(header, content, footer string, width, height int, statusMsg string) string {
+	contentHeight := height - 3 // Reserve space for header + footer + message line
 
 	// Ensure content fits within available space
 	listLines := strings.Split(content, "\n")
@@ -144,42 +144,48 @@ func AssembleView(header, content, footer string, height int) string {
 		padding = 0
 	}
 
+	// Build message line (neomutt-style)
+	messageLine := RenderMessageLine(width, statusMsg)
+
 	// Assemble full view
 	result := header + "\n" + strings.Join(listLines, "\n")
 	if padding > 0 {
 		result += strings.Repeat("\n", padding)
 	}
-	result += "\n" + footer
+	result += "\n" + footer + "\n" + messageLine
 
 	return result
 }
 
-// RenderFormView renders a form with header, input, footer, and unsaved indicator
+// RenderFormView renders a form with header, input, footer, and message line
 func RenderFormView(width, height int, inputView, footerTitle, statusMsg string, hasUnsaved bool, headerKeys ...string) string {
 	// Build header with provided keys
 	header := RenderHeader(width, headerKeys...)
 
-	// Build footer with unsaved indicator in statusMsg
-	footerStatus := statusMsg
-	if footerStatus == "" && hasUnsaved {
-		footerStatus = "Unsaved"
+	// Build footer with unsaved indicator (no statusMsg in footer anymore)
+	footerStatus := ""
+	if hasUnsaved {
+		footerStatus = "[Unsaved]"
 	}
 	footer := RenderFooter(width, footerTitle, footerStatus)
 
 	// Calculate padding for content area
-	contentHeight := height - 2 // header + footer
+	contentHeight := height - 3 // header + footer + message line
 	inputLines := lipgloss.Height(inputView)
 	padding := contentHeight - inputLines
 	if padding < 0 {
 		padding = 0
 	}
 
+	// Build message line (neomutt-style)
+	messageLine := RenderMessageLine(width, statusMsg)
+
 	// Build full view
 	result := header + "\n" + inputView
 	if padding > 0 {
 		result += strings.Repeat("\n", padding)
 	}
-	result += "\n" + footer
+	result += "\n" + footer + "\n" + messageLine
 
 	return result
 }
@@ -280,4 +286,25 @@ func RenderFooter(width int, title string, stats string) string {
 	}
 
 	return getBarStyle(width).Render(content)
+}
+
+// RenderMessageLine renders the message line below footer (neomutt-style)
+// Shows status messages, confirmations, errors. Blank when no message.
+func RenderMessageLine(width int, statusMsg string) string {
+	if statusMsg == "" {
+		// Return blank line to maintain consistent layout
+		return strings.Repeat(" ", width)
+	}
+
+	// Truncate if too long
+	if len(statusMsg) > width {
+		statusMsg = statusMsg[:width]
+	}
+
+	// Pad to full width for consistent appearance
+	if len(statusMsg) < width {
+		statusMsg = statusMsg + strings.Repeat(" ", width-len(statusMsg))
+	}
+
+	return statusMsg
 }

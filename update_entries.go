@@ -1,6 +1,9 @@
 package main
 
 import (
+	"strconv"
+	"time"
+
 	"github.com/apodacaa/amos/internal/helpers"
 	tea "github.com/charmbracelet/bubbletea"
 )
@@ -11,6 +14,13 @@ func (m Model) handleEntriesListKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "q", "ctrl+c":
 		return m, tea.Quit
 	case "n":
+		// Check if cancelling deletion first
+		if m.deleteConfirmPending {
+			m.deleteConfirmPending = false
+			m.statusMsg = "Cancelled"
+			m.statusTime = time.Now()
+			return m, clearStatusAfterDelay()
+		}
 		// Create new entry (using shared helper)
 		return m.handleNewEntry()
 	case "t":
@@ -44,7 +54,113 @@ func (m Model) handleEntriesListKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.selectedEntry--
 		}
 		return m, nil
+	case "d":
+		// Toggle mark for deletion
+		filtered := helpers.FilterEntriesByDateRange(m.entries, m.filterDate)
+		filtered = helpers.FilterEntriesByTags(filtered, m.filterTags)
+
+		if m.selectedEntry >= 0 && m.selectedEntry < len(filtered) {
+			sorted := helpers.SortEntriesForDisplay(filtered)
+			selectedEntry := sorted[m.selectedEntry]
+
+			// Toggle mark
+			if _, marked := m.markedForDeletion[selectedEntry.ID]; marked {
+				// Unmark
+				delete(m.markedForDeletion, selectedEntry.ID)
+				m.statusMsg = "Unmarked"
+			} else {
+				// Mark
+				m.markedForDeletion[selectedEntry.ID] = "entry"
+				// Count total marked items
+				entryCount := 0
+				todoCount := 0
+				for _, itemType := range m.markedForDeletion {
+					if itemType == "entry" {
+						entryCount++
+					} else {
+						todoCount++
+					}
+				}
+				if entryCount > 0 && todoCount > 0 {
+					m.statusMsg = strconv.Itoa(entryCount) + " entries, " + strconv.Itoa(todoCount) + " todos marked. Press $ to delete."
+				} else if entryCount > 0 {
+					m.statusMsg = strconv.Itoa(entryCount) + " entries marked. Press $ to delete."
+				} else {
+					m.statusMsg = strconv.Itoa(todoCount) + " todos marked. Press $ to delete."
+				}
+			}
+			m.statusTime = time.Now()
+			return m, clearStatusAfterDelay()
+		}
+		return m, nil
+	case "y":
+		// Confirm deletion (if pending)
+		if m.deleteConfirmPending {
+			m.deleteConfirmPending = false
+			m.statusMsg = ""
+			return m, m.deleteMarkedCmd()
+		}
+
+	case "$":
+		// Execute deletion of marked items
+		if len(m.markedForDeletion) == 0 {
+			m.statusMsg = "No items marked for deletion"
+			m.statusTime = time.Now()
+			return m, clearStatusAfterDelay()
+		}
+
+		// Show confirmation with y/n prompt
+		// Count entries, todos, and affected linked todos
+		entryCount := 0
+		todoCount := 0
+		linkedTodoCount := 0
+
+		for id, itemType := range m.markedForDeletion {
+			if itemType == "entry" {
+				entryCount++
+				// Find the entry and count its linked todos
+				for _, e := range m.entries {
+					if e.ID == id {
+						linkedTodoCount += len(e.TodoIDs)
+						break
+					}
+				}
+			} else {
+				todoCount++
+			}
+		}
+
+		// Build confirmation message
+		var msg string
+		if entryCount > 0 && todoCount > 0 {
+			msg = "Delete " + strconv.Itoa(entryCount) + " entries"
+			if linkedTodoCount > 0 {
+				msg += " (" + strconv.Itoa(linkedTodoCount) + " linked todos)"
+			}
+			msg += " and " + strconv.Itoa(todoCount) + " todos? ([yes]/no)"
+		} else if entryCount > 0 {
+			msg = "Delete " + strconv.Itoa(entryCount) + " entries"
+			if linkedTodoCount > 0 {
+				msg += " (" + strconv.Itoa(linkedTodoCount) + " linked todos)"
+			}
+			msg += "? ([yes]/no)"
+		} else {
+			msg = "Delete " + strconv.Itoa(todoCount) + " todos? ([yes]/no)"
+		}
+
+		m.deleteConfirmPending = true
+		m.statusMsg = msg
+		m.statusTime = time.Now()
+		return m, nil
+
 	case "enter":
+		// Check if confirming deletion first
+		if m.deleteConfirmPending {
+			m.deleteConfirmPending = false
+			m.statusMsg = ""
+			return m, m.deleteMarkedCmd()
+		}
+
 		// Open selected entry for read-only viewing
 		// Apply filters (same logic as UI)
 		filtered := helpers.FilterEntriesByDateRange(m.entries, m.filterDate)
