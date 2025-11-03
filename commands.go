@@ -106,3 +106,49 @@ func (m Model) saveTodo() tea.Cmd {
 		return saveCompleteMsg{err: err}
 	}
 }
+
+// deleteMarkedCmd deletes all marked entries and todos
+func (m Model) deleteMarkedCmd() tea.Cmd {
+	return func() tea.Msg {
+		// Separate entries and todos, count linked todos
+		var entryIDs []string
+		var todoIDs []string
+		linkedTodoCount := 0
+
+		for id, itemType := range m.markedForDeletion {
+			if itemType == "entry" {
+				entryIDs = append(entryIDs, id)
+				// Count linked todos for this entry
+				for _, e := range m.entries {
+					if e.ID == id {
+						linkedTodoCount += len(e.TodoIDs)
+						break
+					}
+				}
+			} else if itemType == "todo" {
+				todoIDs = append(todoIDs, id)
+			}
+		}
+
+		// Delete entries first (cascade deletes linked todos)
+		for _, id := range entryIDs {
+			err := storage.DeleteEntryCascade(id)
+			if err != nil {
+				return deleteErrorMsg{err: err, message: "Failed to delete entries"}
+			}
+		}
+
+		// Delete standalone todos
+		// Note: entry-linked todos will already be deleted by cascade
+		for _, id := range todoIDs {
+			// Try to delete - if it was already deleted by cascade, storage layer handles it
+			storage.DeleteTodo(id)
+		}
+
+		return deleteCompleteMsg{
+			entryCount:      len(entryIDs),
+			todoCount:       len(todoIDs),
+			linkedTodoCount: linkedTodoCount,
+		}
+	}
+}

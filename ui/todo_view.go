@@ -32,7 +32,7 @@ func highlightTodoInText(body, todoTitle string) string {
 }
 
 // RenderTodoView renders a read-only view of a todo
-func RenderTodoView(width, height int, todo models.Todo, allEntries []models.Entry, scrollOffset int) string {
+func RenderTodoView(width, height int, todo models.Todo, allEntries []models.Entry, scrollOffset int, markedForDeletion map[string]string, statusMsg string) string {
 	// Todo title (wrappable)
 	titleStyle := GetNormalItemStyle().
 		Width(width - 8)
@@ -97,7 +97,7 @@ func RenderTodoView(width, height int, todo models.Todo, allEntries []models.Ent
 	}
 
 	// Calculate available height for title content
-	availableHeight := height - 2 - linkedLineCount // header + footer + linked section
+	availableHeight := height - 3 - linkedLineCount // header + footer + message line + linked section
 	if availableHeight < 5 {
 		availableHeight = 5
 	}
@@ -134,7 +134,7 @@ func RenderTodoView(width, height int, todo models.Todo, allEntries []models.Ent
 	}
 
 	// Header
-	header := RenderHeader(width, "n", "new", "a", "todo", "space", "cycle", "j/k", "nav", "d/u", "scroll", "e", "entries", "t", "todos", "q", "quit")
+	header := RenderHeader(width, "n", "new", "a", "todo", "space", "cycle", "j/k", "nav", "d", "del", "e", "entries", "t", "todos", "q", "quit")
 
 	// Footer: status indicator + date + tags + scroll info
 	statusIcon := "[ ]" // open
@@ -146,6 +146,12 @@ func RenderTodoView(width, height int, todo models.Todo, allEntries []models.Ent
 
 	footerTitle := fmt.Sprintf("%s %s", statusIcon, todo.CreatedAt.Format("2006-01-02"))
 
+	// Add marked indicator if todo is marked for deletion
+	if _, isMarked := markedForDeletion[todo.ID]; isMarked {
+		footerTitle += " [MARKED FOR DELETION]"
+	}
+
+	// Footer stats (statusMsg now in message line, not footer)
 	footerStats := ""
 	if totalLines > availableHeight {
 		footerStats = fmt.Sprintf("lines %d-%d of %d", scrollStart+1, scrollEnd, totalLines)
@@ -157,19 +163,22 @@ func RenderTodoView(width, height int, todo models.Todo, allEntries []models.Ent
 	mainContent := renderedTitle + linkedSection
 
 	// Calculate padding
-	contentHeight := height - 2 // header + footer
+	contentHeight := height - 3 // header + footer + message line
 	mainLines := strings.Count(mainContent, "\n") + 1
 	padding := contentHeight - mainLines
 	if padding < 0 {
 		padding = 0
 	}
 
+	// Build message line (neomutt-style)
+	messageLine := RenderMessageLine(width, statusMsg)
+
 	// Build full view
 	content := header + "\n" + mainContent
 	if padding > 0 {
 		content += strings.Repeat("\n", padding)
 	}
-	content += "\n" + footer
+	content += "\n" + footer + "\n" + messageLine
 
 	return content
 }

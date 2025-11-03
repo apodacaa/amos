@@ -9,7 +9,7 @@ import (
 )
 
 // RenderTodoList renders the todo list view
-func RenderTodoList(width, height int, todos []models.Todo, entries []models.Entry, selectedIdx int, filterTags []string, filterDate string) string {
+func RenderTodoList(width, height int, todos []models.Todo, entries []models.Entry, selectedIdx int, filterTags []string, filterDate string, markedForDeletion map[string]string, statusMsg string) string {
 	// Apply filters: first date, then tags
 	filtered := helpers.FilterTodosByDateRange(todos, filterDate)
 	filtered = helpers.FilterTodosByTags(filtered, filterTags)
@@ -55,12 +55,18 @@ func RenderTodoList(width, height int, todos []models.Todo, entries []models.Ent
 
 			line := fmt.Sprintf("%s %s  %s", checkbox, dateStr, paddedTitle)
 
-			// Add selection marker
+			// Add selection marker and deletion marker
 			var prefix string
-			if i == selectedIdx {
-				prefix = "> "
+			_, isMarked := markedForDeletion[todo.ID]
+
+			if i == selectedIdx && isMarked {
+				prefix = "> D "
+			} else if i == selectedIdx {
+				prefix = ">   "
+			} else if isMarked {
+				prefix = "  D "
 			} else {
-				prefix = "  " // Indent for alignment
+				prefix = "    " // Indent for alignment (4 spaces to match "> D ")
 			}
 			line = prefix + line
 
@@ -95,7 +101,7 @@ func RenderTodoList(width, height int, todos []models.Todo, entries []models.Ent
 	list := strings.Join(listItems, "\n")
 
 	// Header
-	header := RenderHeader(width, "n", "new", "a", "todo", "enter", "view", "j/k", "nav", "space", "cycle", "/", "filter", "c", "clear", "e", "entries", "q", "quit")
+	header := RenderHeader(width, "n", "new", "a", "todo", "enter", "view", "j/k", "nav", "space", "cycle", "d", "del", "/", "filter", "e", "entries", "q", "quit")
 
 	// Footer
 	footerTitle := "Todos"
@@ -121,7 +127,7 @@ func RenderTodoList(width, height int, todos []models.Todo, entries []models.Ent
 		}
 	}
 
-	// Build stats with scroll info if needed
+	// Build stats with scroll info (statusMsg now in message line, not footer)
 	var stats string
 	if len(filtered) > 0 {
 		start, end := CalculateViewport(len(filtered), selectedIdx, height)
@@ -134,5 +140,5 @@ func RenderTodoList(width, height int, todos []models.Todo, entries []models.Ent
 
 	footer := RenderFooter(width, footerTitle, stats)
 
-	return AssembleView(header, list, footer, height)
+	return AssembleView(header, list, footer, width, height, statusMsg)
 }

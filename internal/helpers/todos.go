@@ -44,3 +44,8 @@ func CountTodoStats(todos []models.Todo) (open int, total int) {
 	}
 	return open, total
 }
+
+// IsTodoLinked returns true if the todo is linked to an entry
+func IsTodoLinked(todo models.Todo) bool {
+	return todo.EntryID != nil
+}

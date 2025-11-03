@@ -68,7 +68,7 @@ This codebase is small (~3000 lines) and well-organized. Work efficiently:
 - Entry list integration: `update_entries.go`, `ui/entry_list.go`
 - Todo list integration: `update_todos.go`, `ui/todo_list.go`
 - Context tracking: `model.go` (filterContext field determines return view)
-- Filter workflow: `/` opens filter with current values for editing, `c` clears filter
+- Filter workflow: `/` opens filter with current values for editing, `c` clears filter. After applying filter, status message shows "Filter applied. Press c to clear"
 
 **Entry Management:**
 - Entry form: `update_entry.go`, `ui/entry_form.go`
@@ -185,8 +185,9 @@ internal/
 - Unified filtering via `/` key in both entries and todos views
 - **Filter workflow**:
   - `/` always opens filter with current values pre-populated (for editing)
-  - `c` clears filter entirely
+  - `c` clears filter entirely (only shown in status message when filter is active)
   - Filter persists across navigation until cleared
+  - Status message after applying filter: "Filter applied. Press c to clear" (auto-clears after 3 seconds)
 - **Tag filtering**:
   - Type `@tagname` to filter by tags (autocomplete with `tab`)
   - Filter uses AND logic (all tags must match)
@@ -222,17 +223,21 @@ The app follows strict brutalist principles:
 - Help text uses inverted black/white for maximum contrast
 - Help text uses non-breaking spaces (\u00A0) to prevent key/description splitting
 - Wrapped helper lines have blank line between them for readability
-- Status messages appear above help text (e.g., "saved" in forms)
+- Status messages appear in message line below footer (e.g., "saved" in forms, "Filter applied. Press c to clear", "X items marked. Press $ to delete")
 
 **Data Integrity**:
-- Append-only journal (no delete feature for entries)
+- **neomutt-style deletion**: `d` marks items (toggle), `$` executes deletion (y/n confirmation). `$` key only shown in status message after marking items, not in view headers
+- Visual feedback: "D" prefix in lists, "[MARKED FOR DELETION]" in entry view footer, status message shows "X items marked. Press $ to delete"
+- Multi-select: marks persist across navigation until deletion or app exit
+- Cascade delete: deleting entry removes all linked todos automatically
+- Entry-linked todos: can be marked but only deleted via parent entry
 - Immediate writes: `space` to toggle todo saves immediately
 - Full context: todos visible in entry view
-- No deferred/pending state
+- No hidden state: all marks visible, confirmation shows counts
 
 **Viewport & Scrolling**:
 - Lists (entries, todos) use viewport windowing: show 20-30 items with scroll indicators
-- Entry view: long entries scrollable with `d` (down) / `u` (up) keys
+- Entry view: uses viewport windowing with automatic scroll for long content
 
 ## Common Patterns
 
@@ -307,13 +312,21 @@ Todos stored in `~/.amos/todos.json`:
 
 ## Important Notes
 
-- Entries are append-only (no delete operation by design)
+- **Deletion**: neomutt-style multi-select pattern
+  - `d` key marks/unmarks items for deletion (shows "D" prefix in lists, footer text in entry view)
+  - After marking items, status message shows "X items marked. Press $ to delete"
+  - `$` key executes deletion (doesn't appear in view headers, only in status message after marking)
+  - First `$` press shows y/n confirmation with counts, `y` or `enter` confirms deletion
+  - Marks persist across navigation until deletion or app closes
+  - Cascade deletion: deleting entry removes all linked todos
+  - Entry-linked todos can be marked but only deleted via parent entry (standalone todos deleted independently)
 - Todo status: "open", "next", or "done" (cycle with space key)
 - Tag syntax: `@tagname` in entry body or todo title auto-extracts to Tags array
 - Todo syntax: `!todo Task description @tag` creates linked todo with extracted tags
 - Unified filtering: Works identically for both entries and todos views
   - `/` key opens filter with current values for editing
-  - `c` key clears filter
+  - After applying filter, status message shows "Filter applied. Press c to clear"
+  - `c` key clears filter (doesn't appear in view headers, only in status message when filter is active)
   - Supports tags (@work), dates (today, yesterday, last N days, YYYY-MM-DD, date ranges)
   - Only tag autocomplete (no date autocomplete)
   - Invalid filters show error with 3-second auto-clear

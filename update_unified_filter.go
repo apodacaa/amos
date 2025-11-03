@@ -79,9 +79,10 @@ func (m Model) handleUnifiedFilterKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			return m, clearStatusAfterDelay()
 		}
 
-		// Success - return to list
+		// Success - return to list with status message
 		m.view = m.filterContext
-		m.statusMsg = ""
+		m.statusMsg = "Filter applied. Press c to clear"
+		m.statusTime = time.Now()
 
 		// Reset selection to first item in filtered list
 		if m.filterContext == "entries" {
@@ -90,7 +91,7 @@ func (m Model) handleUnifiedFilterKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.selectedTodo = 0
 		}
 
-		return m, nil
+		return m, clearStatusAfterDelay()
 	}
 
 	// Update textarea and recalculate autocomplete suggestion

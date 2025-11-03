@@ -75,7 +75,7 @@ func RenderUnifiedFilter(width, height int, ti textarea.Model, availableTags []s
 
 	mainContent := lipgloss.JoinVertical(lipgloss.Left, mainParts...)
 
-	return AssembleView(header, mainContent, footer, height)
+	return AssembleView(header, mainContent, footer, width, height, statusMsg)
 }
 
 // getLastWord extracts the last word from the input (after the last space)
