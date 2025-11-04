@@ -157,20 +157,13 @@ func AssembleView(header, content, footer string, width, height int, statusMsg s
 	return result
 }
 
-// RenderFormView renders a form with header, input, footer, and message line
-func RenderFormView(width, height int, inputView, footerTitle, statusMsg string, hasUnsaved bool, headerKeys ...string) string {
+// RenderFormView renders a form with header, input, and message line
+func RenderFormView(width, height int, inputView, statusMsg string, hasUnsaved bool, headerKeys ...string) string {
 	// Build header with provided keys
 	header := RenderHeader(width, headerKeys...)
 
-	// Build footer with unsaved indicator (no statusMsg in footer anymore)
-	footerStatus := ""
-	if hasUnsaved {
-		footerStatus = "[Unsaved]"
-	}
-	footer := RenderFooter(width, footerTitle, footerStatus)
-
 	// Calculate padding for content area
-	contentHeight := height - 3 // header + footer + message line
+	contentHeight := height - 2 // header + message line (no footer in forms)
 	inputLines := lipgloss.Height(inputView)
 	padding := contentHeight - inputLines
 	if padding < 0 {
@@ -180,12 +173,12 @@ func RenderFormView(width, height int, inputView, footerTitle, statusMsg string,
 	// Build message line (neomutt-style)
 	messageLine := RenderMessageLine(width, statusMsg)
 
-	// Build full view
+	// Build full view (no footer)
 	result := header + "\n" + inputView
 	if padding > 0 {
 		result += strings.Repeat("\n", padding)
 	}
-	result += "\n" + footer + "\n" + messageLine
+	result += "\n" + messageLine
 
 	return result
 }
@@ -273,11 +266,14 @@ func RenderHeader(width int, keyDescPairs ...string) string {
 }
 
 // RenderFooter renders the bottom bar with view context and stats
-// Format: "Entries @work  15 items"
+// Format: "Entries @work  15 items" or "15 items" (no leading space when title is empty)
 func RenderFooter(width int, title string, stats string) string {
 	content := title
 	if stats != "" {
-		content += "  " + stats
+		if title != "" {
+			content += "  "
+		}
+		content += stats
 	}
 
 	// Truncate if too long

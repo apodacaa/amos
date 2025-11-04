@@ -29,28 +29,17 @@ func RenderEntryList(width, height int, entries []models.Entry, selectedIdx int,
 		// Render visible items
 		for i := start; i < end; i++ {
 			entry := sorted[i]
-			// Table format: date  title (padded)  tags
+			// Table format: date  title
 			timestamp := entry.Timestamp.Format("2006-01-02")
 
-			// Pad title to fixed width for column alignment
-			titleWidth := 30
-			paddedTitle := entry.Title
-			if len(paddedTitle) > titleWidth {
-				paddedTitle = paddedTitle[:titleWidth]
+			// Add + prefix if entry has todos
+			if len(entry.TodoIDs) > 0 {
+				timestamp = "+" + timestamp
 			} else {
-				paddedTitle = paddedTitle + strings.Repeat(" ", titleWidth-len(paddedTitle))
+				timestamp = " " + timestamp
 			}
 
-			line := fmt.Sprintf("%s  %s", timestamp, paddedTitle)
-
-			// Add tags if present (aligned after padded title)
-			if len(entry.Tags) > 0 {
-				tagStr := ""
-				for _, tag := range entry.Tags {
-					tagStr += " @" + tag
-				}
-				line += tagStr
-			}
+			line := fmt.Sprintf("%s  %s", timestamp, entry.Title)
 
 			// Add selection marker and deletion marker
 			var prefix string
@@ -90,27 +79,29 @@ func RenderEntryList(width, height int, entries []models.Entry, selectedIdx int,
 	// Header
 	header := RenderHeader(width, "n", "new", "a", "todo", "j/k", "nav", "enter", "view", "d", "del", "/", "filter", "t", "todos", "q", "quit")
 
-	// Footer
-	footerTitle := "Entries"
+	// Footer (show only filter context, no view label)
+	var footerTitle string
 	if len(filterTags) > 0 {
-		footerTitle += " " + strings.Join(filterTags, " ")
+		footerTitle = strings.Join(filterTags, " ")
 	}
 	if filterDate != "" {
-		footerTitle += " " + filterDate
+		if footerTitle != "" {
+			footerTitle += " "
+		}
+		footerTitle += filterDate
+	}
+	// Wrap filters in brackets if present
+	if footerTitle != "" {
+		footerTitle = "[" + footerTitle + "]"
 	}
 
-	// Build stats with scroll info (statusMsg now in message line, not footer)
+	// Build stats showing selected entry position
 	var stats string
 	if len(sorted) > 0 {
-		start, end := CalculateViewport(len(sorted), selectedIdx, height)
-		if end-start < len(sorted) {
-			stats = fmt.Sprintf("%d-%d of %d items", start+1, end, len(sorted))
-		} else {
-			stats = fmt.Sprintf("%d items", len(sorted))
-		}
+		stats = fmt.Sprintf("Entry %d of %d", selectedIdx+1, len(sorted))
 	}
 
-	footer := RenderFooter(width, footerTitle, stats)
+	footer := RenderFooter(width, stats, footerTitle)
 
 	return AssembleView(header, list, footer, width, height, statusMsg)
 }

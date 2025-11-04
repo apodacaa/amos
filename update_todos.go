@@ -166,18 +166,19 @@ func (m Model) handleTodosListKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			switch todo.Status {
 			case "open":
 				todo.Status = "next"
-				m.statusMsg = "→ Next"
+				m.statusMsg = "Todo marked as next"
 			case "next":
 				todo.Status = "done"
-				m.statusMsg = "✓ Done"
+				m.statusMsg = "Todo marked as done"
 			case "done":
 				todo.Status = "open"
-				m.statusMsg = "○ Open"
+				m.statusMsg = "Todo marked as open"
 			default:
 				// Unknown status, set to open
 				todo.Status = "open"
-				m.statusMsg = "○ Open"
+				m.statusMsg = "Todo marked as open"
 			}
+			m.statusTime = time.Now()
 
 			// Update in m.todos array and displayTodos (find by ID)
 			// We can't update displayTodos[m.selectedTodo] directly because
