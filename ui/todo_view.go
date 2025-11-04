@@ -48,7 +48,9 @@ func RenderTodoView(width, height int, todo models.Todo, allEntries []models.Ent
 
 	// Wrap title if long
 	wrappedTitle := wordWrap(todo.Title, width-8)
-	titleLines := strings.Split(wrappedTitle, "\n")
+	// Apply tag highlighting to wrapped title
+	highlightedTitle := HighlightTagsInText(wrappedTitle)
+	titleLines := strings.Split(highlightedTitle, "\n")
 
 	// Linked entry section (if EntryID is set)
 	var linkedSection string
@@ -82,11 +84,13 @@ func RenderTodoView(width, height int, todo models.Todo, allEntries []models.Ent
 			}
 
 			metaLine := fmt.Sprintf("%s %s%s", dateStr, linkedEntry.Title, tagStr)
-			linkedParts = append(linkedParts, GetNormalItemStyle().Render(metaLine))
+			linkedParts = append(linkedParts, HighlightTagsInText(metaLine))
 
-			// Body (full text) - highlight the todo reference
+			// Body (full text) - highlight tags and todo reference
 			if linkedEntry.Body != "" {
-				styledBody := highlightTodoInText(linkedEntry.Body, todo.Title)
+				// First highlight tags, then highlight todo reference
+				bodyWithTags := HighlightTagsInText(linkedEntry.Body)
+				styledBody := highlightTodoInText(bodyWithTags, todo.Title)
 				linkedParts = append(linkedParts, styledBody)
 			}
 
@@ -137,7 +141,7 @@ func RenderTodoView(width, height int, todo models.Todo, allEntries []models.Ent
 		visibleLines := titleLines[scrollStart:scrollEnd]
 		renderedTitle = titleStyle.Render(strings.Join(visibleLines, "\n"))
 	} else {
-		renderedTitle = titleStyle.Render(wrappedTitle)
+		renderedTitle = titleStyle.Render(highlightedTitle)
 		scrollStart = 0
 		scrollEnd = totalLines
 	}

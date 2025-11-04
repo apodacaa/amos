@@ -29,32 +29,25 @@ func RenderEntryList(width, height int, entries []models.Entry, selectedIdx int,
 		// Render visible items
 		for i := start; i < end; i++ {
 			entry := sorted[i]
-			// Table format: date  title
+			// Table format: markers  date  title
 			timestamp := entry.Timestamp.Format("2006-01-02")
 
-			// Add + prefix if entry has todos
-			if len(entry.TodoIDs) > 0 {
-				timestamp = "+" + timestamp
-			} else {
-				timestamp = " " + timestamp
-			}
-
-			line := fmt.Sprintf("%s  %s", timestamp, entry.Title)
-
-			// Add selection marker and deletion marker
-			var prefix string
+			// Build 2-character marker prefix (D for deletion, + for todos)
+			var marker string
 			_, isMarked := markedForDeletion[entry.ID]
+			hasTodos := len(entry.TodoIDs) > 0
 
-			if i == selectedIdx && isMarked {
-				prefix = "> D "
-			} else if i == selectedIdx {
-				prefix = ">   "
-			} else if isMarked {
-				prefix = "  D "
+			if isMarked && hasTodos {
+				marker = "D+"
+			} else if isMarked && !hasTodos {
+				marker = "D "
+			} else if !isMarked && hasTodos {
+				marker = " +"
 			} else {
-				prefix = "    " // Indent for alignment (4 spaces to match "> D ")
+				marker = "  "
 			}
-			line = prefix + line
+
+			line := fmt.Sprintf("%s %s  %s", marker, timestamp, entry.Title)
 
 			// Truncate if too long
 			maxLen := width - 6
@@ -62,12 +55,12 @@ func RenderEntryList(width, height int, entries []models.Entry, selectedIdx int,
 				line = line[:maxLen-3] + "..."
 			}
 
-			// Style selected item
+			// Apply selection styling (no tag highlighting in lists)
 			var styled string
 			if i == selectedIdx {
 				styled = GetSelectedItemStyle(width).Render(line)
 			} else {
-				styled = GetNormalItemStyle().Render(line)
+				styled = GetNormalItemStyle().Width(width).Render(line)
 			}
 
 			listItems = append(listItems, styled)
