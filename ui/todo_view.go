@@ -32,7 +32,16 @@ func highlightTodoInText(body, todoTitle string) string {
 }
 
 // RenderTodoView renders a read-only view of a todo
-func RenderTodoView(width, height int, todo models.Todo, allEntries []models.Entry, scrollOffset int, markedForDeletion map[string]string, statusMsg string) string {
+func RenderTodoView(width, height int, todo models.Todo, allEntries []models.Entry, scrollOffset int, markedForDeletion map[string]string, statusMsg string, currentIndex int, totalCount int) string {
+	// Status and date at top
+	statusIcon := "[ ]" // open
+	if todo.Status == "next" {
+		statusIcon = "[>]"
+	} else if todo.Status == "done" {
+		statusIcon = "[x]"
+	}
+	statusLine := fmt.Sprintf("%s %s", statusIcon, todo.CreatedAt.Format("2006-01-02"))
+
 	// Todo title (wrappable)
 	titleStyle := GetNormalItemStyle().
 		Width(width - 8)
@@ -136,15 +145,8 @@ func RenderTodoView(width, height int, todo models.Todo, allEntries []models.Ent
 	// Header
 	header := RenderHeader(width, "n", "new", "a", "todo", "space", "cycle", "j/k", "nav", "d", "del", "e", "entries", "t", "todos", "q", "quit")
 
-	// Footer: status indicator + date + tags + scroll info
-	statusIcon := "[ ]" // open
-	if todo.Status == "next" {
-		statusIcon = "[>]"
-	} else if todo.Status == "done" {
-		statusIcon = "[x]"
-	}
-
-	footerTitle := fmt.Sprintf("%s %s", statusIcon, todo.CreatedAt.Format("2006-01-02"))
+	// Footer: position + marked indicator + scroll info
+	footerTitle := fmt.Sprintf("Todo %d of %d", currentIndex+1, totalCount)
 
 	// Add marked indicator if todo is marked for deletion
 	if _, isMarked := markedForDeletion[todo.ID]; isMarked {
@@ -159,8 +161,8 @@ func RenderTodoView(width, height int, todo models.Todo, allEntries []models.Ent
 
 	footer := RenderFooter(width, footerTitle, footerStats)
 
-	// Build main content
-	mainContent := renderedTitle + linkedSection
+	// Build main content (status + date at top, then blank line, then title)
+	mainContent := statusLine + "\n\n" + renderedTitle + linkedSection
 
 	// Calculate padding
 	contentHeight := height - 3 // header + footer + message line

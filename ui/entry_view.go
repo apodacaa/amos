@@ -10,9 +10,10 @@ import (
 )
 
 // RenderEntryView renders a read-only view of an entry
-func RenderEntryView(width, height int, entry models.Entry, allTodos []models.Todo, scrollOffset int, markedForDeletion map[string]string, statusMsg string) string {
-	// Title at top
-	title := GetNormalItemStyle().Render(entry.Title)
+func RenderEntryView(width, height int, entry models.Entry, allTodos []models.Todo, scrollOffset int, markedForDeletion map[string]string, statusMsg string, currentIndex int, totalCount int) string {
+	// Title at top with date
+	titleText := fmt.Sprintf("%s: %s", entry.Timestamp.Format("2006-01-02"), entry.Title)
+	title := GetNormalItemStyle().Render(titleText)
 
 	// Body
 	bodyStyle := GetNormalItemStyle().
@@ -108,21 +109,12 @@ func RenderEntryView(width, height int, entry models.Entry, allTodos []models.To
 	// Header
 	header := RenderHeader(width, "n", "new", "a", "todo", "j/k", "nav", "d", "del", "e", "entries", "t", "todos", "q", "quit")
 
-	// Footer: date (no time) + tags + marked indicator + scroll info
-	footerTitle := entry.Timestamp.Format("2006-01-02")
+	// Footer: entry position + marked indicator + scroll info
+	footerTitle := fmt.Sprintf("Entry %d of %d", currentIndex+1, totalCount)
 
 	// Add marked indicator if entry is marked for deletion
 	if _, isMarked := markedForDeletion[entry.ID]; isMarked {
 		footerTitle += " [MARKED FOR DELETION]"
-	}
-
-	if len(entry.Tags) > 0 {
-		// Add @ prefix to tags for clarity
-		var tagStrings []string
-		for _, tag := range entry.Tags {
-			tagStrings = append(tagStrings, "@"+tag)
-		}
-		footerTitle += " " + strings.Join(tagStrings, " ")
 	}
 
 	// Footer stats (statusMsg now in message line, not footer)

@@ -69,18 +69,19 @@ func (m Model) handleViewTodoKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		switch m.viewingTodo.Status {
 		case "open":
 			m.viewingTodo.Status = "next"
-			m.statusMsg = "→ Next"
+			m.statusMsg = "Todo marked as next"
 		case "next":
 			m.viewingTodo.Status = "done"
-			m.statusMsg = "✓ Done"
+			m.statusMsg = "Todo marked as done"
 		case "done":
 			m.viewingTodo.Status = "open"
-			m.statusMsg = "○ Open"
+			m.statusMsg = "Todo marked as open"
 		default:
 			// Unknown status, set to open
 			m.viewingTodo.Status = "open"
-			m.statusMsg = "○ Open"
+			m.statusMsg = "Todo marked as open"
 		}
+		m.statusTime = time.Now()
 
 		// Update in m.todos array and displayTodos (find by ID)
 		for i := range m.todos {

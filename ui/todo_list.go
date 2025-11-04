@@ -41,19 +41,10 @@ func RenderTodoList(width, height int, todos []models.Todo, entries []models.Ent
 				checkbox = "[x]" // done
 			}
 
-			// Table format: checkbox  date  title (padded)  tags
+			// Table format: checkbox  date  title  tags
 			dateStr := todo.CreatedAt.Format("2006-01-02")
 
-			// Pad title to fixed width for column alignment
-			titleWidth := 35
-			paddedTitle := todo.Title
-			if len(paddedTitle) > titleWidth {
-				paddedTitle = paddedTitle[:titleWidth]
-			} else {
-				paddedTitle = paddedTitle + strings.Repeat(" ", titleWidth-len(paddedTitle))
-			}
-
-			line := fmt.Sprintf("%s %s  %s", checkbox, dateStr, paddedTitle)
+			line := fmt.Sprintf("%s %s  %s", checkbox, dateStr, todo.Title)
 
 			// Add selection marker and deletion marker
 			var prefix string
@@ -103,42 +94,29 @@ func RenderTodoList(width, height int, todos []models.Todo, entries []models.Ent
 	// Header
 	header := RenderHeader(width, "n", "new", "a", "todo", "enter", "view", "j/k", "nav", "space", "cycle", "d", "del", "/", "filter", "e", "entries", "q", "quit")
 
-	// Footer
-	footerTitle := "Todos"
+	// Footer (show only filter context, no view label)
+	var footerTitle string
 	if len(filterTags) > 0 {
-		footerTitle += " " + strings.Join(filterTags, " ")
+		footerTitle = strings.Join(filterTags, " ")
 	}
 	if filterDate != "" {
-		footerTitle += " " + filterDate
-	}
-
-	// Stats for footer
-	openCount := 0
-	nextCount := 0
-	doneCount := 0
-	for _, todo := range filtered {
-		switch todo.Status {
-		case "open":
-			openCount++
-		case "next":
-			nextCount++
-		case "done":
-			doneCount++
+		if footerTitle != "" {
+			footerTitle += " "
 		}
+		footerTitle += filterDate
+	}
+	// Wrap filters in brackets if present
+	if footerTitle != "" {
+		footerTitle = "[" + footerTitle + "]"
 	}
 
-	// Build stats with scroll info (statusMsg now in message line, not footer)
+	// Build stats showing selected todo position
 	var stats string
 	if len(filtered) > 0 {
-		start, end := CalculateViewport(len(filtered), selectedIdx, height)
-		if end-start < len(filtered) {
-			stats = fmt.Sprintf("%d-%d of %d | %d open, %d next, %d done", start+1, end, len(filtered), openCount, nextCount, doneCount)
-		} else {
-			stats = fmt.Sprintf("%d open, %d next, %d done", openCount, nextCount, doneCount)
-		}
+		stats = fmt.Sprintf("Todo %d of %d", selectedIdx+1, len(filtered))
 	}
 
-	footer := RenderFooter(width, footerTitle, stats)
+	footer := RenderFooter(width, stats, footerTitle)
 
 	return AssembleView(header, list, footer, width, height, statusMsg)
 }

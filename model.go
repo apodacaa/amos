@@ -256,11 +256,19 @@ func (m Model) View() string {
 	case "entries":
 		return ui.RenderEntryList(m.width, m.height, m.entries, m.selectedEntry, m.todos, m.filterTags, m.filterDate, m.markedForDeletion, m.statusMsg)
 	case "view_entry":
-		return ui.RenderEntryView(m.width, m.height, m.viewingEntry, m.todos, m.scrollOffset, m.markedForDeletion, m.statusMsg)
+		// Calculate filtered/sorted entry position for footer display
+		filtered := helpers.FilterEntriesByDateRange(m.entries, m.filterDate)
+		filtered = helpers.FilterEntriesByTags(filtered, m.filterTags)
+		sorted := helpers.SortEntriesForDisplay(filtered)
+		return ui.RenderEntryView(m.width, m.height, m.viewingEntry, m.todos, m.scrollOffset, m.markedForDeletion, m.statusMsg, m.selectedEntry, len(sorted))
 	case "todos":
 		return ui.RenderTodoList(m.width, m.height, m.displayTodos, m.entries, m.selectedTodo, m.filterTags, m.filterDate, m.markedForDeletion, m.statusMsg)
 	case "view_todo":
-		return ui.RenderTodoView(m.width, m.height, m.viewingTodo, m.entries, m.scrollOffset, m.markedForDeletion, m.statusMsg)
+		// Calculate filtered/sorted todo position for footer display
+		filtered := helpers.FilterTodosByDateRange(m.displayTodos, m.filterDate)
+		filtered = helpers.FilterTodosByTags(filtered, m.filterTags)
+		sorted := helpers.SortTodosForDisplay(filtered)
+		return ui.RenderTodoView(m.width, m.height, m.viewingTodo, m.entries, m.scrollOffset, m.markedForDeletion, m.statusMsg, m.selectedTodo, len(sorted))
 	case "unified_filter":
 		return ui.RenderUnifiedFilter(m.width, m.height, m.unifiedFilterInput, m.availableTags, m.autocompleteTag, m.statusMsg)
 	case "add_todo":
