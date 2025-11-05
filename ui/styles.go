@@ -1,7 +1,6 @@
 package ui
 
 import (
-	"regexp"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/textarea"
@@ -66,11 +65,10 @@ func GetSelectedItemStyle(width int) lipgloss.Style {
 		Width(width)
 }
 
-// GetSelectedDoneStyle returns reverse + faint style for selected completed items
+// GetSelectedDoneStyle returns reverse style for selected completed items
 func GetSelectedDoneStyle(width int) lipgloss.Style {
 	return lipgloss.NewStyle().
 		Reverse(true).
-		Faint(true).
 		Width(width)
 }
 
@@ -89,44 +87,10 @@ func GetBoldStyle() lipgloss.Style {
 	return lipgloss.NewStyle().Bold(true)
 }
 
-// HighlightTagsInText highlights @tags in PLAIN text with bold styling
-// IMPORTANT: Only pass plain text (no ANSI codes) to this function
-// Use this for entry_view and todo_view where there's no selection styling
+// HighlightTagsInText returns text as-is (tag highlighting removed)
+// Previously applied bold to @tags but didn't add useful value
 func HighlightTagsInText(text string) string {
-	re := regexp.MustCompile(`(@[a-zA-Z0-9_-]+)`)
-
-	// Find all tag positions
-	matches := re.FindAllStringIndex(text, -1)
-	if len(matches) == 0 {
-		// No tags, return plain text (no styling)
-		return text
-	}
-
-	// Build styled segments
-	var segments []string
-	lastEnd := 0
-
-	for _, match := range matches {
-		start, end := match[0], match[1]
-
-		// Add plain text before tag (no styling)
-		if start > lastEnd {
-			segments = append(segments, text[lastEnd:start])
-		}
-
-		// Add bolded tag
-		segments = append(segments, GetBoldStyle().Inline(true).Render(text[start:end]))
-
-		lastEnd = end
-	}
-
-	// Add remaining text after last tag
-	if lastEnd < len(text) {
-		segments = append(segments, text[lastEnd:])
-	}
-
-	// Join all segments horizontally
-	return lipgloss.JoinHorizontal(lipgloss.Top, segments...)
+	return text
 }
 
 // ApplyTextareaStyle applies consistent styling to a textarea

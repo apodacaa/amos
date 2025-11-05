@@ -15,10 +15,6 @@ func RenderEntryView(width, height int, entry models.Entry, allTodos []models.To
 	titleText := fmt.Sprintf("%s: %s", entry.Timestamp.Format("2006-01-02"), entry.Title)
 	title := HighlightTagsInText(titleText)
 
-	// Body style with width constraint
-	bodyStyle := GetNormalItemStyle().
-		Width(width - 8)
-
 	// Todos section (if any)
 	var todosSection string
 	var todoLineCount int
@@ -102,9 +98,9 @@ func RenderEntryView(width, height int, entry models.Entry, allTodos []models.To
 		}
 
 		visibleLines := bodyLines[scrollStart:scrollEnd]
-		body = bodyStyle.Render(HighlightTagsInText(strings.Join(visibleLines, "\n")))
+		body = HighlightTagsInText(strings.Join(visibleLines, "\n"))
 	} else {
-		body = bodyStyle.Render(HighlightTagsInText(entry.Body))
+		body = HighlightTagsInText(entry.Body)
 		scrollStart = 0
 		scrollEnd = totalLines
 	}

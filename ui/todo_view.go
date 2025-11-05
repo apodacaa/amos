@@ -7,28 +7,10 @@ import (
 	"github.com/apodacaa/amos/internal/models"
 )
 
-// highlightTodoInText highlights the todo title in the entry body
+// highlightTodoInText returns the body text as-is
+// Previously tried to highlight the todo, but rendering caused indentation issues
 func highlightTodoInText(body, todoTitle string) string {
-	// Find "!todo [title]" pattern
-	todoPattern := "!todo " + todoTitle
-
-	// Split by the todo, highlight the todo part
-	parts := strings.Split(body, todoPattern)
-	if len(parts) <= 1 {
-		// Not found, return as-is in normal style
-		return GetNormalItemStyle().Render(body)
-	}
-
-	// Build styled string: body text + highlighted todo
-	var result strings.Builder
-	for i, part := range parts {
-		result.WriteString(GetNormalItemStyle().Render(part))
-		if i < len(parts)-1 {
-			// Add highlighted todo between parts
-			result.WriteString(GetNormalItemStyle().Render(todoPattern))
-		}
-	}
-	return result.String()
+	return body
 }
 
 // RenderTodoView renders a read-only view of a todo
