@@ -72,8 +72,11 @@ func RenderEntryView(width, height int, entry models.Entry, allTodos []models.To
 		availableHeight = 5
 	}
 
-	// Split body into lines
-	bodyLines := strings.Split(entry.Body, "\n")
+	// Wrap body text to fit width, preserving original line breaks
+	wrappedBody := wrapBodyText(entry.Body, width-8)
+
+	// Split wrapped body into lines
+	bodyLines := strings.Split(wrappedBody, "\n")
 	totalLines := len(bodyLines)
 
 	// Apply scroll offset
@@ -100,7 +103,7 @@ func RenderEntryView(width, height int, entry models.Entry, allTodos []models.To
 		visibleLines := bodyLines[scrollStart:scrollEnd]
 		body = HighlightTagsInText(strings.Join(visibleLines, "\n"))
 	} else {
-		body = HighlightTagsInText(entry.Body)
+		body = HighlightTagsInText(wrappedBody)
 		scrollStart = 0
 		scrollEnd = totalLines
 	}

@@ -68,10 +68,12 @@ func RenderTodoView(width, height int, todo models.Todo, allEntries []models.Ent
 			metaLine := fmt.Sprintf("%s %s%s", dateStr, linkedEntry.Title, tagStr)
 			linkedParts = append(linkedParts, HighlightTagsInText(metaLine))
 
-			// Body (full text) - highlight tags and todo reference
+			// Body (full text) - wrap, highlight tags and todo reference
 			if linkedEntry.Body != "" {
+				// Wrap body text to fit width
+				wrappedBody := wrapBodyText(linkedEntry.Body, width-8)
 				// First highlight tags, then highlight todo reference
-				bodyWithTags := HighlightTagsInText(linkedEntry.Body)
+				bodyWithTags := HighlightTagsInText(wrappedBody)
 				styledBody := highlightTodoInText(bodyWithTags, todo.Title)
 				linkedParts = append(linkedParts, styledBody)
 			}
@@ -169,6 +171,29 @@ func RenderTodoView(width, height int, todo models.Todo, allEntries []models.Ent
 	content += "\n" + footer + "\n" + messageLine
 
 	return content
+}
+
+// wrapBodyText wraps body text while preserving original line breaks
+func wrapBodyText(text string, width int) string {
+	if width <= 0 {
+		return text
+	}
+
+	lines := strings.Split(text, "\n")
+	var wrappedLines []string
+
+	for _, line := range lines {
+		if line == "" {
+			// Preserve blank lines
+			wrappedLines = append(wrappedLines, "")
+		} else {
+			// Wrap long lines
+			wrapped := wordWrap(line, width)
+			wrappedLines = append(wrappedLines, wrapped)
+		}
+	}
+
+	return strings.Join(wrappedLines, "\n")
 }
 
 // wordWrap wraps text to fit within a given width
