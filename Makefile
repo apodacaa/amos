@@ -1,4 +1,4 @@
-.PHONY: help build build-windows build-all run fmt vet test test-v test-cover check check-all ci ci-cover staticcheck install-air clean gen-test-data
+.PHONY: help build build-windows build-all run fmt vet test test-v test-cover check check-all ci ci-cover staticcheck install-air clean gen-test-data release
 
 help: ## Show this help message
 	@echo 'Usage: make [target]'
@@ -80,5 +80,13 @@ gen-test-data: ## Generate test data (usage: make gen-test-data ENTRIES=1000 TOD
 	TODOS=$${TODOS:-50}; \
 	echo "Generating $$ENTRIES entries and $$TODOS todos..."; \
 	go run scripts/generate_test_data.go -entries $$ENTRIES -todos $$TODOS
+
+release: ## Create a new release (usage: make release VERSION=1.2.1 [NOTES=release-notes.md])
+	@if [ -z "$(VERSION)" ]; then \
+		echo "Error: VERSION required"; \
+		echo "Usage: make release VERSION=1.2.1 [NOTES=release-notes.md]"; \
+		exit 1; \
+	fi
+	@./scripts/release.sh $(VERSION) $(NOTES)
 
 .DEFAULT_GOAL := help
