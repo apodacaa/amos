@@ -136,7 +136,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			// Mark as saved
 			m.hasUnsaved = false
 			if m.view == "entry" {
-				// For entries, store current content
+				// For entries, update currentEntry with saved data (includes TodoIDs)
+				m.currentEntry = msg.entry
 				m.savedContent = m.textarea.Value()
 			}
 			// For add_todo, we stay in the form (user can add another or press Esc)

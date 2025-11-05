@@ -4,7 +4,8 @@ import "github.com/apodacaa/amos/internal/models"
 
 // saveCompleteMsg is sent when save operation completes
 type saveCompleteMsg struct {
-	err error
+	entry models.Entry
+	err   error
 }
 
 // entriesLoadedMsg is sent when entries are loaded

@@ -61,26 +61,48 @@ func (m Model) saveEntry() tea.Cmd {
 		// Extract todos from content
 		todoTitles := helpers.ExtractTodos(content)
 
-		// Create todo IDs list
+		// Load existing todos for this entry to avoid duplicates
+		existingTodosByTitle := make(map[string]string) // title -> ID
+		allTodos, err := storage.LoadTodos()
+		if err == nil {
+			// Build map of existing todos for this entry
+			for _, existingID := range m.currentEntry.TodoIDs {
+				for _, todo := range allTodos {
+					if todo.ID == existingID {
+						existingTodosByTitle[todo.Title] = todo.ID
+						break
+					}
+				}
+			}
+		}
+
+		// Create todo IDs list (preserve existing + add new)
 		todoIDs := make([]string, 0, len(todoTitles))
 
-		// Create and save todos
+		// Create and save only NEW todos
 		for _, todoTitle := range todoTitles {
-			todo := models.Todo{
-				ID:        uuid.New().String(),
-				Title:     todoTitle,
-				Status:    "open",
-				Tags:      helpers.ExtractTags(todoTitle), // Extract tags from todo title
-				CreatedAt: time.Now(),
-				EntryID:   &m.currentEntry.ID, // Link to this entry
-			}
+			// Check if this todo already exists
+			if existingID, exists := existingTodosByTitle[todoTitle]; exists {
+				// Reuse existing todo ID
+				todoIDs = append(todoIDs, existingID)
+			} else {
+				// Create new todo
+				todo := models.Todo{
+					ID:        uuid.New().String(),
+					Title:     todoTitle,
+					Status:    "open",
+					Tags:      helpers.ExtractTags(todoTitle), // Extract tags from todo title
+					CreatedAt: time.Now(),
+					EntryID:   &m.currentEntry.ID, // Link to this entry
+				}
 
-			// Save each todo
-			if err := storage.SaveTodo(todo); err != nil {
-				return saveCompleteMsg{err: err}
-			}
+				// Save new todo
+				if err := storage.SaveTodo(todo); err != nil {
+					return saveCompleteMsg{err: err}
+				}
 
-			todoIDs = append(todoIDs, todo.ID)
+				todoIDs = append(todoIDs, todo.ID)
+			}
 		}
 
 		// Update current entry
@@ -91,9 +113,9 @@ func (m Model) saveEntry() tea.Cmd {
 		m.currentEntry.Timestamp = time.Now()
 
 		// Save entry to storage
-		err := storage.SaveEntry(m.currentEntry)
+		err = storage.SaveEntry(m.currentEntry)
 
-		return saveCompleteMsg{err: err}
+		return saveCompleteMsg{entry: m.currentEntry, err: err}
 	}
 }
 
