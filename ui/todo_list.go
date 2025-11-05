@@ -41,25 +41,25 @@ func RenderTodoList(width, height int, todos []models.Todo, entries []models.Ent
 				checkbox = "[x]" // done
 			}
 
-			// Table format: checkbox  date  title  tags
+			// Table format: markers  checkbox  date  title
 			dateStr := todo.CreatedAt.Format("2006-01-02")
 
-			line := fmt.Sprintf("%s %s  %s", checkbox, dateStr, todo.Title)
-
-			// Add selection marker and deletion marker
-			var prefix string
+			// Build 2-character marker prefix (D for deletion, + for linked entry)
+			var marker string
 			_, isMarked := markedForDeletion[todo.ID]
+			hasEntry := todo.EntryID != nil
 
-			if i == selectedIdx && isMarked {
-				prefix = "> D "
-			} else if i == selectedIdx {
-				prefix = ">   "
-			} else if isMarked {
-				prefix = "  D "
+			if isMarked && hasEntry {
+				marker = "D+"
+			} else if isMarked && !hasEntry {
+				marker = "D "
+			} else if !isMarked && hasEntry {
+				marker = " +"
 			} else {
-				prefix = "    " // Indent for alignment (4 spaces to match "> D ")
+				marker = "  "
 			}
-			line = prefix + line
+
+			line := fmt.Sprintf("%s %s %s  %s", marker, checkbox, dateStr, todo.Title)
 
 			// Truncate if too long
 			maxLen := width - 6
@@ -67,7 +67,7 @@ func RenderTodoList(width, height int, todos []models.Todo, entries []models.Ent
 				line = line[:maxLen-3] + "..."
 			}
 
-			// Apply selection and completion styling
+			// Apply selection styling (no tag highlighting in lists)
 			var styled string
 			if i == selectedIdx {
 				// Selected items
@@ -79,9 +79,9 @@ func RenderTodoList(width, height int, todos []models.Todo, entries []models.Ent
 			} else {
 				// Dim completed todos, normal color for open
 				if todo.Status == "done" {
-					styled = GetDimmedStyle().Render(line)
+					styled = GetDimmedStyle().Width(width).Render(line)
 				} else {
-					styled = GetNormalItemStyle().Render(line)
+					styled = GetNormalItemStyle().Width(width).Render(line)
 				}
 			}
 

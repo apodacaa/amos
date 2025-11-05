@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"regexp"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/textarea"
@@ -42,10 +43,11 @@ func GetTextStyle() lipgloss.Style {
 	return lipgloss.NewStyle()
 }
 
-// getBarStyle returns the shared full-width inverted bar style
+// getBarStyle returns the shared full-width inverted bar style with bold text
 func getBarStyle(width int) lipgloss.Style {
 	return lipgloss.NewStyle().
 		Reverse(true).
+		Bold(true).
 		Width(width)
 }
 
@@ -57,15 +59,17 @@ func GetEmptyStateStyle(width int) lipgloss.Style {
 		Align(lipgloss.Center)
 }
 
-// GetSelectedItemStyle returns normal style for selected list items (uses > prefix)
+// GetSelectedItemStyle returns reverse video style for selected list items
 func GetSelectedItemStyle(width int) lipgloss.Style {
 	return lipgloss.NewStyle().
+		Reverse(true).
 		Width(width)
 }
 
-// GetSelectedDoneStyle returns faint style for selected completed items (uses > prefix)
+// GetSelectedDoneStyle returns reverse + faint style for selected completed items
 func GetSelectedDoneStyle(width int) lipgloss.Style {
 	return lipgloss.NewStyle().
+		Reverse(true).
 		Faint(true).
 		Width(width)
 }
@@ -78,6 +82,51 @@ func GetNormalItemStyle() lipgloss.Style {
 // GetDimmedStyle returns faint style for completed items
 func GetDimmedStyle() lipgloss.Style {
 	return lipgloss.NewStyle().Faint(true)
+}
+
+// GetBoldStyle returns bold style for emphasis
+func GetBoldStyle() lipgloss.Style {
+	return lipgloss.NewStyle().Bold(true)
+}
+
+// HighlightTagsInText highlights @tags in PLAIN text with bold styling
+// IMPORTANT: Only pass plain text (no ANSI codes) to this function
+// Use this for entry_view and todo_view where there's no selection styling
+func HighlightTagsInText(text string) string {
+	re := regexp.MustCompile(`(@[a-zA-Z0-9_-]+)`)
+
+	// Find all tag positions
+	matches := re.FindAllStringIndex(text, -1)
+	if len(matches) == 0 {
+		// No tags, return plain text (no styling)
+		return text
+	}
+
+	// Build styled segments
+	var segments []string
+	lastEnd := 0
+
+	for _, match := range matches {
+		start, end := match[0], match[1]
+
+		// Add plain text before tag (no styling)
+		if start > lastEnd {
+			segments = append(segments, text[lastEnd:start])
+		}
+
+		// Add bolded tag
+		segments = append(segments, GetBoldStyle().Inline(true).Render(text[start:end]))
+
+		lastEnd = end
+	}
+
+	// Add remaining text after last tag
+	if lastEnd < len(text) {
+		segments = append(segments, text[lastEnd:])
+	}
+
+	// Join all segments horizontally
+	return lipgloss.JoinHorizontal(lipgloss.Top, segments...)
 }
 
 // ApplyTextareaStyle applies consistent styling to a textarea

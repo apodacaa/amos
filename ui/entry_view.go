@@ -13,9 +13,9 @@ import (
 func RenderEntryView(width, height int, entry models.Entry, allTodos []models.Todo, scrollOffset int, markedForDeletion map[string]string, statusMsg string, currentIndex int, totalCount int) string {
 	// Title at top with date
 	titleText := fmt.Sprintf("%s: %s", entry.Timestamp.Format("2006-01-02"), entry.Title)
-	title := GetNormalItemStyle().Render(titleText)
+	title := HighlightTagsInText(titleText)
 
-	// Body
+	// Body style with width constraint
 	bodyStyle := GetNormalItemStyle().
 		Width(width - 8)
 
@@ -40,15 +40,18 @@ func RenderEntryView(width, height int, entry models.Entry, allTodos []models.To
 					checkbox = "[x]"
 				}
 
-				todoLine := fmt.Sprintf("%s %s", checkbox, todo.Title)
+				// Apply tag highlighting to title
+				highlightedTitle := HighlightTagsInText(todo.Title)
+				todoLine := fmt.Sprintf("%s %s", checkbox, highlightedTitle)
 
-				// Add tags if present
+				// Add tags if present (with bold highlighting)
 				if len(todo.Tags) > 0 {
-					tagStr := ""
+					var tagParts []string
 					for _, tag := range todo.Tags {
-						tagStr += " @" + tag
+						tagParts = append(tagParts, "@"+tag)
 					}
-					todoLine += GetDimmedStyle().Render(tagStr)
+					tagStr := " " + strings.Join(tagParts, " ")
+					todoLine += HighlightTagsInText(tagStr)
 				}
 
 				// Dim completed todos
@@ -99,9 +102,9 @@ func RenderEntryView(width, height int, entry models.Entry, allTodos []models.To
 		}
 
 		visibleLines := bodyLines[scrollStart:scrollEnd]
-		body = bodyStyle.Render(strings.Join(visibleLines, "\n"))
+		body = bodyStyle.Render(HighlightTagsInText(strings.Join(visibleLines, "\n")))
 	} else {
-		body = bodyStyle.Render(entry.Body)
+		body = bodyStyle.Render(HighlightTagsInText(entry.Body))
 		scrollStart = 0
 		scrollEnd = totalLines
 	}
