@@ -45,42 +45,60 @@ func RenderTodoList(width, height int, todos []models.Todo, entries []models.Ent
 			dateStr := todo.CreatedAt.Format("2006-01-02")
 
 			// Build 2-character marker prefix (D for deletion, + for linked entry)
-			var marker string
+			var markerText string
 			_, isMarked := markedForDeletion[todo.ID]
 			hasEntry := todo.EntryID != nil
 
 			if isMarked && hasEntry {
-				marker = "D+"
+				markerText = "D+"
 			} else if isMarked && !hasEntry {
-				marker = "D "
+				markerText = "D "
 			} else if !isMarked && hasEntry {
-				marker = " +"
+				markerText = " +"
 			} else {
-				marker = "  "
+				markerText = "  "
 			}
 
-			line := fmt.Sprintf("%s %s %s  %s", marker, checkbox, dateStr, todo.Title)
-
-			// Truncate if too long
+			// Truncate title if too long
+			titleText := todo.Title
+			plainLen := len(markerText) + 1 + len(checkbox) + 1 + len(dateStr) + 2 + len(titleText)
 			maxLen := width - 6
-			if len(line) > maxLen {
-				line = line[:maxLen-3] + "..."
+			if plainLen > maxLen {
+				titleText = titleText[:len(titleText)-(plainLen-maxLen)-3] + "..."
 			}
 
-			// Apply selection styling (no tag highlighting in lists)
+			// Build line - style differently for selected vs non-selected
 			var styled string
 			if i == selectedIdx {
-				// Selected items
+				// Selected: plain text on neon green background (no color styling)
+				plainLine := fmt.Sprintf("%s %s %s  %s", markerText, checkbox, dateStr, titleText)
 				if todo.Status == "done" {
-					styled = GetSelectedDoneStyle(width).Render(line)
+					styled = GetSelectedDoneStyle(width).Render(plainLine)
 				} else {
-					styled = GetSelectedItemStyle(width).Render(line)
+					styled = GetSelectedItemStyle(width).Render(plainLine)
 				}
 			} else {
-				// Dim completed todos, normal color for open
+				// Not selected: check status first
 				if todo.Status == "done" {
-					styled = GetDimmedStyle().Width(width).Render(line)
+					// Done: plain text, dimmed
+					plainLine := fmt.Sprintf("%s %s %s  %s", markerText, checkbox, dateStr, titleText)
+					styled = GetDimmedStyle().Width(width).Render(plainLine)
 				} else {
+					// Open/next: apply full color styling
+					var styledMarker string
+					if isMarked && hasEntry {
+						styledMarker = StyleMarker("D", true) + StyleMarker("+", false)
+					} else if isMarked && !hasEntry {
+						styledMarker = StyleMarker("D", true) + " "
+					} else if !isMarked && hasEntry {
+						styledMarker = " " + StyleMarker("+", false)
+					} else {
+						styledMarker = "  "
+					}
+					styledCheckbox := StyleTodoStatus(todo.Status, checkbox)
+					styledDate := StyleDate(dateStr)
+					styledTitle := HighlightTagsInText(titleText)
+					line := fmt.Sprintf("%s %s %s  %s", styledMarker, styledCheckbox, styledDate, styledTitle)
 					styled = GetNormalItemStyle().Width(width).Render(line)
 				}
 			}

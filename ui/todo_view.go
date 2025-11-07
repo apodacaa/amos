@@ -22,7 +22,12 @@ func RenderTodoView(width, height int, todo models.Todo, allEntries []models.Ent
 	} else if todo.Status == "done" {
 		statusIcon = "[x]"
 	}
-	statusLine := fmt.Sprintf("%s %s", statusIcon, todo.CreatedAt.Format("2006-01-02"))
+
+	// Style status icon and date
+	styledStatus := StyleTodoStatus(todo.Status, statusIcon)
+	dateStr := todo.CreatedAt.Format("2006-01-02")
+	styledDate := StyleDate(dateStr)
+	statusLine := fmt.Sprintf("%s %s", styledStatus, styledDate)
 
 	// Todo title (wrappable)
 	titleStyle := GetNormalItemStyle().
@@ -56,17 +61,19 @@ func RenderTodoView(width, height int, todo models.Todo, allEntries []models.Ent
 
 			// Date, title, tags line
 			dateStr := linkedEntry.Timestamp.Format("2006-01-02")
+			styledDate := StyleDate(dateStr)
+			styledTitle := HighlightTagsInText(linkedEntry.Title)
 			tagStr := ""
 			if len(linkedEntry.Tags) > 0 {
 				var tagStrings []string
 				for _, tag := range linkedEntry.Tags {
 					tagStrings = append(tagStrings, "@"+tag)
 				}
-				tagStr = " " + strings.Join(tagStrings, " ")
+				tagStr = " " + HighlightTagsInText(strings.Join(tagStrings, " "))
 			}
 
-			metaLine := fmt.Sprintf("%s %s%s", dateStr, linkedEntry.Title, tagStr)
-			linkedParts = append(linkedParts, HighlightTagsInText(metaLine))
+			metaLine := fmt.Sprintf("%s %s%s", styledDate, styledTitle, tagStr)
+			linkedParts = append(linkedParts, metaLine)
 
 			// Body (full text) - wrap, highlight tags and todo reference
 			if linkedEntry.Body != "" {

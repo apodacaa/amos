@@ -1,13 +1,23 @@
 package ui
 
 import (
+	"regexp"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/textarea"
 	"github.com/charmbracelet/lipgloss"
 )
 
-// Brutalist design: use terminal defaults, no explicit colors
+// Cyberpunk color palette (Matrix/Blade Runner vibes)
+const (
+	NeonGreen    = lipgloss.Color("#00FF41") // Primary - Matrix green (headers/footers)
+	ElectricBlue = lipgloss.Color("#0080FF") // Selection highlight - Tron blue
+	HotPink      = lipgloss.Color("#FF00FF") // Accent 1 - Magenta
+	Cyan         = lipgloss.Color("#00FFFF") // Accent 2 - Cyan/Aqua
+	Orange       = lipgloss.Color("#FF8C00") // Warning/dates
+	DarkGray     = lipgloss.Color("#555555") // Dimmed
+	Black        = lipgloss.Color("#000000") // For text on neon backgrounds
+)
 
 // GetFullScreenBox returns a box that fills most of the terminal with consistent styling
 func GetFullScreenBox(width, height int) lipgloss.Style {
@@ -42,10 +52,11 @@ func GetTextStyle() lipgloss.Style {
 	return lipgloss.NewStyle()
 }
 
-// getBarStyle returns the shared full-width inverted bar style with bold text
+// getBarStyle returns the shared full-width neon bar style with bold text
 func getBarStyle(width int) lipgloss.Style {
 	return lipgloss.NewStyle().
-		Reverse(true).
+		Background(NeonGreen).
+		Foreground(Black).
 		Bold(true).
 		Width(width)
 }
@@ -58,17 +69,21 @@ func GetEmptyStateStyle(width int) lipgloss.Style {
 		Align(lipgloss.Center)
 }
 
-// GetSelectedItemStyle returns reverse video style for selected list items
+// GetSelectedItemStyle returns electric blue selection style for list items
 func GetSelectedItemStyle(width int) lipgloss.Style {
 	return lipgloss.NewStyle().
-		Reverse(true).
+		Background(ElectricBlue).
+		Foreground(Black).
+		Bold(true).
 		Width(width)
 }
 
-// GetSelectedDoneStyle returns reverse style for selected completed items
+// GetSelectedDoneStyle returns electric blue selection style for completed items
 func GetSelectedDoneStyle(width int) lipgloss.Style {
 	return lipgloss.NewStyle().
-		Reverse(true).
+		Background(ElectricBlue).
+		Foreground(Black).
+		Bold(true).
 		Width(width)
 }
 
@@ -77,9 +92,9 @@ func GetNormalItemStyle() lipgloss.Style {
 	return lipgloss.NewStyle()
 }
 
-// GetDimmedStyle returns faint style for completed items
+// GetDimmedStyle returns dark gray style for completed items
 func GetDimmedStyle() lipgloss.Style {
-	return lipgloss.NewStyle().Faint(true)
+	return lipgloss.NewStyle().Foreground(DarkGray)
 }
 
 // GetBoldStyle returns bold style for emphasis
@@ -87,10 +102,43 @@ func GetBoldStyle() lipgloss.Style {
 	return lipgloss.NewStyle().Bold(true)
 }
 
-// HighlightTagsInText returns text as-is (tag highlighting removed)
-// Previously applied bold to @tags but didn't add useful value
+// HighlightTagsInText highlights @tags with cyan color
 func HighlightTagsInText(text string) string {
-	return text
+	tagRegex := regexp.MustCompile(`@\w+`)
+	tagStyle := lipgloss.NewStyle().Foreground(Cyan).Bold(true)
+
+	return tagRegex.ReplaceAllStringFunc(text, func(tag string) string {
+		return tagStyle.Render(tag)
+	})
+}
+
+// StyleDate returns orange-styled date string
+func StyleDate(date string) string {
+	return lipgloss.NewStyle().Foreground(Orange).Render(date)
+}
+
+// StyleTodoStatus returns color-coded status indicator
+func StyleTodoStatus(status, indicator string) string {
+	var style lipgloss.Style
+	switch status {
+	case "open":
+		style = lipgloss.NewStyle().Foreground(HotPink).Bold(true)
+	case "next":
+		style = lipgloss.NewStyle().Foreground(NeonGreen).Bold(true)
+	case "done":
+		style = lipgloss.NewStyle().Foreground(DarkGray)
+	default:
+		style = lipgloss.NewStyle()
+	}
+	return style.Render(indicator)
+}
+
+// StyleMarker returns color-coded marker (D for delete, + for todo/entry)
+func StyleMarker(marker string, isDelete bool) string {
+	if isDelete {
+		return lipgloss.NewStyle().Foreground(HotPink).Bold(true).Render(marker)
+	}
+	return lipgloss.NewStyle().Foreground(Cyan).Render(marker)
 }
 
 // ApplyTextareaStyle applies consistent styling to a textarea

@@ -33,33 +33,49 @@ func RenderEntryList(width, height int, entries []models.Entry, selectedIdx int,
 			timestamp := entry.Timestamp.Format("2006-01-02")
 
 			// Build 2-character marker prefix (D for deletion, + for todos)
-			var marker string
+			var markerText string
 			_, isMarked := markedForDeletion[entry.ID]
 			hasTodos := len(entry.TodoIDs) > 0
 
 			if isMarked && hasTodos {
-				marker = "D+"
+				markerText = "D+"
 			} else if isMarked && !hasTodos {
-				marker = "D "
+				markerText = "D "
 			} else if !isMarked && hasTodos {
-				marker = " +"
+				markerText = " +"
 			} else {
-				marker = "  "
+				markerText = "  "
 			}
 
-			line := fmt.Sprintf("%s %s  %s", marker, timestamp, entry.Title)
-
-			// Truncate if too long
+			// Truncate title if too long
+			titleText := entry.Title
+			plainLen := len(markerText) + 1 + len(timestamp) + 2 + len(titleText)
 			maxLen := width - 6
-			if len(line) > maxLen {
-				line = line[:maxLen-3] + "..."
+			if plainLen > maxLen {
+				titleText = titleText[:len(titleText)-(plainLen-maxLen)-3] + "..."
 			}
 
-			// Apply selection styling (no tag highlighting in lists)
+			// Build line - style only for non-selected items
 			var styled string
 			if i == selectedIdx {
-				styled = GetSelectedItemStyle(width).Render(line)
+				// Selected: plain text, let selection style handle it
+				plainLine := fmt.Sprintf("%s %s  %s", markerText, timestamp, titleText)
+				styled = GetSelectedItemStyle(width).Render(plainLine)
 			} else {
+				// Not selected: apply color styling
+				var styledMarker string
+				if isMarked && hasTodos {
+					styledMarker = StyleMarker("D", true) + StyleMarker("+", false)
+				} else if isMarked && !hasTodos {
+					styledMarker = StyleMarker("D", true) + " "
+				} else if !isMarked && hasTodos {
+					styledMarker = " " + StyleMarker("+", false)
+				} else {
+					styledMarker = "  "
+				}
+				styledDate := StyleDate(timestamp)
+				styledTitle := HighlightTagsInText(titleText)
+				line := fmt.Sprintf("%s %s  %s", styledMarker, styledDate, styledTitle)
 				styled = GetNormalItemStyle().Width(width).Render(line)
 			}
 

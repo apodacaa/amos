@@ -12,8 +12,10 @@ import (
 // RenderEntryView renders a read-only view of an entry
 func RenderEntryView(width, height int, entry models.Entry, allTodos []models.Todo, scrollOffset int, markedForDeletion map[string]string, statusMsg string, currentIndex int, totalCount int) string {
 	// Title at top with date
-	titleText := fmt.Sprintf("%s: %s", entry.Timestamp.Format("2006-01-02"), entry.Title)
-	title := HighlightTagsInText(titleText)
+	dateStr := entry.Timestamp.Format("2006-01-02")
+	styledDate := StyleDate(dateStr)
+	styledTitle := HighlightTagsInText(entry.Title)
+	title := fmt.Sprintf("%s: %s", styledDate, styledTitle)
 
 	// Todos section (if any)
 	var todosSection string
@@ -34,11 +36,16 @@ func RenderEntryView(width, height int, entry models.Entry, allTodos []models.To
 				checkbox := "[ ]"
 				if todo.Status == "done" {
 					checkbox = "[x]"
+				} else if todo.Status == "next" {
+					checkbox = "[>]"
 				}
+
+				// Style checkbox based on status
+				styledCheckbox := StyleTodoStatus(todo.Status, checkbox)
 
 				// Apply tag highlighting to title
 				highlightedTitle := HighlightTagsInText(todo.Title)
-				todoLine := fmt.Sprintf("%s %s", checkbox, highlightedTitle)
+				todoLine := fmt.Sprintf("%s %s", styledCheckbox, highlightedTitle)
 
 				// Add tags if present (with bold highlighting)
 				if len(todo.Tags) > 0 {
