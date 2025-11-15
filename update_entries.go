@@ -48,6 +48,12 @@ func (m Model) handleEntriesListKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			}
 		}
 		return m, nil
+	case "?":
+		// Open help page
+		m.previousView = m.view
+		m.scrollOffset = 0 // Reset scroll when opening help
+		m.view = "help"
+		return m, nil
 	case "/":
 		// Open unified filter input with current filter pre-populated
 		return m.openUnifiedFilter("entries")

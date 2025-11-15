@@ -46,6 +46,12 @@ func (m Model) handleTodosListKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			}
 		}
 		return m, nil
+	case "?":
+		// Open help page
+		m.previousView = m.view
+		m.scrollOffset = 0 // Reset scroll when opening help
+		m.view = "help"
+		return m, nil
 	case "/":
 		// Open unified filter input with current filter pre-populated
 		return m.openUnifiedFilter("todos")
@@ -66,7 +72,7 @@ func (m Model) handleTodosListKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.selectedTodo--
 		}
 		return m, nil
-	case "r":
+	case "R":
 		// Refresh - reload todos to re-sort
 		return m, m.loadTodos()
 	case "d":

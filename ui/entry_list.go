@@ -32,17 +32,17 @@ func RenderEntryList(width, height int, theme Theme, entries []models.Entry, sel
 			// Table format: markers  date  title
 			timestamp := entry.Timestamp.Format("2006-01-02")
 
-			// Build 2-character marker prefix (D for deletion, + for todos)
+			// Build 2-character marker prefix (D for deletion, >/*/= for todos)
 			var markerText string
 			_, isMarked := markedForDeletion[entry.ID]
-			hasTodos := len(entry.TodoIDs) > 0
+			todoMarker := helpers.GetEntryMarker(todos, entry.ID)
 
-			if isMarked && hasTodos {
-				markerText = "D+"
-			} else if isMarked && !hasTodos {
+			if isMarked && todoMarker != "" {
+				markerText = "D" + todoMarker
+			} else if isMarked && todoMarker == "" {
 				markerText = "D "
-			} else if !isMarked && hasTodos {
-				markerText = " +"
+			} else if !isMarked && todoMarker != "" {
+				markerText = " " + todoMarker
 			} else {
 				markerText = "  "
 			}
@@ -64,12 +64,12 @@ func RenderEntryList(width, height int, theme Theme, entries []models.Entry, sel
 			} else {
 				// Not selected: apply color styling
 				var styledMarker string
-				if isMarked && hasTodos {
-					styledMarker = StyleMarker("D", true, theme) + StyleMarker("+", false, theme)
-				} else if isMarked && !hasTodos {
+				if isMarked && todoMarker != "" {
+					styledMarker = StyleMarker("D", true, theme) + StyleMarker(todoMarker, false, theme)
+				} else if isMarked && todoMarker == "" {
 					styledMarker = StyleMarker("D", true, theme) + " "
-				} else if !isMarked && hasTodos {
-					styledMarker = " " + StyleMarker("+", false, theme)
+				} else if !isMarked && todoMarker != "" {
+					styledMarker = " " + StyleMarker(todoMarker, false, theme)
 				} else {
 					styledMarker = "  "
 				}
@@ -86,7 +86,7 @@ func RenderEntryList(width, height int, theme Theme, entries []models.Entry, sel
 	list := strings.Join(listItems, "\n")
 
 	// Header
-	header := RenderHeader(width, theme, "n", "new", "a", "todo", "j/k", "nav", "enter", "view", "d", "del", "/", "filter", "t", "todos", "s", "theme", "q", "quit")
+	header := RenderHeader(width, theme, "n", "new", "a", "todo", "j/k", "nav", "enter", "view", "d", "del", "/", "filter", "t", "todos", "?", "help", "q", "quit")
 
 	// Footer (show only filter context, no view label)
 	var footerTitle string

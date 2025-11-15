@@ -16,7 +16,7 @@ import (
 
 // Model holds the application state
 type Model struct {
-	view                 string            // Current view: "entry", "entries", "view_entry", "todos", "view_todo", "unified_filter", "add_todo", or "theme_selector"
+	view                 string            // Current view: "entry", "entries", "view_entry", "todos", "view_todo", "unified_filter", "add_todo", "theme_selector", or "help"
 	previousView         string            // Previous view (for returning from modals like theme_selector)
 	width                int               // Terminal width
 	height               int               // Terminal height
@@ -100,8 +100,8 @@ func NewModel() Model {
 
 // Init initializes the model (Elm architecture)
 func (m Model) Init() tea.Cmd {
-	// Load entries and todos on startup
-	return tea.Batch(textarea.Blink, m.loadEntriesAndTodos())
+	// Load entries and todos on startup, repairing Entry ↔ Todo relationships
+	return tea.Batch(textarea.Blink, m.loadAndRepairEntriesAndTodos())
 }
 
 // Update handles messages (Elm architecture)
@@ -128,6 +128,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m.handleAddTodoKeys(msg)
 		case "theme_selector":
 			return m.handleThemeSelectorKeys(msg)
+		case "help":
+			return updateHelp(m, msg)
 		default:
 			// Default to entry list (app opens to entries)
 			return m.handleEntriesListKeys(msg)
@@ -302,6 +304,8 @@ func (m Model) View() string {
 		return ui.RenderAddTodoForm(m.width, m.height, m.currentTheme, m.todoInput, m.statusMsg, m.hasUnsaved)
 	case "theme_selector":
 		return ui.RenderThemeSelector(m.width, m.height, m.currentTheme, m.selectedTheme)
+	case "help":
+		return ui.RenderHelp(m.width, m.height, m.currentTheme, m.scrollOffset)
 	default:
 		return ui.RenderEntryList(m.width, m.height, m.currentTheme, m.entries, m.selectedEntry, m.todos, m.filterTags, m.filterDate, m.markedForDeletion, m.statusMsg)
 	}

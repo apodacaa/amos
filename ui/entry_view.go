@@ -6,7 +6,6 @@ import (
 
 	"github.com/apodacaa/amos/internal/helpers"
 	"github.com/apodacaa/amos/internal/models"
-	"github.com/charmbracelet/lipgloss"
 )
 
 // RenderEntryView renders a read-only view of an entry
@@ -19,7 +18,6 @@ func RenderEntryView(width, height int, theme Theme, entry models.Entry, allTodo
 
 	// Todos section (if any)
 	var todosSection string
-	var todoLineCount int
 	if len(entry.TodoIDs) > 0 {
 		// Filter todos that belong to this entry
 		entryTodos := helpers.FilterTodosByEntry(allTodos, entry.ID)
@@ -69,12 +67,21 @@ func RenderEntryView(width, height int, theme Theme, entry models.Entry, allTodo
 
 			todosContent := strings.Join(todoLines, "\n")
 			todosSection = "\n\n" + todosTitle + "\n" + todosContent
-			todoLineCount = 2 + len(todoLines) // Title + blank + todo lines
 		}
 	}
 
-	// Calculate available height for content
-	availableHeight := height - 3 - todoLineCount // header + footer + message line + todos
+	// Calculate available height for scrollable body content
+	// Reserve space for header, footer, message, title, blank line, and todos
+	// Base: header (1) + footer (1) + message (1) + title (1) + blank line (1) = 5
+	baseReserved := 5
+
+	// Calculate todos section height (if present)
+	todosHeight := 0
+	if todosSection != "" {
+		todosHeight = strings.Count(todosSection, "\n") + 1
+	}
+
+	availableHeight := height - baseReserved - todosHeight
 	if availableHeight < 5 {
 		availableHeight = 5
 	}
@@ -116,7 +123,7 @@ func RenderEntryView(width, height int, theme Theme, entry models.Entry, allTodo
 	}
 
 	// Header
-	header := RenderHeader(width, theme, "n", "new", "a", "todo", "j/k", "nav", "d", "del", "e", "entries", "t", "todos", "s", "theme", "q", "quit")
+	header := RenderHeader(width, theme, "n", "new", "a", "todo", "j/k", "nav", "f/b", "scroll", "d", "del", "e", "entries", "t", "todos", "?", "help", "q", "quit")
 
 	// Footer: entry position + marked indicator + scroll info
 	footerTitle := fmt.Sprintf("Entry %d of %d", currentIndex+1, totalCount)
@@ -134,32 +141,28 @@ func RenderEntryView(width, height int, theme Theme, entry models.Entry, allTodo
 
 	footer := RenderFooter(width, theme, footerTitle, footerStats)
 
-	// Build main content
-	mainContent := lipgloss.JoinVertical(
-		lipgloss.Left,
-		title,
-		"",
-		body,
-		todosSection,
-	)
+	// Build main content (simple string concatenation to avoid lipgloss adding extra formatting)
+	var contentParts []string
+	contentParts = append(contentParts, title)
+	contentParts = append(contentParts, "") // blank line
+	contentParts = append(contentParts, body)
+	if todosSection != "" {
+		contentParts = append(contentParts, todosSection)
+	}
 
-	// Calculate padding for content area
-	contentHeight := height - 3 // header + footer + message line
-	mainLines := strings.Count(mainContent, "\n") + 1
-	padding := contentHeight - mainLines
-	if padding < 0 {
-		padding = 0
+	mainContent := strings.Join(contentParts, "\n")
+
+	// Calculate padding to fill remaining vertical space
+	contentHeight := strings.Count(mainContent, "\n") + 1
+	availableContentHeight := height - 3 // header + footer + message line
+	paddingNeeded := availableContentHeight - contentHeight
+	if paddingNeeded > 0 {
+		mainContent += strings.Repeat("\n", paddingNeeded)
 	}
 
 	// Build message line (neomutt-style)
 	messageLine := RenderMessageLine(width, statusMsg)
 
-	// Build full view
-	content := header + "\n" + mainContent
-	if padding > 0 {
-		content += strings.Repeat("\n", padding)
-	}
-	content += "\n" + footer + "\n" + messageLine
-
-	return content
+	// Assemble: header + mainContent + footer + message line
+	return header + "\n" + mainContent + "\n" + footer + "\n" + messageLine
 }

@@ -138,7 +138,7 @@ func RenderTodoView(width, height int, theme Theme, todo models.Todo, allEntries
 	}
 
 	// Header
-	header := RenderHeader(width, theme, "n", "new", "a", "todo", "space", "cycle", "j/k", "nav", "d", "del", "e", "entries", "t", "todos", "q", "quit")
+	header := RenderHeader(width, theme, "n", "new", "a", "todo", "space", "cycle", "j/k", "nav", "f/b", "scroll", "d", "del", "e", "entries", "t", "todos", "?", "help", "q", "quit")
 
 	// Footer: position + marked indicator + scroll info
 	footerTitle := fmt.Sprintf("Todo %d of %d", currentIndex+1, totalCount)
@@ -159,25 +159,19 @@ func RenderTodoView(width, height int, theme Theme, todo models.Todo, allEntries
 	// Build main content (status + date at top, then blank line, then title)
 	mainContent := statusLine + "\n\n" + renderedTitle + linkedSection
 
-	// Calculate padding
-	contentHeight := height - 3 // header + footer + message line
-	mainLines := strings.Count(mainContent, "\n") + 1
-	padding := contentHeight - mainLines
-	if padding < 0 {
-		padding = 0
+	// Calculate padding to fill remaining vertical space
+	contentHeight := strings.Count(mainContent, "\n") + 1
+	availableContentHeight := height - 3 // header + footer + message line
+	paddingNeeded := availableContentHeight - contentHeight
+	if paddingNeeded > 0 {
+		mainContent += strings.Repeat("\n", paddingNeeded)
 	}
 
 	// Build message line (neomutt-style)
 	messageLine := RenderMessageLine(width, statusMsg)
 
-	// Build full view
-	content := header + "\n" + mainContent
-	if padding > 0 {
-		content += strings.Repeat("\n", padding)
-	}
-	content += "\n" + footer + "\n" + messageLine
-
-	return content
+	// Assemble: header + mainContent + footer + message line
+	return header + "\n" + mainContent + "\n" + footer + "\n" + messageLine
 }
 
 // wrapBodyText wraps body text while preserving original line breaks

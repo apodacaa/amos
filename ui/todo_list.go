@@ -110,7 +110,7 @@ func RenderTodoList(width, height int, theme Theme, todos []models.Todo, entries
 	list := strings.Join(listItems, "\n")
 
 	// Header
-	header := RenderHeader(width, theme, "n", "new", "a", "todo", "enter", "view", "j/k", "nav", "space", "cycle", "d", "del", "/", "filter", "e", "entries", "s", "theme", "q", "quit")
+	header := RenderHeader(width, theme, "n", "new", "a", "todo", "enter", "view", "j/k", "nav", "space", "cycle", "d", "del", "R", "refresh", "/", "filter", "e", "entries", "?", "help", "q", "quit")
 
 	// Footer (show only filter context, no view label)
 	var footerTitle string

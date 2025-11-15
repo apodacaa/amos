@@ -38,6 +38,41 @@ func (m Model) loadEntriesAndTodos() tea.Cmd {
 	return tea.Batch(m.loadEntries(), m.loadTodos())
 }
 
+// loadAndRepairEntriesAndTodos loads entries and todos, then repairs the Entry ↔ Todo relationship
+// This ensures entry.TodoIDs is in sync with todos that have entry_id pointing to the entry
+func (m Model) loadAndRepairEntriesAndTodos() tea.Cmd {
+	return func() tea.Msg {
+		// Load entries
+		entries, err := storage.LoadEntries()
+		if err != nil {
+			return entriesLoadedMsg{entries: entries, err: err}
+		}
+
+		// Load todos
+		todos, err := storage.LoadTodos()
+		if err != nil {
+			return todosLoadedMsg{todos: todos, err: err}
+		}
+
+		// Repair the Entry ↔ Todo relationship
+		repairedEntries := helpers.RepairEntryTodoRelationships(entries, todos)
+
+		// Save repaired entries back to storage
+		for _, entry := range repairedEntries {
+			if err := storage.SaveEntry(entry); err != nil {
+				// Continue on error - we still want to load what we can
+				continue
+			}
+		}
+
+		// Return both as batch messages
+		return tea.Batch(
+			func() tea.Msg { return entriesLoadedMsg{entries: repairedEntries, err: nil} },
+			func() tea.Msg { return todosLoadedMsg{todos: todos, err: nil} },
+		)()
+	}
+}
+
 // toggleTodoImmediate saves a todo immediately without reloading
 func (m Model) toggleTodoImmediate(todo models.Todo) tea.Cmd {
 	return func() tea.Msg {

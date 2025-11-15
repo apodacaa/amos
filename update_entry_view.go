@@ -45,6 +45,12 @@ func (m Model) handleViewEntryKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			}
 		}
 		return m, nil
+	case "?":
+		// Open help page
+		m.previousView = m.view
+		m.scrollOffset = 0 // Reset scroll when opening help
+		m.view = "help"
+		return m, nil
 	case "e":
 		// Jump to entries list (explicit navigation)
 		m.view = "entries"
@@ -106,6 +112,26 @@ func (m Model) handleViewEntryKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 				m.scrollOffset = 0 // Reset scroll when switching entries
 			}
 		}
+		return m, nil
+	case "b":
+		// Scroll backward (up) one page
+		availableHeight := m.height - 3
+		if availableHeight < 5 {
+			availableHeight = 5
+		}
+		m.scrollOffset -= availableHeight
+		if m.scrollOffset < 0 {
+			m.scrollOffset = 0
+		}
+		return m, nil
+	case "f":
+		// Scroll forward (down) one page
+		availableHeight := m.height - 3
+		if availableHeight < 5 {
+			availableHeight = 5
+		}
+		m.scrollOffset += availableHeight
+		// UI layer will clamp to maxOffset, so we don't need to calculate it here
 		return m, nil
 	case "d":
 		// Toggle mark for deletion (for currently viewed entry)
