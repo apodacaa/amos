@@ -16,6 +16,8 @@ func RenderHelp(width, height int, theme Theme, scrollOffset int) string {
 		renderCommandsSection(theme),
 		"",
 		renderNavigationSection(theme),
+		"",
+		renderDataStorageSection(theme),
 	}
 
 	fullContent := strings.Join(sections, "\n")
@@ -172,6 +174,19 @@ func renderNavigationSection(theme Theme) string {
 		"Entry list and todo list are peer views - use e/t to jump between them.",
 		"Global shortcuts (n, a, s, ?) work from any read-only view.",
 		"Press esc to exit forms and return to their natural home view.",
+	}
+
+	return title + "\n\n" + strings.Join(items, "\n")
+}
+
+func renderDataStorageSection(theme Theme) string {
+	title := lipgloss.NewStyle().Bold(true).Render("DATA STORAGE")
+
+	items := []string{
+		"All data is stored in plain JSON files in ~/.amos/:",
+		"  ~/.amos/entries.json   Journal entries",
+		"  ~/.amos/todos.json     Todo items",
+		"  ~/.amos/config.json    User preferences (theme)",
 	}
 
 	return title + "\n\n" + strings.Join(items, "\n")
