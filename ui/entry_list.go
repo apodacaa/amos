@@ -9,7 +9,7 @@ import (
 )
 
 // RenderEntryList renders the entry list view
-func RenderEntryList(width, height int, entries []models.Entry, selectedIdx int, todos []models.Todo, filterTags []string, filterDate string, markedForDeletion map[string]string, statusMsg string) string {
+func RenderEntryList(width, height int, theme Theme, entries []models.Entry, selectedIdx int, todos []models.Todo, filterTags []string, filterDate string, markedForDeletion map[string]string, statusMsg string) string {
 	// Apply filters: first date, then tags
 	filtered := helpers.FilterEntriesByDateRange(entries, filterDate)
 	filtered = helpers.FilterEntriesByTags(filtered, filterTags)
@@ -32,34 +32,50 @@ func RenderEntryList(width, height int, entries []models.Entry, selectedIdx int,
 			// Table format: markers  date  title
 			timestamp := entry.Timestamp.Format("2006-01-02")
 
-			// Build 2-character marker prefix (D for deletion, + for todos)
-			var marker string
+			// Build 2-character marker prefix (D for deletion, >/*/= for todos)
+			var markerText string
 			_, isMarked := markedForDeletion[entry.ID]
-			hasTodos := len(entry.TodoIDs) > 0
+			todoMarker := helpers.GetEntryMarker(todos, entry.ID)
 
-			if isMarked && hasTodos {
-				marker = "D+"
-			} else if isMarked && !hasTodos {
-				marker = "D "
-			} else if !isMarked && hasTodos {
-				marker = " +"
+			if isMarked && todoMarker != "" {
+				markerText = "D" + todoMarker
+			} else if isMarked && todoMarker == "" {
+				markerText = "D "
+			} else if !isMarked && todoMarker != "" {
+				markerText = " " + todoMarker
 			} else {
-				marker = "  "
+				markerText = "  "
 			}
 
-			line := fmt.Sprintf("%s %s  %s", marker, timestamp, entry.Title)
-
-			// Truncate if too long
+			// Truncate title if too long
+			titleText := entry.Title
+			plainLen := len(markerText) + 1 + len(timestamp) + 2 + len(titleText)
 			maxLen := width - 6
-			if len(line) > maxLen {
-				line = line[:maxLen-3] + "..."
+			if plainLen > maxLen {
+				titleText = titleText[:len(titleText)-(plainLen-maxLen)-3] + "..."
 			}
 
-			// Apply selection styling (no tag highlighting in lists)
+			// Build line - style only for non-selected items
 			var styled string
 			if i == selectedIdx {
-				styled = GetSelectedItemStyle(width).Render(line)
+				// Selected: plain text, let selection style handle it
+				plainLine := fmt.Sprintf("%s %s  %s", markerText, timestamp, titleText)
+				styled = GetSelectedItemStyle(width, theme).Render(plainLine)
 			} else {
+				// Not selected: apply color styling
+				var styledMarker string
+				if isMarked && todoMarker != "" {
+					styledMarker = StyleMarker("D", true, theme) + StyleMarker(todoMarker, false, theme)
+				} else if isMarked && todoMarker == "" {
+					styledMarker = StyleMarker("D", true, theme) + " "
+				} else if !isMarked && todoMarker != "" {
+					styledMarker = " " + StyleMarker(todoMarker, false, theme)
+				} else {
+					styledMarker = "  "
+				}
+				styledDate := StyleDate(timestamp, theme)
+				styledTitle := HighlightTagsInText(titleText, theme)
+				line := fmt.Sprintf("%s %s  %s", styledMarker, styledDate, styledTitle)
 				styled = GetNormalItemStyle().Width(width).Render(line)
 			}
 
@@ -70,7 +86,7 @@ func RenderEntryList(width, height int, entries []models.Entry, selectedIdx int,
 	list := strings.Join(listItems, "\n")
 
 	// Header
-	header := RenderHeader(width, "n", "new", "a", "todo", "j/k", "nav", "enter", "view", "d", "del", "/", "filter", "t", "todos", "q", "quit")
+	header := RenderHeader(width, theme, "n", "new", "a", "todo", "j/k", "nav", "enter", "view", "d", "del", "/", "filter", "t", "todos", "?", "help", "q", "quit")
 
 	// Footer (show only filter context, no view label)
 	var footerTitle string
@@ -94,7 +110,7 @@ func RenderEntryList(width, height int, entries []models.Entry, selectedIdx int,
 		stats = fmt.Sprintf("Entry %d of %d", selectedIdx+1, len(sorted))
 	}
 
-	footer := RenderFooter(width, stats, footerTitle)
+	footer := RenderFooter(width, theme, stats, footerTitle)
 
 	return AssembleView(header, list, footer, width, height, statusMsg)
 }

@@ -5,6 +5,6 @@ import (
 )
 
 // RenderEntryForm renders the entry editing form
-func RenderEntryForm(width, height int, ta textarea.Model, statusMsg string, hasUnsaved bool) string {
-	return RenderFormView(width, height, ta.View(), statusMsg, hasUnsaved, "ctrl+s", "save", "esc", "cancel")
+func RenderEntryForm(width, height int, theme Theme, ta textarea.Model, statusMsg string, hasUnsaved bool) string {
+	return RenderFormView(width, height, theme, ta.View(), statusMsg, hasUnsaved, "ctrl+s", "save", "esc", "cancel")
 }

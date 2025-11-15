@@ -1,13 +1,80 @@
 package ui
 
 import (
+	"regexp"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/textarea"
 	"github.com/charmbracelet/lipgloss"
 )
 
-// Brutalist design: use terminal defaults, no explicit colors
+// Theme defines a complete color scheme for the app
+type Theme struct {
+	Name        string
+	Description string
+	Colors      ThemeColors
+}
+
+// ThemeColors contains all color definitions for a theme
+type ThemeColors struct {
+	Primary    lipgloss.Color // For headers/footers
+	Selection  lipgloss.Color // For selected items
+	Accent1    lipgloss.Color // For delete markers, open todos
+	Accent2    lipgloss.Color // For tags, markers
+	Warning    lipgloss.Color // For dates
+	Dimmed     lipgloss.Color // For completed items
+	Foreground lipgloss.Color // For text on colored backgrounds
+}
+
+// Available themes
+var (
+	// BrutalistTheme uses terminal default colors (monochrome, user's terminal palette)
+	BrutalistTheme = Theme{
+		Name:        "brutalist",
+		Description: "terminal default colors",
+		Colors: ThemeColors{
+			Primary:    lipgloss.Color(""), // Terminal default
+			Selection:  lipgloss.Color(""), // Terminal default
+			Accent1:    lipgloss.Color(""), // Terminal default
+			Accent2:    lipgloss.Color(""), // Terminal default
+			Warning:    lipgloss.Color(""), // Terminal default
+			Dimmed:     lipgloss.Color(""), // Terminal default (will use Faint)
+			Foreground: lipgloss.Color(""), // Terminal default
+		},
+	}
+
+	// CyberpunkTheme uses neon colors (Matrix/Blade Runner vibes)
+	CyberpunkTheme = Theme{
+		Name:        "cyberpunk",
+		Description: "neon colors",
+		Colors: ThemeColors{
+			Primary:    lipgloss.Color("#00FF41"), // Matrix green
+			Selection:  lipgloss.Color("#0080FF"), // Tron blue
+			Accent1:    lipgloss.Color("#CC00CC"), // Magenta (toned down for readability)
+			Accent2:    lipgloss.Color("#00FFFF"), // Cyan
+			Warning:    lipgloss.Color("#FF8C00"), // Orange
+			Dimmed:     lipgloss.Color("#555555"), // Dark gray
+			Foreground: lipgloss.Color("#000000"), // Black text on neon
+		},
+	}
+)
+
+// GetThemeByName returns a theme by name, defaults to Cyberpunk if not found
+func GetThemeByName(name string) Theme {
+	switch name {
+	case "brutalist":
+		return BrutalistTheme
+	case "cyberpunk":
+		return CyberpunkTheme
+	default:
+		return CyberpunkTheme
+	}
+}
+
+// ListThemes returns all available themes
+func ListThemes() []Theme {
+	return []Theme{BrutalistTheme, CyberpunkTheme}
+}
 
 // GetFullScreenBox returns a box that fills most of the terminal with consistent styling
 func GetFullScreenBox(width, height int) lipgloss.Style {
@@ -42,12 +109,21 @@ func GetTextStyle() lipgloss.Style {
 	return lipgloss.NewStyle()
 }
 
-// getBarStyle returns the shared full-width inverted bar style with bold text
-func getBarStyle(width int) lipgloss.Style {
-	return lipgloss.NewStyle().
-		Reverse(true).
+// getBarStyle returns the shared full-width bar style with bold text
+func getBarStyle(width int, theme Theme) lipgloss.Style {
+	style := lipgloss.NewStyle().
 		Bold(true).
 		Width(width)
+
+	// Only apply colors for non-brutalist themes
+	if theme.Colors.Primary != "" {
+		style = style.Background(theme.Colors.Primary).Foreground(theme.Colors.Foreground)
+	} else {
+		// Brutalist: use reverse video for emphasis
+		style = style.Reverse(true)
+	}
+
+	return style
 }
 
 // GetEmptyStateStyle returns centered faint style for empty lists
@@ -58,18 +134,26 @@ func GetEmptyStateStyle(width int) lipgloss.Style {
 		Align(lipgloss.Center)
 }
 
-// GetSelectedItemStyle returns reverse video style for selected list items
-func GetSelectedItemStyle(width int) lipgloss.Style {
-	return lipgloss.NewStyle().
-		Reverse(true).
+// GetSelectedItemStyle returns selection style for list items
+func GetSelectedItemStyle(width int, theme Theme) lipgloss.Style {
+	style := lipgloss.NewStyle().
+		Bold(true).
 		Width(width)
+
+	// Only apply colors for non-brutalist themes
+	if theme.Colors.Selection != "" {
+		style = style.Background(theme.Colors.Selection).Foreground(theme.Colors.Foreground)
+	} else {
+		// Brutalist: use reverse video for selection
+		style = style.Reverse(true)
+	}
+
+	return style
 }
 
-// GetSelectedDoneStyle returns reverse style for selected completed items
-func GetSelectedDoneStyle(width int) lipgloss.Style {
-	return lipgloss.NewStyle().
-		Reverse(true).
-		Width(width)
+// GetSelectedDoneStyle returns selection style for completed items
+func GetSelectedDoneStyle(width int, theme Theme) lipgloss.Style {
+	return GetSelectedItemStyle(width, theme) // Same as regular selection
 }
 
 // GetNormalItemStyle returns terminal default foreground for list items
@@ -77,9 +161,18 @@ func GetNormalItemStyle() lipgloss.Style {
 	return lipgloss.NewStyle()
 }
 
-// GetDimmedStyle returns faint style for completed items
-func GetDimmedStyle() lipgloss.Style {
-	return lipgloss.NewStyle().Faint(true)
+// GetDimmedStyle returns dimmed style for completed items
+func GetDimmedStyle(theme Theme) lipgloss.Style {
+	style := lipgloss.NewStyle()
+
+	// Use Faint for brutalist, or theme color for others
+	if theme.Colors.Dimmed != "" {
+		style = style.Foreground(theme.Colors.Dimmed)
+	} else {
+		style = style.Faint(true)
+	}
+
+	return style
 }
 
 // GetBoldStyle returns bold style for emphasis
@@ -87,10 +180,70 @@ func GetBoldStyle() lipgloss.Style {
 	return lipgloss.NewStyle().Bold(true)
 }
 
-// HighlightTagsInText returns text as-is (tag highlighting removed)
-// Previously applied bold to @tags but didn't add useful value
-func HighlightTagsInText(text string) string {
-	return text
+// HighlightTagsInText highlights @tags with theme accent color
+func HighlightTagsInText(text string, theme Theme) string {
+	tagRegex := regexp.MustCompile(`@\w+`)
+
+	tagStyle := lipgloss.NewStyle()
+	if theme.Colors.Accent2 != "" {
+		tagStyle = tagStyle.Foreground(theme.Colors.Accent2)
+	}
+
+	return tagRegex.ReplaceAllStringFunc(text, func(tag string) string {
+		return tagStyle.Render(tag)
+	})
+}
+
+// StyleDate returns theme-styled date string
+func StyleDate(date string, theme Theme) string {
+	style := lipgloss.NewStyle()
+	if theme.Colors.Warning != "" {
+		style = style.Foreground(theme.Colors.Warning)
+	}
+	return style.Render(date)
+}
+
+// StyleTodoStatus returns color-coded status indicator
+func StyleTodoStatus(status, indicator string, theme Theme) string {
+	var style lipgloss.Style
+	switch status {
+	case "open":
+		style = lipgloss.NewStyle()
+		if theme.Colors.Accent1 != "" {
+			style = style.Foreground(theme.Colors.Accent1)
+		}
+	case "next":
+		style = lipgloss.NewStyle()
+		if theme.Colors.Primary != "" {
+			style = style.Foreground(theme.Colors.Primary)
+		}
+	case "done":
+		if theme.Colors.Dimmed != "" {
+			style = lipgloss.NewStyle().Foreground(theme.Colors.Dimmed)
+		} else {
+			style = lipgloss.NewStyle().Faint(true)
+		}
+	default:
+		style = lipgloss.NewStyle()
+	}
+	return style.Render(indicator)
+}
+
+// StyleMarker returns color-coded marker (D for delete, + for todo/entry)
+func StyleMarker(marker string, isDelete bool, theme Theme) string {
+	style := lipgloss.NewStyle()
+
+	if isDelete {
+		if theme.Colors.Accent1 != "" {
+			style = style.Foreground(theme.Colors.Accent1)
+		}
+	} else {
+		if theme.Colors.Accent2 != "" {
+			style = style.Foreground(theme.Colors.Accent2)
+		}
+	}
+
+	return style.Render(marker)
 }
 
 // ApplyTextareaStyle applies consistent styling to a textarea
@@ -171,9 +324,9 @@ func AssembleView(header, content, footer string, width, height int, statusMsg s
 }
 
 // RenderFormView renders a form with header, input, and message line
-func RenderFormView(width, height int, inputView, statusMsg string, hasUnsaved bool, headerKeys ...string) string {
+func RenderFormView(width, height int, theme Theme, inputView, statusMsg string, hasUnsaved bool, headerKeys ...string) string {
 	// Build header with provided keys
-	header := RenderHeader(width, headerKeys...)
+	header := RenderHeader(width, theme, headerKeys...)
 
 	// Calculate padding for content area
 	contentHeight := height - 2 // header + message line (no footer in forms)
@@ -243,7 +396,6 @@ func formatHelpWithAlign(width int, align lipgloss.Position, keyDescPairs ...str
 
 	// Render with lipgloss (which may wrap based on width)
 	rendered := lipgloss.NewStyle().
-		Faint(true).
 		Width(width - 8).
 		Align(align).
 		Render(result)
@@ -259,7 +411,7 @@ func formatHelpWithAlign(width int, align lipgloss.Position, keyDescPairs ...str
 
 // RenderHeader renders the top bar with app name and help shortcuts
 // Format: "n:new  a:todo  q:quit"
-func RenderHeader(width int, keyDescPairs ...string) string {
+func RenderHeader(width int, theme Theme, keyDescPairs ...string) string {
 	// Build shortcuts string
 	var shortcuts []string
 	for i := 0; i < len(keyDescPairs); i += 2 {
@@ -275,12 +427,12 @@ func RenderHeader(width int, keyDescPairs ...string) string {
 		content = content[:width]
 	}
 
-	return getBarStyle(width).Render(content)
+	return getBarStyle(width, theme).Render(content)
 }
 
 // RenderFooter renders the bottom bar with view context and stats
 // Format: "Entries @work  15 items" or "15 items" (no leading space when title is empty)
-func RenderFooter(width int, title string, stats string) string {
+func RenderFooter(width int, theme Theme, title string, stats string) string {
 	content := title
 	if stats != "" {
 		if title != "" {
@@ -294,7 +446,7 @@ func RenderFooter(width int, title string, stats string) string {
 		content = content[:width]
 	}
 
-	return getBarStyle(width).Render(content)
+	return getBarStyle(width, theme).Render(content)
 }
 
 // RenderMessageLine renders the message line below footer (neomutt-style)

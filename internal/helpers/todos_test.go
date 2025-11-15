@@ -169,3 +169,100 @@ func TestCountTodoStats(t *testing.T) {
 		})
 	}
 }
+
+func TestGetEntryMarker(t *testing.T) {
+	entryID1 := "entry-1"
+	entryID2 := "entry-2"
+
+	tests := []struct {
+		name     string
+		todos    []models.Todo
+		entryID  string
+		expected string
+	}{
+		{
+			name:     "no todos",
+			todos:    []models.Todo{},
+			entryID:  entryID1,
+			expected: "",
+		},
+		{
+			name: "entry with no linked todos",
+			todos: []models.Todo{
+				{ID: "1", Status: "open", EntryID: &entryID2},
+			},
+			entryID:  entryID1,
+			expected: "",
+		},
+		{
+			name: "entry with next todo (highest priority)",
+			todos: []models.Todo{
+				{ID: "1", Status: "next", EntryID: &entryID1},
+			},
+			entryID:  entryID1,
+			expected: ">",
+		},
+		{
+			name: "entry with open todo",
+			todos: []models.Todo{
+				{ID: "1", Status: "open", EntryID: &entryID1},
+			},
+			entryID:  entryID1,
+			expected: "*",
+		},
+		{
+			name: "entry with done todo",
+			todos: []models.Todo{
+				{ID: "1", Status: "done", EntryID: &entryID1},
+			},
+			entryID:  entryID1,
+			expected: "=",
+		},
+		{
+			name: "entry with next overrides open",
+			todos: []models.Todo{
+				{ID: "1", Status: "open", EntryID: &entryID1},
+				{ID: "2", Status: "next", EntryID: &entryID1},
+				{ID: "3", Status: "done", EntryID: &entryID1},
+			},
+			entryID:  entryID1,
+			expected: ">",
+		},
+		{
+			name: "entry with open overrides done",
+			todos: []models.Todo{
+				{ID: "1", Status: "done", EntryID: &entryID1},
+				{ID: "2", Status: "open", EntryID: &entryID1},
+			},
+			entryID:  entryID1,
+			expected: "*",
+		},
+		{
+			name: "entry with multiple done todos",
+			todos: []models.Todo{
+				{ID: "1", Status: "done", EntryID: &entryID1},
+				{ID: "2", Status: "done", EntryID: &entryID1},
+			},
+			entryID:  entryID1,
+			expected: "=",
+		},
+		{
+			name: "mixed entries - only count correct entry",
+			todos: []models.Todo{
+				{ID: "1", Status: "next", EntryID: &entryID2},
+				{ID: "2", Status: "open", EntryID: &entryID1},
+			},
+			entryID:  entryID1,
+			expected: "*",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := GetEntryMarker(tt.todos, tt.entryID)
+			if result != tt.expected {
+				t.Errorf("GetEntryMarker() = %q, want %q", result, tt.expected)
+			}
+		})
+	}
+}

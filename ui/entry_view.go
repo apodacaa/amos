@@ -6,18 +6,18 @@ import (
 
 	"github.com/apodacaa/amos/internal/helpers"
 	"github.com/apodacaa/amos/internal/models"
-	"github.com/charmbracelet/lipgloss"
 )
 
 // RenderEntryView renders a read-only view of an entry
-func RenderEntryView(width, height int, entry models.Entry, allTodos []models.Todo, scrollOffset int, markedForDeletion map[string]string, statusMsg string, currentIndex int, totalCount int) string {
+func RenderEntryView(width, height int, theme Theme, entry models.Entry, allTodos []models.Todo, scrollOffset int, markedForDeletion map[string]string, statusMsg string, currentIndex int, totalCount int) string {
 	// Title at top with date
-	titleText := fmt.Sprintf("%s: %s", entry.Timestamp.Format("2006-01-02"), entry.Title)
-	title := HighlightTagsInText(titleText)
+	dateStr := entry.Timestamp.Format("2006-01-02")
+	styledDate := StyleDate(dateStr, theme)
+	styledTitle := HighlightTagsInText(entry.Title, theme)
+	title := fmt.Sprintf("%s: %s", styledDate, styledTitle)
 
 	// Todos section (if any)
 	var todosSection string
-	var todoLineCount int
 	if len(entry.TodoIDs) > 0 {
 		// Filter todos that belong to this entry
 		entryTodos := helpers.FilterTodosByEntry(allTodos, entry.ID)
@@ -34,11 +34,16 @@ func RenderEntryView(width, height int, entry models.Entry, allTodos []models.To
 				checkbox := "[ ]"
 				if todo.Status == "done" {
 					checkbox = "[x]"
+				} else if todo.Status == "next" {
+					checkbox = "[>]"
 				}
 
+				// Style checkbox based on status
+				styledCheckbox := StyleTodoStatus(todo.Status, checkbox, theme)
+
 				// Apply tag highlighting to title
-				highlightedTitle := HighlightTagsInText(todo.Title)
-				todoLine := fmt.Sprintf("%s %s", checkbox, highlightedTitle)
+				highlightedTitle := HighlightTagsInText(todo.Title, theme)
+				todoLine := fmt.Sprintf("%s %s", styledCheckbox, highlightedTitle)
 
 				// Add tags if present (with bold highlighting)
 				if len(todo.Tags) > 0 {
@@ -47,12 +52,12 @@ func RenderEntryView(width, height int, entry models.Entry, allTodos []models.To
 						tagParts = append(tagParts, "@"+tag)
 					}
 					tagStr := " " + strings.Join(tagParts, " ")
-					todoLine += HighlightTagsInText(tagStr)
+					todoLine += HighlightTagsInText(tagStr, theme)
 				}
 
 				// Dim completed todos
 				if todo.Status == "done" {
-					todoLine = GetDimmedStyle().Render(todoLine)
+					todoLine = GetDimmedStyle(theme).Render(todoLine)
 				} else {
 					todoLine = GetNormalItemStyle().Render(todoLine)
 				}
@@ -62,12 +67,21 @@ func RenderEntryView(width, height int, entry models.Entry, allTodos []models.To
 
 			todosContent := strings.Join(todoLines, "\n")
 			todosSection = "\n\n" + todosTitle + "\n" + todosContent
-			todoLineCount = 2 + len(todoLines) // Title + blank + todo lines
 		}
 	}
 
-	// Calculate available height for content
-	availableHeight := height - 3 - todoLineCount // header + footer + message line + todos
+	// Calculate available height for scrollable body content
+	// Reserve space for header, footer, message, title, blank line, and todos
+	// Base: header (1) + footer (1) + message (1) + title (1) + blank line (1) = 5
+	baseReserved := 5
+
+	// Calculate todos section height (if present)
+	todosHeight := 0
+	if todosSection != "" {
+		todosHeight = strings.Count(todosSection, "\n") + 1
+	}
+
+	availableHeight := height - baseReserved - todosHeight
 	if availableHeight < 5 {
 		availableHeight = 5
 	}
@@ -101,15 +115,15 @@ func RenderEntryView(width, height int, entry models.Entry, allTodos []models.To
 		}
 
 		visibleLines := bodyLines[scrollStart:scrollEnd]
-		body = HighlightTagsInText(strings.Join(visibleLines, "\n"))
+		body = HighlightTagsInText(strings.Join(visibleLines, "\n"), theme)
 	} else {
-		body = HighlightTagsInText(wrappedBody)
+		body = HighlightTagsInText(wrappedBody, theme)
 		scrollStart = 0
 		scrollEnd = totalLines
 	}
 
 	// Header
-	header := RenderHeader(width, "n", "new", "a", "todo", "j/k", "nav", "d", "del", "e", "entries", "t", "todos", "q", "quit")
+	header := RenderHeader(width, theme, "n", "new", "a", "todo", "j/k", "nav", "f/b", "scroll", "d", "del", "e", "entries", "t", "todos", "?", "help", "q", "quit")
 
 	// Footer: entry position + marked indicator + scroll info
 	footerTitle := fmt.Sprintf("Entry %d of %d", currentIndex+1, totalCount)
@@ -125,34 +139,30 @@ func RenderEntryView(width, height int, entry models.Entry, allTodos []models.To
 		footerStats = fmt.Sprintf("lines %d-%d of %d", scrollStart+1, scrollEnd, totalLines)
 	}
 
-	footer := RenderFooter(width, footerTitle, footerStats)
+	footer := RenderFooter(width, theme, footerTitle, footerStats)
 
-	// Build main content
-	mainContent := lipgloss.JoinVertical(
-		lipgloss.Left,
-		title,
-		"",
-		body,
-		todosSection,
-	)
+	// Build main content (simple string concatenation to avoid lipgloss adding extra formatting)
+	var contentParts []string
+	contentParts = append(contentParts, title)
+	contentParts = append(contentParts, "") // blank line
+	contentParts = append(contentParts, body)
+	if todosSection != "" {
+		contentParts = append(contentParts, todosSection)
+	}
 
-	// Calculate padding for content area
-	contentHeight := height - 3 // header + footer + message line
-	mainLines := strings.Count(mainContent, "\n") + 1
-	padding := contentHeight - mainLines
-	if padding < 0 {
-		padding = 0
+	mainContent := strings.Join(contentParts, "\n")
+
+	// Calculate padding to fill remaining vertical space
+	contentHeight := strings.Count(mainContent, "\n") + 1
+	availableContentHeight := height - 3 // header + footer + message line
+	paddingNeeded := availableContentHeight - contentHeight
+	if paddingNeeded > 0 {
+		mainContent += strings.Repeat("\n", paddingNeeded)
 	}
 
 	// Build message line (neomutt-style)
 	messageLine := RenderMessageLine(width, statusMsg)
 
-	// Build full view
-	content := header + "\n" + mainContent
-	if padding > 0 {
-		content += strings.Repeat("\n", padding)
-	}
-	content += "\n" + footer + "\n" + messageLine
-
-	return content
+	// Assemble: header + mainContent + footer + message line
+	return header + "\n" + mainContent + "\n" + footer + "\n" + messageLine
 }

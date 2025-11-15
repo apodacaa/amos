@@ -10,9 +10,9 @@ import (
 )
 
 // RenderUnifiedFilter renders the unified filter input view (tags + dates)
-func RenderUnifiedFilter(width, height int, ti textarea.Model, availableTags []string, autocompleteTag string, statusMsg string) string {
+func RenderUnifiedFilter(width, height int, theme Theme, ti textarea.Model, availableTags []string, autocompleteTag string, statusMsg string) string {
 	// Header
-	header := RenderHeader(width, "tab", "complete", "enter", "apply", "esc", "cancel")
+	header := RenderHeader(width, theme, "tab", "complete", "enter", "apply", "esc", "cancel")
 
 	// Footer with hint
 	footerTitle := "Filter"
@@ -20,7 +20,7 @@ func RenderUnifiedFilter(width, height int, ti textarea.Model, availableTags []s
 	if statusMsg != "" {
 		footerHint = statusMsg // Show error/status instead of hint
 	}
-	footer := RenderFooter(width, footerTitle, footerHint)
+	footer := RenderFooter(width, theme, footerTitle, footerHint)
 
 	// Input field
 	input := ti.View()
@@ -28,7 +28,7 @@ func RenderUnifiedFilter(width, height int, ti textarea.Model, availableTags []s
 	// Autocomplete hint (if available)
 	autocompleteHint := ""
 	if autocompleteTag != "" {
-		autocompleteHint = GetDimmedStyle().Render(fmt.Sprintf("Tab: %s", autocompleteTag))
+		autocompleteHint = GetDimmedStyle(theme).Render(fmt.Sprintf("Tab: %s", autocompleteTag))
 	}
 
 	// Suggestions section - show both tags and dates
@@ -52,8 +52,8 @@ func RenderUnifiedFilter(width, height int, ti textarea.Model, availableTags []s
 		}
 
 		if len(matches) > 0 {
-			matchesLabel := GetDimmedStyle().Render("Suggestions:")
-			matchesList := GetDimmedStyle().Render(strings.Join(matches, ", "))
+			matchesLabel := GetDimmedStyle(theme).Render("Suggestions:")
+			matchesList := GetDimmedStyle(theme).Render(strings.Join(matches, ", "))
 
 			suggestionsSection = lipgloss.JoinVertical(
 				lipgloss.Left,

@@ -14,7 +14,7 @@ func highlightTodoInText(body, todoTitle string) string {
 }
 
 // RenderTodoView renders a read-only view of a todo
-func RenderTodoView(width, height int, todo models.Todo, allEntries []models.Entry, scrollOffset int, markedForDeletion map[string]string, statusMsg string, currentIndex int, totalCount int) string {
+func RenderTodoView(width, height int, theme Theme, todo models.Todo, allEntries []models.Entry, scrollOffset int, markedForDeletion map[string]string, statusMsg string, currentIndex int, totalCount int) string {
 	// Status and date at top
 	statusIcon := "[ ]" // open
 	if todo.Status == "next" {
@@ -22,7 +22,12 @@ func RenderTodoView(width, height int, todo models.Todo, allEntries []models.Ent
 	} else if todo.Status == "done" {
 		statusIcon = "[x]"
 	}
-	statusLine := fmt.Sprintf("%s %s", statusIcon, todo.CreatedAt.Format("2006-01-02"))
+
+	// Style status icon and date
+	styledStatus := StyleTodoStatus(todo.Status, statusIcon, theme)
+	dateStr := todo.CreatedAt.Format("2006-01-02")
+	styledDate := StyleDate(dateStr, theme)
+	statusLine := fmt.Sprintf("%s %s", styledStatus, styledDate)
 
 	// Todo title (wrappable)
 	titleStyle := GetNormalItemStyle().
@@ -31,7 +36,7 @@ func RenderTodoView(width, height int, todo models.Todo, allEntries []models.Ent
 	// Wrap title if long
 	wrappedTitle := wordWrap(todo.Title, width-8)
 	// Apply tag highlighting to wrapped title
-	highlightedTitle := HighlightTagsInText(wrappedTitle)
+	highlightedTitle := HighlightTagsInText(wrappedTitle, theme)
 	titleLines := strings.Split(highlightedTitle, "\n")
 
 	// Linked entry section (if EntryID is set)
@@ -52,28 +57,30 @@ func RenderTodoView(width, height int, todo models.Todo, allEntries []models.Ent
 			var linkedParts []string
 
 			// Header line: "From the following entry..."
-			linkedParts = append(linkedParts, GetDimmedStyle().Render("From entry..."))
+			linkedParts = append(linkedParts, GetDimmedStyle(theme).Render("From entry..."))
 
 			// Date, title, tags line
 			dateStr := linkedEntry.Timestamp.Format("2006-01-02")
+			styledDate := StyleDate(dateStr, theme)
+			styledTitle := HighlightTagsInText(linkedEntry.Title, theme)
 			tagStr := ""
 			if len(linkedEntry.Tags) > 0 {
 				var tagStrings []string
 				for _, tag := range linkedEntry.Tags {
 					tagStrings = append(tagStrings, "@"+tag)
 				}
-				tagStr = " " + strings.Join(tagStrings, " ")
+				tagStr = " " + HighlightTagsInText(strings.Join(tagStrings, " "), theme)
 			}
 
-			metaLine := fmt.Sprintf("%s %s%s", dateStr, linkedEntry.Title, tagStr)
-			linkedParts = append(linkedParts, HighlightTagsInText(metaLine))
+			metaLine := fmt.Sprintf("%s %s%s", styledDate, styledTitle, tagStr)
+			linkedParts = append(linkedParts, metaLine)
 
 			// Body (full text) - wrap, highlight tags and todo reference
 			if linkedEntry.Body != "" {
 				// Wrap body text to fit width
 				wrappedBody := wrapBodyText(linkedEntry.Body, width-8)
 				// First highlight tags, then highlight todo reference
-				bodyWithTags := HighlightTagsInText(wrappedBody)
+				bodyWithTags := HighlightTagsInText(wrappedBody, theme)
 				styledBody := highlightTodoInText(bodyWithTags, todo.Title)
 				linkedParts = append(linkedParts, styledBody)
 			}
@@ -131,7 +138,7 @@ func RenderTodoView(width, height int, todo models.Todo, allEntries []models.Ent
 	}
 
 	// Header
-	header := RenderHeader(width, "n", "new", "a", "todo", "space", "cycle", "j/k", "nav", "d", "del", "e", "entries", "t", "todos", "q", "quit")
+	header := RenderHeader(width, theme, "n", "new", "a", "todo", "space", "cycle", "j/k", "nav", "f/b", "scroll", "d", "del", "e", "entries", "t", "todos", "?", "help", "q", "quit")
 
 	// Footer: position + marked indicator + scroll info
 	footerTitle := fmt.Sprintf("Todo %d of %d", currentIndex+1, totalCount)
@@ -147,30 +154,24 @@ func RenderTodoView(width, height int, todo models.Todo, allEntries []models.Ent
 		footerStats = fmt.Sprintf("lines %d-%d of %d", scrollStart+1, scrollEnd, totalLines)
 	}
 
-	footer := RenderFooter(width, footerTitle, footerStats)
+	footer := RenderFooter(width, theme, footerTitle, footerStats)
 
 	// Build main content (status + date at top, then blank line, then title)
 	mainContent := statusLine + "\n\n" + renderedTitle + linkedSection
 
-	// Calculate padding
-	contentHeight := height - 3 // header + footer + message line
-	mainLines := strings.Count(mainContent, "\n") + 1
-	padding := contentHeight - mainLines
-	if padding < 0 {
-		padding = 0
+	// Calculate padding to fill remaining vertical space
+	contentHeight := strings.Count(mainContent, "\n") + 1
+	availableContentHeight := height - 3 // header + footer + message line
+	paddingNeeded := availableContentHeight - contentHeight
+	if paddingNeeded > 0 {
+		mainContent += strings.Repeat("\n", paddingNeeded)
 	}
 
 	// Build message line (neomutt-style)
 	messageLine := RenderMessageLine(width, statusMsg)
 
-	// Build full view
-	content := header + "\n" + mainContent
-	if padding > 0 {
-		content += strings.Repeat("\n", padding)
-	}
-	content += "\n" + footer + "\n" + messageLine
-
-	return content
+	// Assemble: header + mainContent + footer + message line
+	return header + "\n" + mainContent + "\n" + footer + "\n" + messageLine
 }
 
 // wrapBodyText wraps body text while preserving original line breaks

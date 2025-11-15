@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/apodacaa/amos/internal/helpers"
+	"github.com/apodacaa/amos/ui"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -32,6 +33,25 @@ func (m Model) handleTodosListKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "a":
 		// Add standalone todo (using shared helper)
 		return m.handleAddTodo()
+	case "s":
+		// Open theme selector
+		m.previousView = m.view
+		m.view = "theme_selector"
+		// Set selected theme to current theme
+		themes := ui.ListThemes()
+		for i, theme := range themes {
+			if theme.Name == m.currentTheme.Name {
+				m.selectedTheme = i
+				break
+			}
+		}
+		return m, nil
+	case "?":
+		// Open help page
+		m.previousView = m.view
+		m.scrollOffset = 0 // Reset scroll when opening help
+		m.view = "help"
+		return m, nil
 	case "/":
 		// Open unified filter input with current filter pre-populated
 		return m.openUnifiedFilter("todos")
@@ -52,7 +72,7 @@ func (m Model) handleTodosListKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.selectedTodo--
 		}
 		return m, nil
-	case "r":
+	case "R":
 		// Refresh - reload todos to re-sort
 		return m, m.loadTodos()
 	case "d":

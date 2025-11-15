@@ -40,3 +40,8 @@ type deleteErrorMsg struct {
 	err     error
 	message string
 }
+
+// configSavedMsg is sent when config save operation completes
+type configSavedMsg struct {
+	err error
+}
