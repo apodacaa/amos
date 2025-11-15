@@ -32,17 +32,18 @@ func RenderEntryList(width, height int, theme Theme, entries []models.Entry, sel
 			// Table format: markers  date  title
 			timestamp := entry.Timestamp.Format("2006-01-02")
 
-			// Build 2-character marker prefix (D for deletion, >/*/= for todos)
+			// Build 2-character marker prefix (D for deletion, + for todos)
+			// GetEntryMarker returns status: "next", "open", "done", or ""
 			var markerText string
 			_, isMarked := markedForDeletion[entry.ID]
-			todoMarker := helpers.GetEntryMarker(todos, entry.ID)
+			todoStatus := helpers.GetEntryMarker(todos, entry.ID)
 
-			if isMarked && todoMarker != "" {
-				markerText = "D" + todoMarker
-			} else if isMarked && todoMarker == "" {
+			if isMarked && todoStatus != "" {
+				markerText = "D+"
+			} else if isMarked && todoStatus == "" {
 				markerText = "D "
-			} else if !isMarked && todoMarker != "" {
-				markerText = " " + todoMarker
+			} else if !isMarked && todoStatus != "" {
+				markerText = " +"
 			} else {
 				markerText = "  "
 			}
@@ -64,12 +65,12 @@ func RenderEntryList(width, height int, theme Theme, entries []models.Entry, sel
 			} else {
 				// Not selected: apply color styling
 				var styledMarker string
-				if isMarked && todoMarker != "" {
-					styledMarker = StyleMarker("D", true, theme) + StyleMarker(todoMarker, false, theme)
-				} else if isMarked && todoMarker == "" {
+				if isMarked && todoStatus != "" {
+					styledMarker = StyleMarker("D", true, theme) + StyleTodoStatus(todoStatus, "+", theme)
+				} else if isMarked && todoStatus == "" {
 					styledMarker = StyleMarker("D", true, theme) + " "
-				} else if !isMarked && todoMarker != "" {
-					styledMarker = " " + StyleMarker(todoMarker, false, theme)
+				} else if !isMarked && todoStatus != "" {
+					styledMarker = " " + StyleTodoStatus(todoStatus, "+", theme)
 				} else {
 					styledMarker = "  "
 				}

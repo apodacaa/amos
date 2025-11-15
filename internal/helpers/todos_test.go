@@ -200,7 +200,7 @@ func TestGetEntryMarker(t *testing.T) {
 				{ID: "1", Status: "next", EntryID: &entryID1},
 			},
 			entryID:  entryID1,
-			expected: ">",
+			expected: "next",
 		},
 		{
 			name: "entry with open todo",
@@ -208,7 +208,7 @@ func TestGetEntryMarker(t *testing.T) {
 				{ID: "1", Status: "open", EntryID: &entryID1},
 			},
 			entryID:  entryID1,
-			expected: "*",
+			expected: "open",
 		},
 		{
 			name: "entry with done todo",
@@ -216,7 +216,7 @@ func TestGetEntryMarker(t *testing.T) {
 				{ID: "1", Status: "done", EntryID: &entryID1},
 			},
 			entryID:  entryID1,
-			expected: "=",
+			expected: "done",
 		},
 		{
 			name: "entry with next overrides open",
@@ -226,7 +226,7 @@ func TestGetEntryMarker(t *testing.T) {
 				{ID: "3", Status: "done", EntryID: &entryID1},
 			},
 			entryID:  entryID1,
-			expected: ">",
+			expected: "next",
 		},
 		{
 			name: "entry with open overrides done",
@@ -235,7 +235,7 @@ func TestGetEntryMarker(t *testing.T) {
 				{ID: "2", Status: "open", EntryID: &entryID1},
 			},
 			entryID:  entryID1,
-			expected: "*",
+			expected: "open",
 		},
 		{
 			name: "entry with multiple done todos",
@@ -244,7 +244,7 @@ func TestGetEntryMarker(t *testing.T) {
 				{ID: "2", Status: "done", EntryID: &entryID1},
 			},
 			entryID:  entryID1,
-			expected: "=",
+			expected: "done",
 		},
 		{
 			name: "mixed entries - only count correct entry",
@@ -253,7 +253,7 @@ func TestGetEntryMarker(t *testing.T) {
 				{ID: "2", Status: "open", EntryID: &entryID1},
 			},
 			entryID:  entryID1,
-			expected: "*",
+			expected: "open",
 		},
 	}
 

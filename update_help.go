@@ -88,9 +88,8 @@ func renderSymbolsSectionText() string {
 
 	items := []string{
 		"Entry List Markers:",
-		"  >  Entry has at least one 'next' todo (highest priority)",
-		"  *  Entry has at least one 'open' todo",
-		"  =  Entry has only 'done' todos",
+		"  +  Entry has linked todos (color shows highest priority)",
+		"     Green = next, Magenta = open, Dim = done",
 		"  D  Entry marked for deletion",
 		"",
 		"Todo List Markers:",

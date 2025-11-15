@@ -100,8 +100,8 @@ func NewModel() Model {
 
 // Init initializes the model (Elm architecture)
 func (m Model) Init() tea.Cmd {
-	// Load entries and todos on startup, repairing Entry ↔ Todo relationships
-	return tea.Batch(textarea.Blink, m.loadAndRepairEntriesAndTodos())
+	// Load entries and todos on startup (single source of truth: Todo.EntryID)
+	return tea.Batch(textarea.Blink, m.loadEntriesAndTodos())
 }
 
 // Update handles messages (Elm architecture)
