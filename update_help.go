@@ -17,6 +17,8 @@ func updateHelp(m Model, msg tea.KeyMsg) (Model, tea.Cmd) {
 		renderCommandsSectionText(),
 		"",
 		renderNavigationSectionText(),
+		"",
+		renderDataStorageSectionText(),
 	}
 	content := strings.Join(sections, "\n")
 	totalLines := strings.Count(content, "\n") + 1
@@ -114,7 +116,7 @@ func renderCommandsSectionText() string {
 		"",
 		"Entry View:",
 		"  j/k:nav       Navigate between entries",
-		"  f/b:scroll    Scroll forward/backward in long entries",
+		"  f/b:page      Page forward/backward in long entries",
 		"  d:del         Mark/unmark for deletion",
 		"  esc:back      Return to entry list",
 		"",
@@ -152,6 +154,19 @@ func renderNavigationSectionText() string {
 		"Entry list and todo list are peer views - use e/t to jump between them.",
 		"Global shortcuts (n, a, s, ?) work from any read-only view.",
 		"Press esc to exit forms and return to their natural home view.",
+	}
+
+	return title + "\n\n" + strings.Join(items, "\n")
+}
+
+func renderDataStorageSectionText() string {
+	title := "DATA STORAGE"
+
+	items := []string{
+		"All data is stored in plain JSON files in ~/.amos/:",
+		"  ~/.amos/entries.json   Journal entries",
+		"  ~/.amos/todos.json     Todo items",
+		"  ~/.amos/config.json    User preferences (theme)",
 	}
 
 	return title + "\n\n" + strings.Join(items, "\n")

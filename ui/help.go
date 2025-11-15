@@ -136,7 +136,7 @@ func renderCommandsSection(theme Theme) string {
 		"",
 		"Entry View:",
 		"  j/k:nav       Navigate between entries",
-		"  f/b:scroll    Scroll forward/backward in long entries",
+		"  f/b:page      Page forward/backward in long entries",
 		"  d:del         Mark/unmark for deletion",
 		"  esc:back      Return to entry list",
 		"",
