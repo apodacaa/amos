@@ -60,9 +60,8 @@ func RenderHelp(width, height int, theme Theme, scrollOffset int) string {
 		scrollEnd = totalLines
 	}
 
-	// Header with scroll keys
+	// Header with page navigation keys
 	header := RenderHeader(width, theme,
-		"j/k", "scroll",
 		"f/b", "page",
 		"esc", "back",
 		"q", "quit",
