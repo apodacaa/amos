@@ -52,6 +52,7 @@ make build
 - `d` - Mark/unmark current entry for deletion (shows "[MARKED FOR DELETION]" in footer)
 - `$` - Delete all marked items (shown in status message after marking, y/n confirmation, cascades to linked todos)
 - Shows entry with inline todos
+- `s` - Select theme (brutalist or cyberpunk)
 - `e` - Jump to entries
 - `t` - Jump to todos
 - `esc` - Back to entry list
@@ -66,6 +67,7 @@ make build
 - `$` - Delete all marked items (shown in status message after marking, y/n confirmation, only standalone todos deleted)
 - `/` - Filter by tags and/or date
 - `c` - Clear filter (shown in status message when filter is active)
+- `s` - Select theme (brutalist or cyberpunk)
 - `r` - Refresh (re-sort todos)
 - `e` - Jump to entries
 - `q` - Quit
@@ -86,6 +88,11 @@ make build
 - Type todo title (tags auto-extracted from @mentions)
 - `enter` - Save and start new todo (shows "saved" confirmation, power mode for rapid entry)
 - `esc` - Cancel and return to todo list
+
+*Theme Selector:*
+- `j/k` or `↑/↓` - Navigate themes
+- `enter` - Select theme (saves to config)
+- `esc` - Cancel
 
 ## Development
 
@@ -179,7 +186,7 @@ air               # Run with auto-reload
 - Full context visible (todos show in entry view)
 - No unnecessary features or decorations
 - Fast, minimal TUI
-- **Monochrome design**: Pure black/white/gray palette
+- **Theme support**: Choose between brutalist (monochrome, terminal defaults) or cyberpunk (neon colors) themes with `s` key
 - **Anchored help text**: Footer stays at bottom (no bouncing)
 - **Viewport windowing**: Long lists show 20-30 items with scroll indicators
 - **Entry scrolling**: Navigate long entries with `d/u` keys (d=down, u=up)
@@ -198,7 +205,8 @@ air               # Run with auto-reload
 │   ├── update_entry_view.go
 │   ├── update_unified_filter.go
 │   ├── update_todos.go
-│   └── update_add_todo.go
+│   ├── update_add_todo.go
+│   └── update_theme_selector.go
 ├── ui/                     # View renderers (pure functions)
 │   ├── entry_form.go
 │   ├── entry_list.go
@@ -206,11 +214,13 @@ air               # Run with auto-reload
 │   ├── unified_filter.go
 │   ├── todo_list.go
 │   ├── add_todo_form.go
+│   ├── theme_selector.go
 │   └── styles.go
 ├── internal/               # Business logic
 │   ├── models/            # Data structures
 │   │   ├── entry.go
-│   │   └── todo.go
+│   │   ├── todo.go
+│   │   └── config.go      # User preferences
 │   ├── storage/           # JSON persistence
 │   │   └── storage.go
 │   └── helpers/           # Utilities
@@ -274,6 +284,7 @@ make build
 
 - Entries stored in `~/.amos/entries.json`
 - Todos stored in `~/.amos/todos.json`
+- User config stored in `~/.amos/config.json` (theme preference)
 - Plain JSON format (no database)
 - Auto-creates directory on first run
 

@@ -5,6 +5,6 @@ import (
 )
 
 // RenderAddTodoForm renders the standalone todo creation form
-func RenderAddTodoForm(width, height int, ti textarea.Model, statusMsg string, hasUnsaved bool) string {
-	return RenderFormView(width, height, ti.View(), statusMsg, hasUnsaved, "enter", "save", "esc", "cancel")
+func RenderAddTodoForm(width, height int, theme Theme, ti textarea.Model, statusMsg string, hasUnsaved bool) string {
+	return RenderFormView(width, height, theme, ti.View(), statusMsg, hasUnsaved, "enter", "save", "esc", "cancel")
 }

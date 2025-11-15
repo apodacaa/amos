@@ -7,6 +7,7 @@ import (
 
 	"github.com/apodacaa/amos/internal/helpers"
 	"github.com/apodacaa/amos/internal/models"
+	"github.com/apodacaa/amos/internal/storage"
 	"github.com/apodacaa/amos/ui"
 	"github.com/charmbracelet/bubbles/textarea"
 	tea "github.com/charmbracelet/bubbletea"
@@ -15,7 +16,8 @@ import (
 
 // Model holds the application state
 type Model struct {
-	view                 string            // Current view: "entry", "entries", "view_entry", "todos", "view_todo", "unified_filter", or "add_todo"
+	view                 string            // Current view: "entry", "entries", "view_entry", "todos", "view_todo", "unified_filter", "add_todo", or "theme_selector"
+	previousView         string            // Previous view (for returning from modals like theme_selector)
 	width                int               // Terminal width
 	height               int               // Terminal height
 	textarea             textarea.Model    // Textarea for entry input
@@ -43,6 +45,9 @@ type Model struct {
 	autocompleteTag      string            // Current autocomplete suggestion for tag input
 	markedForDeletion    map[string]string // Map of ID to type ("entry" or "todo") for items marked for deletion
 	deleteConfirmPending bool              // Whether $ has been pressed once (waiting for second press)
+	config               models.Config     // User configuration (theme, etc.)
+	currentTheme         ui.Theme          // Currently active theme
+	selectedTheme        int               // Selected theme index in theme selector
 }
 
 // NewModel creates a new model with default values
@@ -73,6 +78,12 @@ func NewModel() Model {
 	unifiedFilterInput.SetHeight(1) // Single line
 	ui.ApplyTextareaStyle(&unifiedFilterInput)
 
+	// Load config from storage (or use default)
+	config, _ := storage.LoadConfig()
+
+	// Load theme based on config
+	currentTheme := ui.GetThemeByName(config.Theme)
+
 	return Model{
 		view:               "entries",
 		width:              80, // Default width
@@ -81,6 +92,9 @@ func NewModel() Model {
 		todoInput:          todoInput,
 		unifiedFilterInput: unifiedFilterInput,
 		markedForDeletion:  make(map[string]string),
+		config:             config,
+		currentTheme:       currentTheme,
+		selectedTheme:      0, // Will be set when opening theme selector
 	}
 }
 
@@ -112,6 +126,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m.handleUnifiedFilterKeys(msg)
 		case "add_todo":
 			return m.handleAddTodoKeys(msg)
+		case "theme_selector":
+			return m.handleThemeSelectorKeys(msg)
 		default:
 			// Default to entry list (app opens to entries)
 			return m.handleEntriesListKeys(msg)
@@ -239,6 +255,16 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		m.statusTime = time.Now()
 		return m, clearStatusAfterDelay()
+
+	case configSavedMsg:
+		// Config saved - no need to show status message
+		// Theme is already applied in handleThemeSelectorKeys
+		if msg.err != nil {
+			m.statusMsg = "Error saving theme: " + msg.err.Error()
+			m.statusTime = time.Now()
+			return m, clearStatusAfterDelay()
+		}
+		return m, nil
 	}
 
 	// Update textarea if in entry view
@@ -253,29 +279,31 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m Model) View() string {
 	switch m.view {
 	case "entry":
-		return ui.RenderEntryForm(m.width, m.height, m.textarea, m.statusMsg, m.hasUnsaved)
+		return ui.RenderEntryForm(m.width, m.height, m.currentTheme, m.textarea, m.statusMsg, m.hasUnsaved)
 	case "entries":
-		return ui.RenderEntryList(m.width, m.height, m.entries, m.selectedEntry, m.todos, m.filterTags, m.filterDate, m.markedForDeletion, m.statusMsg)
+		return ui.RenderEntryList(m.width, m.height, m.currentTheme, m.entries, m.selectedEntry, m.todos, m.filterTags, m.filterDate, m.markedForDeletion, m.statusMsg)
 	case "view_entry":
 		// Calculate filtered/sorted entry position for footer display
 		filtered := helpers.FilterEntriesByDateRange(m.entries, m.filterDate)
 		filtered = helpers.FilterEntriesByTags(filtered, m.filterTags)
 		sorted := helpers.SortEntriesForDisplay(filtered)
-		return ui.RenderEntryView(m.width, m.height, m.viewingEntry, m.todos, m.scrollOffset, m.markedForDeletion, m.statusMsg, m.selectedEntry, len(sorted))
+		return ui.RenderEntryView(m.width, m.height, m.currentTheme, m.viewingEntry, m.todos, m.scrollOffset, m.markedForDeletion, m.statusMsg, m.selectedEntry, len(sorted))
 	case "todos":
-		return ui.RenderTodoList(m.width, m.height, m.displayTodos, m.entries, m.selectedTodo, m.filterTags, m.filterDate, m.markedForDeletion, m.statusMsg)
+		return ui.RenderTodoList(m.width, m.height, m.currentTheme, m.displayTodos, m.entries, m.selectedTodo, m.filterTags, m.filterDate, m.markedForDeletion, m.statusMsg)
 	case "view_todo":
 		// Calculate filtered/sorted todo position for footer display
 		filtered := helpers.FilterTodosByDateRange(m.displayTodos, m.filterDate)
 		filtered = helpers.FilterTodosByTags(filtered, m.filterTags)
 		sorted := helpers.SortTodosForDisplay(filtered)
-		return ui.RenderTodoView(m.width, m.height, m.viewingTodo, m.entries, m.scrollOffset, m.markedForDeletion, m.statusMsg, m.selectedTodo, len(sorted))
+		return ui.RenderTodoView(m.width, m.height, m.currentTheme, m.viewingTodo, m.entries, m.scrollOffset, m.markedForDeletion, m.statusMsg, m.selectedTodo, len(sorted))
 	case "unified_filter":
-		return ui.RenderUnifiedFilter(m.width, m.height, m.unifiedFilterInput, m.availableTags, m.autocompleteTag, m.statusMsg)
+		return ui.RenderUnifiedFilter(m.width, m.height, m.currentTheme, m.unifiedFilterInput, m.availableTags, m.autocompleteTag, m.statusMsg)
 	case "add_todo":
-		return ui.RenderAddTodoForm(m.width, m.height, m.todoInput, m.statusMsg, m.hasUnsaved)
+		return ui.RenderAddTodoForm(m.width, m.height, m.currentTheme, m.todoInput, m.statusMsg, m.hasUnsaved)
+	case "theme_selector":
+		return ui.RenderThemeSelector(m.width, m.height, m.currentTheme, m.selectedTheme)
 	default:
-		return ui.RenderEntryList(m.width, m.height, m.entries, m.selectedEntry, m.todos, m.filterTags, m.filterDate, m.markedForDeletion, m.statusMsg)
+		return ui.RenderEntryList(m.width, m.height, m.currentTheme, m.entries, m.selectedEntry, m.todos, m.filterTags, m.filterDate, m.markedForDeletion, m.statusMsg)
 	}
 }
 

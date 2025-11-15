@@ -12,6 +12,7 @@ const (
 	amosDir     = ".amos"
 	entriesFile = "entries.json"
 	todosFile   = "todos.json"
+	configFile  = "config.json"
 )
 
 // GetAmosDir returns the path to ~/.amos directory
@@ -264,4 +265,52 @@ func DeleteEntryCascade(entryID string) error {
 	}
 
 	return SaveTodos(filteredTodos)
+}
+
+// LoadConfig loads user configuration from config.json
+func LoadConfig() (models.Config, error) {
+	dir, err := GetAmosDir()
+	if err != nil {
+		return models.DefaultConfig(), err
+	}
+
+	path := filepath.Join(dir, configFile)
+
+	// If file doesn't exist, return default config
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		return models.DefaultConfig(), nil
+	}
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return models.DefaultConfig(), err
+	}
+
+	var config models.Config
+	if err := json.Unmarshal(data, &config); err != nil {
+		return models.DefaultConfig(), err
+	}
+
+	return config, nil
+}
+
+// SaveConfig saves user configuration to config.json
+func SaveConfig(config models.Config) error {
+	if err := EnsureAmosDir(); err != nil {
+		return err
+	}
+
+	dir, err := GetAmosDir()
+	if err != nil {
+		return err
+	}
+
+	path := filepath.Join(dir, configFile)
+
+	data, err := json.MarshalIndent(config, "", "  ")
+	if err != nil {
+		return err
+	}
+
+	return os.WriteFile(path, data, 0644)
 }

@@ -9,7 +9,7 @@ import (
 )
 
 // RenderEntryList renders the entry list view
-func RenderEntryList(width, height int, entries []models.Entry, selectedIdx int, todos []models.Todo, filterTags []string, filterDate string, markedForDeletion map[string]string, statusMsg string) string {
+func RenderEntryList(width, height int, theme Theme, entries []models.Entry, selectedIdx int, todos []models.Todo, filterTags []string, filterDate string, markedForDeletion map[string]string, statusMsg string) string {
 	// Apply filters: first date, then tags
 	filtered := helpers.FilterEntriesByDateRange(entries, filterDate)
 	filtered = helpers.FilterEntriesByTags(filtered, filterTags)
@@ -60,21 +60,21 @@ func RenderEntryList(width, height int, entries []models.Entry, selectedIdx int,
 			if i == selectedIdx {
 				// Selected: plain text, let selection style handle it
 				plainLine := fmt.Sprintf("%s %s  %s", markerText, timestamp, titleText)
-				styled = GetSelectedItemStyle(width).Render(plainLine)
+				styled = GetSelectedItemStyle(width, theme).Render(plainLine)
 			} else {
 				// Not selected: apply color styling
 				var styledMarker string
 				if isMarked && hasTodos {
-					styledMarker = StyleMarker("D", true) + StyleMarker("+", false)
+					styledMarker = StyleMarker("D", true, theme) + StyleMarker("+", false, theme)
 				} else if isMarked && !hasTodos {
-					styledMarker = StyleMarker("D", true) + " "
+					styledMarker = StyleMarker("D", true, theme) + " "
 				} else if !isMarked && hasTodos {
-					styledMarker = " " + StyleMarker("+", false)
+					styledMarker = " " + StyleMarker("+", false, theme)
 				} else {
 					styledMarker = "  "
 				}
-				styledDate := StyleDate(timestamp)
-				styledTitle := HighlightTagsInText(titleText)
+				styledDate := StyleDate(timestamp, theme)
+				styledTitle := HighlightTagsInText(titleText, theme)
 				line := fmt.Sprintf("%s %s  %s", styledMarker, styledDate, styledTitle)
 				styled = GetNormalItemStyle().Width(width).Render(line)
 			}
@@ -86,7 +86,7 @@ func RenderEntryList(width, height int, entries []models.Entry, selectedIdx int,
 	list := strings.Join(listItems, "\n")
 
 	// Header
-	header := RenderHeader(width, "n", "new", "a", "todo", "j/k", "nav", "enter", "view", "d", "del", "/", "filter", "t", "todos", "q", "quit")
+	header := RenderHeader(width, theme, "n", "new", "a", "todo", "j/k", "nav", "enter", "view", "d", "del", "/", "filter", "t", "todos", "s", "theme", "q", "quit")
 
 	// Footer (show only filter context, no view label)
 	var footerTitle string
@@ -110,7 +110,7 @@ func RenderEntryList(width, height int, entries []models.Entry, selectedIdx int,
 		stats = fmt.Sprintf("Entry %d of %d", selectedIdx+1, len(sorted))
 	}
 
-	footer := RenderFooter(width, stats, footerTitle)
+	footer := RenderFooter(width, theme, stats, footerTitle)
 
 	return AssembleView(header, list, footer, width, height, statusMsg)
 }

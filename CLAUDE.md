@@ -80,6 +80,13 @@ This codebase is small (~3000 lines) and well-organized. Work efficiently:
 - Add todo: `update_add_todo.go`, `ui/add_todo_form.go`
 - Todo logic: `internal/helpers/todos.go`, `internal/helpers/sorting.go`
 
+**Theme Selector:**
+- Input handler: `update_theme_selector.go`
+- UI renderer: `ui/theme_selector.go`
+- Theme definitions: `ui/styles.go` (BrutalistTheme, CyberpunkTheme)
+- Config model: `internal/models/config.go`
+- Accessed via `s` key from entry view and todo list
+
 **Core State:**
 - Model struct: `model.go:17-42` (includes filterContext field)
 - Update routing: `model.go:97-129` (switch on view)
@@ -127,6 +134,7 @@ update_*.go              # Key handlers per view (domain separation)
   update_todos.go        # Todo list (toggle, reorder)
   update_unified_filter.go  # Unified filtering (tags + dates)
   update_add_todo.go     # Standalone todo form
+  update_theme_selector.go  # Theme selection modal
 ui/                      # Pure view renderers
   entry_form.go
   entry_list.go
@@ -134,11 +142,13 @@ ui/                      # Pure view renderers
   todo_list.go
   unified_filter.go      # Unified filter view
   add_todo_form.go
-  styles.go              # Brutalist styling (monochrome)
+  theme_selector.go      # Theme selection modal
+  styles.go              # Theme definitions and styling
 internal/
   models/                # Data structures
     entry.go             # Entry{ID, Title, Body, Tags, Timestamp, TodoIDs}
     todo.go              # Todo{ID, Title, Status, Tags, CreatedAt, EntryID, Position}
+    config.go            # Config{Theme}
   storage/               # JSON persistence (~/.amos/)
     storage.go           # Load/Save functions for entries.json and todos.json
   helpers/               # Reusable business logic
@@ -153,9 +163,9 @@ internal/
 
 **State Management**:
 - All state lives in the `Model` struct (model.go:17-42)
-- View routing via `m.view` string field ("entry", "entries", "view_entry", "todos", "unified_filter", "add_todo")
+- View routing via `m.view` string field ("entry", "entries", "view_entry", "todos", "unified_filter", "add_todo", "theme_selector")
 - Filter context via `m.filterContext` ("entries" or "todos") - determines return view from filter
-- No hidden previousView tracking - explicit navigation only
+- Theme selector uses `m.previousView` to return to calling view
 - App opens to "entries" view (entry list as default)
 
 **Message Flow**:
@@ -170,6 +180,7 @@ internal/
 - JSON files in `~/.amos/` directory
 - `storage.LoadEntries()` / `storage.SaveEntry()` for entries
 - `storage.LoadTodos()` / `storage.SaveTodo()` for todos
+- `storage.LoadConfig()` / `storage.SaveConfig()` for user preferences (theme)
 - Save operations happen via commands (async), results via messages
 
 **Todo System**:
@@ -211,16 +222,19 @@ The app follows strict brutalist principles:
 **Navigation**:
 - Entry list and todo list are peer views (no hierarchy, no back button)
 - `e` / `t` - Jump between entry list and todo list from any view
-- `esc` - Exits forms to natural home: entry form → entry list, add todo → todo list, entry view → entry list
+- `s` - Open theme selector (from entry view and todo list)
+- `esc` - Exits forms to natural home: entry form → entry list, add todo → todo list, entry view → entry list, theme selector → previous view
 - `n` - New entry (works from any read-only view)
 - `a` - Add standalone todo (works from any read-only view)
-- No hidden navigation state - explicit view switching only
+- Theme selector uses `m.previousView` to track return destination
 
 **Visual Design**:
 - **All views**: Honest workspaces with left-aligned help text anchored to bottom
-- **Monochrome palette**: Pure black/white/gray (no colors)
+- **Theme support**: Two built-in themes accessible via `s` key
+  - **Brutalist**: Monochrome (terminal defaults), reverse video for emphasis
+  - **Cyberpunk**: Neon colors (Matrix green, Tron blue, magenta, cyan, orange)
 - **No decorations**: No italics, no Unicode bullets (use `>` not `►`), just ASCII
-- Help text uses inverted black/white for maximum contrast
+- Help text uses maximum contrast (reverse video for brutalist, colored backgrounds for cyberpunk)
 - Help text uses non-breaking spaces (\u00A0) to prevent key/description splitting
 - Wrapped helper lines have blank line between them for readability
 - Status messages appear in message line below footer (e.g., "saved" in forms, "Filter applied. Press c to clear", "X items marked. Press $ to delete")

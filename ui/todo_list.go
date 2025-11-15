@@ -9,7 +9,7 @@ import (
 )
 
 // RenderTodoList renders the todo list view
-func RenderTodoList(width, height int, todos []models.Todo, entries []models.Entry, selectedIdx int, filterTags []string, filterDate string, markedForDeletion map[string]string, statusMsg string) string {
+func RenderTodoList(width, height int, theme Theme, todos []models.Todo, entries []models.Entry, selectedIdx int, filterTags []string, filterDate string, markedForDeletion map[string]string, statusMsg string) string {
 	// Apply filters: first date, then tags
 	filtered := helpers.FilterTodosByDateRange(todos, filterDate)
 	filtered = helpers.FilterTodosByTags(filtered, filterTags)
@@ -73,31 +73,31 @@ func RenderTodoList(width, height int, todos []models.Todo, entries []models.Ent
 				// Selected: plain text on neon green background (no color styling)
 				plainLine := fmt.Sprintf("%s %s %s  %s", markerText, checkbox, dateStr, titleText)
 				if todo.Status == "done" {
-					styled = GetSelectedDoneStyle(width).Render(plainLine)
+					styled = GetSelectedDoneStyle(width, theme).Render(plainLine)
 				} else {
-					styled = GetSelectedItemStyle(width).Render(plainLine)
+					styled = GetSelectedItemStyle(width, theme).Render(plainLine)
 				}
 			} else {
 				// Not selected: check status first
 				if todo.Status == "done" {
 					// Done: plain text, dimmed
 					plainLine := fmt.Sprintf("%s %s %s  %s", markerText, checkbox, dateStr, titleText)
-					styled = GetDimmedStyle().Width(width).Render(plainLine)
+					styled = GetDimmedStyle(theme).Width(width).Render(plainLine)
 				} else {
 					// Open/next: apply full color styling
 					var styledMarker string
 					if isMarked && hasEntry {
-						styledMarker = StyleMarker("D", true) + StyleMarker("+", false)
+						styledMarker = StyleMarker("D", true, theme) + StyleMarker("+", false, theme)
 					} else if isMarked && !hasEntry {
-						styledMarker = StyleMarker("D", true) + " "
+						styledMarker = StyleMarker("D", true, theme) + " "
 					} else if !isMarked && hasEntry {
-						styledMarker = " " + StyleMarker("+", false)
+						styledMarker = " " + StyleMarker("+", false, theme)
 					} else {
 						styledMarker = "  "
 					}
-					styledCheckbox := StyleTodoStatus(todo.Status, checkbox)
-					styledDate := StyleDate(dateStr)
-					styledTitle := HighlightTagsInText(titleText)
+					styledCheckbox := StyleTodoStatus(todo.Status, checkbox, theme)
+					styledDate := StyleDate(dateStr, theme)
+					styledTitle := HighlightTagsInText(titleText, theme)
 					line := fmt.Sprintf("%s %s %s  %s", styledMarker, styledCheckbox, styledDate, styledTitle)
 					styled = GetNormalItemStyle().Width(width).Render(line)
 				}
@@ -110,7 +110,7 @@ func RenderTodoList(width, height int, todos []models.Todo, entries []models.Ent
 	list := strings.Join(listItems, "\n")
 
 	// Header
-	header := RenderHeader(width, "n", "new", "a", "todo", "enter", "view", "j/k", "nav", "space", "cycle", "d", "del", "/", "filter", "e", "entries", "q", "quit")
+	header := RenderHeader(width, theme, "n", "new", "a", "todo", "enter", "view", "j/k", "nav", "space", "cycle", "d", "del", "/", "filter", "e", "entries", "s", "theme", "q", "quit")
 
 	// Footer (show only filter context, no view label)
 	var footerTitle string
@@ -134,7 +134,7 @@ func RenderTodoList(width, height int, todos []models.Todo, entries []models.Ent
 		stats = fmt.Sprintf("Todo %d of %d", selectedIdx+1, len(filtered))
 	}
 
-	footer := RenderFooter(width, stats, footerTitle)
+	footer := RenderFooter(width, theme, stats, footerTitle)
 
 	return AssembleView(header, list, footer, width, height, statusMsg)
 }

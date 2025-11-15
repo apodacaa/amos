@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/apodacaa/amos/internal/helpers"
+	"github.com/apodacaa/amos/ui"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -34,6 +35,19 @@ func (m Model) handleEntriesListKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "a":
 		// Add standalone todo (using shared helper)
 		return m.handleAddTodo()
+	case "s":
+		// Open theme selector
+		m.previousView = m.view
+		m.view = "theme_selector"
+		// Set selected theme to current theme
+		themes := ui.ListThemes()
+		for i, theme := range themes {
+			if theme.Name == m.currentTheme.Name {
+				m.selectedTheme = i
+				break
+			}
+		}
+		return m, nil
 	case "/":
 		// Open unified filter input with current filter pre-populated
 		return m.openUnifiedFilter("entries")

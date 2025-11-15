@@ -10,11 +10,11 @@ import (
 )
 
 // RenderEntryView renders a read-only view of an entry
-func RenderEntryView(width, height int, entry models.Entry, allTodos []models.Todo, scrollOffset int, markedForDeletion map[string]string, statusMsg string, currentIndex int, totalCount int) string {
+func RenderEntryView(width, height int, theme Theme, entry models.Entry, allTodos []models.Todo, scrollOffset int, markedForDeletion map[string]string, statusMsg string, currentIndex int, totalCount int) string {
 	// Title at top with date
 	dateStr := entry.Timestamp.Format("2006-01-02")
-	styledDate := StyleDate(dateStr)
-	styledTitle := HighlightTagsInText(entry.Title)
+	styledDate := StyleDate(dateStr, theme)
+	styledTitle := HighlightTagsInText(entry.Title, theme)
 	title := fmt.Sprintf("%s: %s", styledDate, styledTitle)
 
 	// Todos section (if any)
@@ -41,10 +41,10 @@ func RenderEntryView(width, height int, entry models.Entry, allTodos []models.To
 				}
 
 				// Style checkbox based on status
-				styledCheckbox := StyleTodoStatus(todo.Status, checkbox)
+				styledCheckbox := StyleTodoStatus(todo.Status, checkbox, theme)
 
 				// Apply tag highlighting to title
-				highlightedTitle := HighlightTagsInText(todo.Title)
+				highlightedTitle := HighlightTagsInText(todo.Title, theme)
 				todoLine := fmt.Sprintf("%s %s", styledCheckbox, highlightedTitle)
 
 				// Add tags if present (with bold highlighting)
@@ -54,12 +54,12 @@ func RenderEntryView(width, height int, entry models.Entry, allTodos []models.To
 						tagParts = append(tagParts, "@"+tag)
 					}
 					tagStr := " " + strings.Join(tagParts, " ")
-					todoLine += HighlightTagsInText(tagStr)
+					todoLine += HighlightTagsInText(tagStr, theme)
 				}
 
 				// Dim completed todos
 				if todo.Status == "done" {
-					todoLine = GetDimmedStyle().Render(todoLine)
+					todoLine = GetDimmedStyle(theme).Render(todoLine)
 				} else {
 					todoLine = GetNormalItemStyle().Render(todoLine)
 				}
@@ -108,15 +108,15 @@ func RenderEntryView(width, height int, entry models.Entry, allTodos []models.To
 		}
 
 		visibleLines := bodyLines[scrollStart:scrollEnd]
-		body = HighlightTagsInText(strings.Join(visibleLines, "\n"))
+		body = HighlightTagsInText(strings.Join(visibleLines, "\n"), theme)
 	} else {
-		body = HighlightTagsInText(wrappedBody)
+		body = HighlightTagsInText(wrappedBody, theme)
 		scrollStart = 0
 		scrollEnd = totalLines
 	}
 
 	// Header
-	header := RenderHeader(width, "n", "new", "a", "todo", "j/k", "nav", "d", "del", "e", "entries", "t", "todos", "q", "quit")
+	header := RenderHeader(width, theme, "n", "new", "a", "todo", "j/k", "nav", "d", "del", "e", "entries", "t", "todos", "s", "theme", "q", "quit")
 
 	// Footer: entry position + marked indicator + scroll info
 	footerTitle := fmt.Sprintf("Entry %d of %d", currentIndex+1, totalCount)
@@ -132,7 +132,7 @@ func RenderEntryView(width, height int, entry models.Entry, allTodos []models.To
 		footerStats = fmt.Sprintf("lines %d-%d of %d", scrollStart+1, scrollEnd, totalLines)
 	}
 
-	footer := RenderFooter(width, footerTitle, footerStats)
+	footer := RenderFooter(width, theme, footerTitle, footerStats)
 
 	// Build main content
 	mainContent := lipgloss.JoinVertical(
