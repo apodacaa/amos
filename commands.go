@@ -38,41 +38,6 @@ func (m Model) loadEntriesAndTodos() tea.Cmd {
 	return tea.Batch(m.loadEntries(), m.loadTodos())
 }
 
-// loadAndRepairEntriesAndTodos loads entries and todos, then repairs the Entry ↔ Todo relationship
-// This ensures entry.TodoIDs is in sync with todos that have entry_id pointing to the entry
-func (m Model) loadAndRepairEntriesAndTodos() tea.Cmd {
-	return func() tea.Msg {
-		// Load entries
-		entries, err := storage.LoadEntries()
-		if err != nil {
-			return entriesLoadedMsg{entries: entries, err: err}
-		}
-
-		// Load todos
-		todos, err := storage.LoadTodos()
-		if err != nil {
-			return todosLoadedMsg{todos: todos, err: err}
-		}
-
-		// Repair the Entry ↔ Todo relationship
-		repairedEntries := helpers.RepairEntryTodoRelationships(entries, todos)
-
-		// Save repaired entries back to storage
-		for _, entry := range repairedEntries {
-			if err := storage.SaveEntry(entry); err != nil {
-				// Continue on error - we still want to load what we can
-				continue
-			}
-		}
-
-		// Return both as batch messages
-		return tea.Batch(
-			func() tea.Msg { return entriesLoadedMsg{entries: repairedEntries, err: nil} },
-			func() tea.Msg { return todosLoadedMsg{todos: todos, err: nil} },
-		)()
-	}
-}
-
 // toggleTodoImmediate saves a todo immediately without reloading
 func (m Model) toggleTodoImmediate(todo models.Todo) tea.Cmd {
 	return func() tea.Msg {
@@ -97,30 +62,21 @@ func (m Model) saveEntry() tea.Cmd {
 		todoTitles := helpers.ExtractTodos(content)
 
 		// Load existing todos for this entry to avoid duplicates
+		// Single source of truth: use Todo.EntryID to find linked todos
 		existingTodosByTitle := make(map[string]string) // title -> ID
 		allTodos, err := storage.LoadTodos()
 		if err == nil {
-			// Build map of existing todos for this entry
-			for _, existingID := range m.currentEntry.TodoIDs {
-				for _, todo := range allTodos {
-					if todo.ID == existingID {
-						existingTodosByTitle[todo.Title] = todo.ID
-						break
-					}
-				}
+			// Filter todos that belong to this entry
+			entryTodos := helpers.FilterTodosByEntry(allTodos, m.currentEntry.ID)
+			for _, todo := range entryTodos {
+				existingTodosByTitle[todo.Title] = todo.ID
 			}
 		}
 
-		// Create todo IDs list (preserve existing + add new)
-		todoIDs := make([]string, 0, len(todoTitles))
-
-		// Create and save only NEW todos
+		// Create and save only NEW todos (no need to track TodoIDs on entry)
 		for _, todoTitle := range todoTitles {
-			// Check if this todo already exists
-			if existingID, exists := existingTodosByTitle[todoTitle]; exists {
-				// Reuse existing todo ID
-				todoIDs = append(todoIDs, existingID)
-			} else {
+			// Check if this todo already exists for this entry
+			if _, exists := existingTodosByTitle[todoTitle]; !exists {
 				// Create new todo
 				todo := models.Todo{
 					ID:        uuid.New().String(),
@@ -128,23 +84,20 @@ func (m Model) saveEntry() tea.Cmd {
 					Status:    "open",
 					Tags:      helpers.ExtractTags(todoTitle), // Extract tags from todo title
 					CreatedAt: time.Now(),
-					EntryID:   &m.currentEntry.ID, // Link to this entry
+					EntryID:   &m.currentEntry.ID, // Link to this entry (single source of truth)
 				}
 
 				// Save new todo
 				if err := storage.SaveTodo(todo); err != nil {
 					return saveCompleteMsg{err: err}
 				}
-
-				todoIDs = append(todoIDs, todo.ID)
 			}
 		}
 
-		// Update current entry
+		// Update current entry (no TodoIDs needed - single source of truth via Todo.EntryID)
 		m.currentEntry.Title = title
 		m.currentEntry.Body = body
 		m.currentEntry.Tags = tags
-		m.currentEntry.TodoIDs = todoIDs
 		m.currentEntry.Timestamp = time.Now()
 
 		// Save entry to storage
@@ -175,13 +128,9 @@ func (m Model) deleteMarkedCmd() tea.Cmd {
 		for id, itemType := range m.markedForDeletion {
 			if itemType == "entry" {
 				entryIDs = append(entryIDs, id)
-				// Count linked todos for this entry
-				for _, e := range m.entries {
-					if e.ID == id {
-						linkedTodoCount += len(e.TodoIDs)
-						break
-					}
-				}
+				// Count linked todos for this entry (single source of truth: use FilterTodosByEntry)
+				linkedTodos := helpers.FilterTodosByEntry(m.todos, id)
+				linkedTodoCount += len(linkedTodos)
 			} else if itemType == "todo" {
 				todoIDs = append(todoIDs, id)
 			}

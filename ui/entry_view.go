@@ -18,56 +18,54 @@ func RenderEntryView(width, height int, theme Theme, entry models.Entry, allTodo
 
 	// Todos section (if any)
 	var todosSection string
-	if len(entry.TodoIDs) > 0 {
-		// Filter todos that belong to this entry
-		entryTodos := helpers.FilterTodosByEntry(allTodos, entry.ID)
+	// Filter todos that belong to this entry (single source of truth: Todo.EntryID)
+	entryTodos := helpers.FilterTodosByEntry(allTodos, entry.ID)
 
-		if len(entryTodos) > 0 {
-			// Count open todos
-			openCount, totalCount := helpers.CountTodoStats(entryTodos)
+	if len(entryTodos) > 0 {
+		// Count open todos
+		openCount, totalCount := helpers.CountTodoStats(entryTodos)
 
-			todosTitle := GetNormalItemStyle().Render(fmt.Sprintf("Todos (%d open, %d total)", openCount, totalCount))
+		todosTitle := GetNormalItemStyle().Render(fmt.Sprintf("Todos (%d open, %d total)", openCount, totalCount))
 
-			// Render each todo
-			var todoLines []string
-			for _, todo := range entryTodos {
-				checkbox := "[ ]"
-				if todo.Status == "done" {
-					checkbox = "[x]"
-				} else if todo.Status == "next" {
-					checkbox = "[>]"
-				}
-
-				// Style checkbox based on status
-				styledCheckbox := StyleTodoStatus(todo.Status, checkbox, theme)
-
-				// Apply tag highlighting to title
-				highlightedTitle := HighlightTagsInText(todo.Title, theme)
-				todoLine := fmt.Sprintf("%s %s", styledCheckbox, highlightedTitle)
-
-				// Add tags if present (with bold highlighting)
-				if len(todo.Tags) > 0 {
-					var tagParts []string
-					for _, tag := range todo.Tags {
-						tagParts = append(tagParts, "@"+tag)
-					}
-					tagStr := " " + strings.Join(tagParts, " ")
-					todoLine += HighlightTagsInText(tagStr, theme)
-				}
-
-				// Dim completed todos
-				if todo.Status == "done" {
-					todoLine = GetDimmedStyle(theme).Render(todoLine)
-				} else {
-					todoLine = GetNormalItemStyle().Render(todoLine)
-				}
-
-				todoLines = append(todoLines, "  "+todoLine)
+		// Render each todo
+		var todoLines []string
+		for _, todo := range entryTodos {
+			checkbox := "[ ]"
+			if todo.Status == "done" {
+				checkbox = "[x]"
+			} else if todo.Status == "next" {
+				checkbox = "[>]"
 			}
 
-			todosContent := strings.Join(todoLines, "\n")
-			todosSection = "\n\n" + todosTitle + "\n" + todosContent
+			// Style checkbox based on status
+			styledCheckbox := StyleTodoStatus(todo.Status, checkbox, theme)
+
+			// Apply tag highlighting to title
+			highlightedTitle := HighlightTagsInText(todo.Title, theme)
+			todoLine := fmt.Sprintf("%s %s", styledCheckbox, highlightedTitle)
+
+			// Add tags if present (with bold highlighting)
+			if len(todo.Tags) > 0 {
+				var tagParts []string
+				for _, tag := range todo.Tags {
+					tagParts = append(tagParts, "@"+tag)
+				}
+				tagStr := " " + strings.Join(tagParts, " ")
+				todoLine += HighlightTagsInText(tagStr, theme)
+			}
+
+			// Dim completed todos
+			if todo.Status == "done" {
+				todoLine = GetDimmedStyle(theme).Render(todoLine)
+			} else {
+				todoLine = GetNormalItemStyle().Render(todoLine)
+			}
+
+			todoLines = append(todoLines, "  "+todoLine)
 		}
+
+		todosContent := strings.Join(todoLines, "\n")
+		todosSection = "\n\n" + todosTitle + "\n" + todosContent
 	}
 
 	// Calculate available height for scrollable body content
