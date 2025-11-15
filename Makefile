@@ -87,6 +87,6 @@ release: ## Create a new release (usage: make release VERSION=1.2.1 [NOTES=relea
 		echo "Usage: make release VERSION=1.2.1 [NOTES=release-notes.md] [DRY_RUN=true]"; \
 		exit 1; \
 	fi
-	@./scripts/release.sh $(VERSION) $(NOTES) $(DRY_RUN)
+	@./scripts/release.sh $(VERSION) "$(NOTES)" "$(DRY_RUN)"
 
 .DEFAULT_GOAL := help
