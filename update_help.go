@@ -47,20 +47,6 @@ func updateHelp(m Model, msg tea.KeyMsg) (Model, tea.Cmd) {
 		}
 		return m, nil
 
-	case "j", "down":
-		// Scroll down one line
-		if m.scrollOffset < maxOffset {
-			m.scrollOffset++
-		}
-		return m, nil
-
-	case "k", "up":
-		// Scroll up one line
-		if m.scrollOffset > 0 {
-			m.scrollOffset--
-		}
-		return m, nil
-
 	case "f":
 		// Scroll forward (down) one page
 		m.scrollOffset += availableHeight
