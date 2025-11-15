@@ -8,6 +8,7 @@ set -e
 
 VERSION=$1
 RELEASE_NOTES_FILE=$2
+DRY_RUN=$3
 HOMEBREW_PATH="/home/anthonyapodaca/Github/homebrew-amos"
 AMOS_PATH="/home/anthonyapodaca/Github/amos"
 GH_CLI="$HOME/.local/bin/gh"
@@ -18,10 +19,21 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
+# Helper function to run commands (respects DRY_RUN)
+run_cmd() {
+    if [ "$DRY_RUN" = "true" ]; then
+        echo -e "${YELLOW}[DRY RUN]${NC} $*"
+    else
+        "$@"
+    fi
+}
+
 if [ -z "$VERSION" ]; then
     echo -e "${RED}Error: Version required${NC}"
-    echo "Usage: $0 VERSION [RELEASE_NOTES_FILE]"
+    echo "Usage: $0 VERSION [RELEASE_NOTES_FILE] [DRY_RUN]"
     echo "Example: $0 1.2.1"
+    echo "Example: $0 1.2.1 release-notes.md"
+    echo "Example: $0 1.2.1 \"\" true  # Dry run"
     exit 1
 fi
 
@@ -33,16 +45,23 @@ fi
 
 echo -e "${GREEN}========================================${NC}"
 echo -e "${GREEN}Starting release process for v${VERSION}${NC}"
+if [ "$DRY_RUN" = "true" ]; then
+    echo -e "${YELLOW}[DRY RUN MODE - No changes will be made]${NC}"
+fi
 echo -e "${GREEN}========================================${NC}"
 echo ""
 
 # Check if we're in the amos directory
 cd "$AMOS_PATH"
 
-# Check for uncommitted changes
-if ! git diff-index --quiet HEAD --; then
-    echo -e "${RED}Error: Uncommitted changes detected. Commit or stash them first.${NC}"
-    exit 1
+# Check for uncommitted changes (skip in dry-run mode)
+if [ "$DRY_RUN" != "true" ]; then
+    if ! git diff-index --quiet HEAD --; then
+        echo -e "${RED}Error: Uncommitted changes detected. Commit or stash them first.${NC}"
+        exit 1
+    fi
+else
+    echo -e "${YELLOW}[DRY RUN] Skipping uncommitted changes check${NC}"
 fi
 
 # Get current branch
@@ -52,25 +71,25 @@ echo -e "${YELLOW}Current branch: $CURRENT_BRANCH${NC}"
 # Merge to main if not already on main
 if [ "$CURRENT_BRANCH" != "main" ]; then
     echo -e "${YELLOW}Merging $CURRENT_BRANCH to main...${NC}"
-    git checkout main
-    git pull origin main
-    git merge "$CURRENT_BRANCH" --no-edit
+    run_cmd git checkout main
+    run_cmd git pull origin main
+    run_cmd git merge "$CURRENT_BRANCH" --no-edit
     echo -e "${GREEN}✓ Merged to main${NC}"
 else
     echo -e "${YELLOW}Already on main, pulling latest...${NC}"
-    git pull origin main
+    run_cmd git pull origin main
 fi
 
 echo ""
 
 # Create annotated tag
 echo -e "${YELLOW}Creating tag v${VERSION}...${NC}"
-git tag -a "v${VERSION}" -m "Release v${VERSION}"
+run_cmd git tag -a "v${VERSION}" -m "Release v${VERSION}"
 echo -e "${GREEN}✓ Tag created${NC}"
 
 # Push tag
 echo -e "${YELLOW}Pushing tag to GitHub...${NC}"
-git push origin "v${VERSION}"
+run_cmd git push origin "v${VERSION}"
 echo -e "${GREEN}✓ Tag pushed${NC}"
 
 echo ""
@@ -116,7 +135,7 @@ fi
 
 # Create GitHub release
 echo -e "${YELLOW}Creating GitHub release...${NC}"
-$GH_CLI release create "v${VERSION}" \
+run_cmd $GH_CLI release create "v${VERSION}" \
     --repo apodacaa/amos \
     --title "Release v${VERSION}" \
     --notes "$RELEASE_NOTES"
@@ -131,10 +150,15 @@ sleep 5
 echo -e "${YELLOW}Downloading release tarball...${NC}"
 TARBALL_URL="https://github.com/apodacaa/amos/archive/refs/tags/v${VERSION}.tar.gz"
 TARBALL_PATH="/tmp/amos-${VERSION}.tar.gz"
-curl -L -o "$TARBALL_PATH" "$TARBALL_URL" 2>/dev/null
+run_cmd curl -L -o "$TARBALL_PATH" "$TARBALL_URL" 2>/dev/null
 
 echo -e "${YELLOW}Calculating SHA256...${NC}"
-SHA256=$(sha256sum "$TARBALL_PATH" | awk '{print $1}')
+if [ "$DRY_RUN" = "true" ]; then
+    SHA256="<SHA256_WOULD_BE_CALCULATED>"
+    echo -e "${YELLOW}[DRY RUN]${NC} sha256sum $TARBALL_PATH"
+else
+    SHA256=$(sha256sum "$TARBALL_PATH" | awk '{print $1}')
+fi
 echo -e "${GREEN}✓ SHA256: $SHA256${NC}"
 echo ""
 
@@ -143,16 +167,16 @@ echo -e "${YELLOW}Updating Homebrew formula...${NC}"
 cd "$HOMEBREW_PATH"
 
 # Update URL
-sed -i "s|url \"https://github.com/apodacaa/amos/archive/refs/tags/v[0-9.]*\.tar\.gz\"|url \"https://github.com/apodacaa/amos/archive/refs/tags/v${VERSION}.tar.gz\"|" Formula/amos.rb
+run_cmd sed -i "s|url \"https://github.com/apodacaa/amos/archive/refs/tags/v[0-9.]*\.tar\.gz\"|url \"https://github.com/apodacaa/amos/archive/refs/tags/v${VERSION}.tar.gz\"|" Formula/amos.rb
 
 # Update SHA256
-sed -i "s|sha256 \"[a-f0-9]*\"|sha256 \"${SHA256}\"|" Formula/amos.rb
+run_cmd sed -i "s|sha256 \"[a-f0-9]*\"|sha256 \"${SHA256}\"|" Formula/amos.rb
 
 # Update ldflags version
-sed -i "s|ldflags: \"-X main.Version=[0-9.]*\"|ldflags: \"-X main.Version=${VERSION}\"|" Formula/amos.rb
+run_cmd sed -i "s|ldflags: \"-X main.Version=[0-9.]*\"|ldflags: \"-X main.Version=${VERSION}\"|" Formula/amos.rb
 
 # Update test version
-sed -i "s|amos version [0-9.]*|amos version ${VERSION}|" Formula/amos.rb
+run_cmd sed -i "s|amos version [0-9.]*|amos version ${VERSION}|" Formula/amos.rb
 
 echo -e "${GREEN}✓ Formula updated${NC}"
 
@@ -164,15 +188,15 @@ echo ""
 
 # Commit and push formula
 echo -e "${YELLOW}Committing formula changes...${NC}"
-git add Formula/amos.rb
-git commit -m "Bump version to v${VERSION}
+run_cmd git add Formula/amos.rb
+run_cmd git commit -m "Bump version to v${VERSION}
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 Co-Authored-By: Claude <noreply@anthropic.com>"
 
 echo -e "${YELLOW}Pushing formula to GitHub...${NC}"
-git push origin main
+run_cmd git push origin main
 
 cd "$AMOS_PATH"
 

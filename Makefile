@@ -81,12 +81,12 @@ gen-test-data: ## Generate test data (usage: make gen-test-data ENTRIES=1000 TOD
 	echo "Generating $$ENTRIES entries and $$TODOS todos..."; \
 	go run scripts/generate_test_data.go -entries $$ENTRIES -todos $$TODOS
 
-release: ## Create a new release (usage: make release VERSION=1.2.1 [NOTES=release-notes.md])
+release: ## Create a new release (usage: make release VERSION=1.2.1 [NOTES=release-notes.md] [DRY_RUN=true])
 	@if [ -z "$(VERSION)" ]; then \
 		echo "Error: VERSION required"; \
-		echo "Usage: make release VERSION=1.2.1 [NOTES=release-notes.md]"; \
+		echo "Usage: make release VERSION=1.2.1 [NOTES=release-notes.md] [DRY_RUN=true]"; \
 		exit 1; \
 	fi
-	@./scripts/release.sh $(VERSION) $(NOTES)
+	@./scripts/release.sh $(VERSION) $(NOTES) $(DRY_RUN)
 
 .DEFAULT_GOAL := help
