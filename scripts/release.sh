@@ -10,7 +10,7 @@ VERSION=$1
 RELEASE_NOTES_FILE=$2
 HOMEBREW_PATH="/home/anthonyapodaca/Github/homebrew-amos"
 AMOS_PATH="/home/anthonyapodaca/Github/amos"
-GH_CLI="/tmp/gh_2.83.0_linux_amd64/bin/gh"
+GH_CLI="$HOME/.local/bin/gh"
 
 # Colors
 RED='\033[0;31m'
