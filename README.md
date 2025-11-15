@@ -42,6 +42,7 @@ make build
 - `$` - Delete all marked items (shown in status message after marking, y/n confirmation, cascades to linked todos)
 - `/` - Filter by tags and/or date
 - `c` - Clear filter (shown in status message when filter is active)
+- `?` - Show help page
 - `t` - Jump to todos
 - `q` - Quit
 
@@ -49,10 +50,11 @@ make build
 - `n` - New Entry
 - `a` - Add Standalone Todo
 - `j/k` or `↑/↓` - Navigate between entries
+- `f/b` - Page forward/backward in long entries
 - `d` - Mark/unmark current entry for deletion (shows "[MARKED FOR DELETION]" in footer)
 - `$` - Delete all marked items (shown in status message after marking, y/n confirmation, cascades to linked todos)
 - Shows entry with inline todos
-- `s` - Select theme (brutalist or cyberpunk)
+- `?` - Show help page
 - `e` - Jump to entries
 - `t` - Jump to todos
 - `esc` - Back to entry list
@@ -67,8 +69,8 @@ make build
 - `$` - Delete all marked items (shown in status message after marking, y/n confirmation, only standalone todos deleted)
 - `/` - Filter by tags and/or date
 - `c` - Clear filter (shown in status message when filter is active)
-- `s` - Select theme (brutalist or cyberpunk)
-- `r` - Refresh (re-sort todos)
+- `R` - Refresh (re-sort todos)
+- `?` - Show help page
 - `e` - Jump to entries
 - `q` - Quit
 
@@ -77,8 +79,10 @@ make build
 - `a` - Add Standalone Todo
 - `space` - Cycle todo status: open → next → done (saves immediately)
 - `j/k` or `↑/↓` - Navigate between todos
+- `f/b` - Page forward/backward in long todos
 - `d` - Mark/unmark current todo for deletion (shows "[MARKED FOR DELETION]" in footer)
 - `$` - Delete all marked items (shown in status message after marking, y/n confirmation)
+- `?` - Show help page
 - `e` - Jump to entries
 - `t` - Jump to todos
 - `esc` or `enter` - Back to todo list
@@ -93,6 +97,10 @@ make build
 - `j/k` or `↑/↓` - Navigate themes
 - `enter` - Select theme (saves to config)
 - `esc` - Cancel
+
+*Help Page:*
+- `f/b` - Page forward/backward
+- `esc` or `q` - Close help
 
 ## Development
 

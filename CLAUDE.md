@@ -87,6 +87,13 @@ This codebase is small (~3000 lines) and well-organized. Work efficiently:
 - Config model: `internal/models/config.go`
 - Accessed via `s` key from entry view and todo list
 
+**Help Page:**
+- Input handler: `update_help.go`
+- UI renderer: `ui/help.go`
+- Accessible via `?` from all read-only views
+- Page navigation: `f/b` keys for page forward/backward
+- Documents symbols, commands, and navigation
+
 **Core State:**
 - Model struct: `model.go:17-42` (includes filterContext field)
 - Update routing: `model.go:97-129` (switch on view)
@@ -135,6 +142,7 @@ update_*.go              # Key handlers per view (domain separation)
   update_unified_filter.go  # Unified filtering (tags + dates)
   update_add_todo.go     # Standalone todo form
   update_theme_selector.go  # Theme selection modal
+  update_help.go         # Help page navigation
 ui/                      # Pure view renderers
   entry_form.go
   entry_list.go
@@ -143,10 +151,11 @@ ui/                      # Pure view renderers
   unified_filter.go      # Unified filter view
   add_todo_form.go
   theme_selector.go      # Theme selection modal
+  help.go                # Help page documentation
   styles.go              # Theme definitions and styling
 internal/
   models/                # Data structures
-    entry.go             # Entry{ID, Title, Body, Tags, Timestamp, TodoIDs}
+    entry.go             # Entry{ID, Title, Body, Tags, Timestamp}
     todo.go              # Todo{ID, Title, Status, Tags, CreatedAt, EntryID, Position}
     config.go            # Config{Theme}
   storage/               # JSON persistence (~/.amos/)
@@ -163,9 +172,9 @@ internal/
 
 **State Management**:
 - All state lives in the `Model` struct (model.go:17-42)
-- View routing via `m.view` string field ("entry", "entries", "view_entry", "todos", "unified_filter", "add_todo", "theme_selector")
+- View routing via `m.view` string field ("entry", "entries", "view_entry", "todos", "unified_filter", "add_todo", "theme_selector", "help")
 - Filter context via `m.filterContext` ("entries" or "todos") - determines return view from filter
-- Theme selector uses `m.previousView` to return to calling view
+- Theme selector and help page use `m.previousView` to return to calling view
 - App opens to "entries" view (entry list as default)
 
 **Message Flow**:
@@ -185,7 +194,8 @@ internal/
 
 **Todo System**:
 - Standalone todos: `EntryID` is nil
-- Entry-linked todos: `EntryID` points to parent entry
+- Entry-linked todos: `EntryID` points to parent entry (single source of truth)
+- **No Entry.TodoIDs field** - unidirectional relationship via Todo.EntryID only
 - Position field enables manual priority (lower = higher)
 - Sorting: open todos first → by position → newest first (helpers/sorting.go)
 - Extract from entries with `!todo Task description @tag` syntax
@@ -223,17 +233,22 @@ The app follows strict brutalist principles:
 - Entry list and todo list are peer views (no hierarchy, no back button)
 - `e` / `t` - Jump between entry list and todo list from any view
 - `s` - Open theme selector (from entry view and todo list)
-- `esc` - Exits forms to natural home: entry form → entry list, add todo → todo list, entry view → entry list, theme selector → previous view
+- `?` - Open help page (from any read-only view)
+- `esc` - Exits forms/modals to natural home: entry form → entry list, add todo → todo list, entry view → entry list, theme selector/help → previous view
 - `n` - New entry (works from any read-only view)
 - `a` - Add standalone todo (works from any read-only view)
-- Theme selector uses `m.previousView` to track return destination
+- Theme selector and help page use `m.previousView` to track return destination
 
 **Visual Design**:
 - **All views**: Honest workspaces with left-aligned help text anchored to bottom
 - **Theme support**: Two built-in themes accessible via `s` key
   - **Brutalist**: Monochrome (terminal defaults), reverse video for emphasis
   - **Cyberpunk**: Neon colors (Matrix green, Tron blue, magenta, cyan, orange)
-- **No decorations**: No italics, no Unicode bullets (use `>` not `►`), just ASCII
+- **Entry markers**: Color-coded `+` symbol shows todo priority
+  - Green `+` = entry has "next" todos (highest priority)
+  - Magenta `+` = entry has "open" todos
+  - Dim `+` = entry has only "done" todos
+- **No decorations**: No italics, no Unicode bullets, just ASCII
 - Help text uses maximum contrast (reverse video for brutalist, colored backgrounds for cyberpunk)
 - Help text uses non-breaking spaces (\u00A0) to prevent key/description splitting
 - Wrapped helper lines have blank line between them for readability
@@ -249,9 +264,10 @@ The app follows strict brutalist principles:
 - Full context: todos visible in entry view
 - No hidden state: all marks visible, confirmation shows counts
 
-**Viewport & Scrolling**:
+**Viewport & Page Navigation**:
 - Lists (entries, todos) use viewport windowing: show 20-30 items with scroll indicators
-- Entry view: uses viewport windowing with automatic scroll for long content
+- Entry view, todo view, and help page: use viewport windowing with `f/b` keys for page forward/backward navigation
+- No line-by-line scrolling - discrete page jumps only
 
 ## Common Patterns
 
@@ -303,11 +319,12 @@ Entries stored in `~/.amos/entries.json`:
     "title": "Entry title",
     "body": "Entry content with @tags and !todo items",
     "tags": ["work", "personal"],
-    "timestamp": "2025-01-01T12:00:00Z",
-    "todo_ids": ["todo-uuid-1", "todo-uuid-2"]
+    "timestamp": "2025-01-01T12:00:00Z"
   }
 ]
 ```
+
+**Note**: Entry.TodoIDs field removed - relationships use Todo.EntryID as single source of truth.
 
 Todos stored in `~/.amos/todos.json`:
 ```json
@@ -334,7 +351,12 @@ Todos stored in `~/.amos/todos.json`:
   - Marks persist across navigation until deletion or app closes
   - Cascade deletion: deleting entry removes all linked todos
   - Entry-linked todos can be marked but only deleted via parent entry (standalone todos deleted independently)
+- **Single source of truth**: Todo.EntryID only (no Entry.TodoIDs) - unidirectional relationship prevents sync issues
+- **Entry markers**: Color-coded `+` shows todo priority (green=next, magenta=open, dim=done)
+- **Page navigation**: `f/b` keys in entry/todo/help views for page forward/backward (no line scrolling)
+- **Help page**: Press `?` from any read-only view to see comprehensive documentation
 - Todo status: "open", "next", or "done" (cycle with space key)
+- Todo refresh: `R` (capital) to re-sort todos in todo list
 - Tag syntax: `@tagname` in entry body or todo title auto-extracts to Tags array
 - Todo syntax: `!todo Task description @tag` creates linked todo with extracted tags
 - Unified filtering: Works identically for both entries and todos views
