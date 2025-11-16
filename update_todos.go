@@ -72,9 +72,6 @@ func (m Model) handleTodosListKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.selectedTodo--
 		}
 		return m, nil
-	case "R":
-		// Refresh - reload todos to re-sort
-		return m, m.loadTodos()
 	case "d":
 		// Toggle mark for deletion
 		filtered := helpers.FilterTodosByDateRange(m.displayTodos, m.filterDate)

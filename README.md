@@ -69,7 +69,6 @@ make build
 - `$` - Delete all marked items (shown in status message after marking, y/n confirmation, only standalone todos deleted)
 - `/` - Filter by tags and/or date
 - `c` - Clear filter (shown in status message when filter is active)
-- `R` - Refresh (re-sort todos)
 - `?` - Show help page
 - `e` - Jump to entries
 - `q` - Quit

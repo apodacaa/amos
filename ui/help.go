@@ -145,7 +145,6 @@ func renderCommandsSection(theme Theme) string {
 		"  space:toggle  Cycle todo status (open → next → done)",
 		"  d:del         Mark/unmark for deletion",
 		"  $:exec        Execute deletion (after marking)",
-		"  R:refresh     Re-sort todos",
 		"  /:filter      Filter by tags/dates",
 		"  c:clear       Clear active filter",
 		"",

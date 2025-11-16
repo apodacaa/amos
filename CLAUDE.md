@@ -356,7 +356,6 @@ Todos stored in `~/.amos/todos.json`:
 - **Page navigation**: `f/b` keys in entry/todo/help views for page forward/backward (no line scrolling)
 - **Help page**: Press `?` from any read-only view to see comprehensive documentation
 - Todo status: "open", "next", or "done" (cycle with space key)
-- Todo refresh: `R` (capital) to re-sort todos in todo list
 - Tag syntax: `@tagname` in entry body or todo title auto-extracts to Tags array
 - Todo syntax: `!todo Task description @tag` creates linked todo with extracted tags
 - Unified filtering: Works identically for both entries and todos views
