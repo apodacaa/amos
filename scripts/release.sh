@@ -19,6 +19,29 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
+# Configure git for non-interactive mode
+export GIT_TERMINAL_PROMPT=0
+export GIT_SSH_COMMAND="ssh -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new"
+
+# Cleanup function for failures
+cleanup_on_error() {
+    if [ "$DRY_RUN" != "true" ] && [ -n "$VERSION" ]; then
+        echo -e "${RED}Release failed. Cleaning up partial changes...${NC}"
+        cd "$AMOS_PATH" 2>/dev/null || true
+        # Delete local tag if it exists
+        git tag -d "v${VERSION}" 2>/dev/null && echo -e "${YELLOW}✓ Deleted local tag v${VERSION}${NC}" || true
+        # Note: We don't delete the GitHub release as it may be intentional to keep for debugging
+        # Clean up tarball
+        rm -f "/tmp/amos-${VERSION}.tar.gz" 2>/dev/null || true
+    fi
+}
+trap cleanup_on_error ERR
+
+# Logging helper with timestamps
+log_step() {
+    echo -e "${GREEN}[$(date '+%H:%M:%S')]${NC} $*"
+}
+
 # Helper function to run commands (respects DRY_RUN)
 run_cmd() {
     if [ "$DRY_RUN" = "true" ]; then
@@ -64,6 +87,49 @@ else
     echo -e "${YELLOW}[DRY RUN] Skipping uncommitted changes check${NC}"
 fi
 
+# Pre-flight checks
+log_step "Running pre-flight checks..."
+
+# Check gh CLI is installed and authenticated
+if ! command -v "$GH_CLI" &> /dev/null; then
+    echo -e "${RED}Error: gh CLI not found at $GH_CLI${NC}"
+    exit 1
+fi
+
+if [ "$DRY_RUN" != "true" ]; then
+    if ! "$GH_CLI" auth status &>/dev/null; then
+        echo -e "${RED}Error: gh CLI not authenticated. Run: gh auth login${NC}"
+        exit 1
+    fi
+fi
+echo -e "${GREEN}✓ gh CLI authenticated${NC}"
+
+# Check homebrew-amos repo exists and is clean
+if [ ! -d "$HOMEBREW_PATH" ]; then
+    echo -e "${RED}Error: Homebrew tap not found at $HOMEBREW_PATH${NC}"
+    exit 1
+fi
+
+if [ "$DRY_RUN" != "true" ]; then
+    cd "$HOMEBREW_PATH"
+    if ! git diff-index --quiet HEAD --; then
+        echo -e "${RED}Error: homebrew-amos has uncommitted changes${NC}"
+        cd "$AMOS_PATH"
+        exit 1
+    fi
+    cd "$AMOS_PATH"
+fi
+echo -e "${GREEN}✓ Homebrew tap is clean${NC}"
+
+# Check if tag already exists
+if git rev-parse "v${VERSION}" &>/dev/null; then
+    echo -e "${RED}Error: Tag v${VERSION} already exists${NC}"
+    exit 1
+fi
+echo -e "${GREEN}✓ Tag v${VERSION} does not exist${NC}"
+
+echo ""
+
 # Get current branch
 CURRENT_BRANCH=$(git branch --show-current)
 echo -e "${YELLOW}Current branch: $CURRENT_BRANCH${NC}"
@@ -83,12 +149,12 @@ fi
 echo ""
 
 # Create annotated tag
-echo -e "${YELLOW}Creating tag v${VERSION}...${NC}"
+log_step "Creating tag v${VERSION}..."
 run_cmd git tag -a "v${VERSION}" -m "Release v${VERSION}"
 echo -e "${GREEN}✓ Tag created${NC}"
 
 # Push tag
-echo -e "${YELLOW}Pushing tag to GitHub...${NC}"
+log_step "Pushing tag to GitHub..."
 run_cmd git push origin "v${VERSION}"
 echo -e "${GREEN}✓ Tag pushed${NC}"
 
@@ -134,7 +200,7 @@ brew install amos
 fi
 
 # Create GitHub release
-echo -e "${YELLOW}Creating GitHub release...${NC}"
+log_step "Creating GitHub release..."
 run_cmd $GH_CLI release create "v${VERSION}" \
     --repo apodacaa/amos \
     --title "Release v${VERSION}" \
@@ -142,15 +208,62 @@ run_cmd $GH_CLI release create "v${VERSION}" \
 echo -e "${GREEN}✓ GitHub release created${NC}"
 echo ""
 
-# Wait for GitHub to process release
-echo -e "${YELLOW}Waiting for GitHub to process release...${NC}"
-sleep 5
-
-# Download tarball and calculate SHA256
-echo -e "${YELLOW}Downloading release tarball...${NC}"
+# Wait for GitHub to process release and make tarball available
 TARBALL_URL="https://github.com/apodacaa/amos/archive/refs/tags/v${VERSION}.tar.gz"
 TARBALL_PATH="/tmp/amos-${VERSION}.tar.gz"
-run_cmd curl -L -o "$TARBALL_PATH" "$TARBALL_URL" 2>/dev/null
+
+if [ "$DRY_RUN" != "true" ]; then
+    log_step "Waiting for GitHub to generate release tarball..."
+    TARBALL_READY=false
+    for i in {1..30}; do
+        if timeout 5 curl -L -I -f "$TARBALL_URL" &>/dev/null; then
+            echo -e "${GREEN}✓ Tarball available (took $((i * 5)) seconds)${NC}"
+            TARBALL_READY=true
+            break
+        fi
+        if [ $i -eq 30 ]; then
+            echo -e "${RED}Error: Tarball not available after 2.5 minutes${NC}"
+            exit 1
+        fi
+        echo -n "."
+        sleep 5
+    done
+    echo ""
+else
+    echo -e "${YELLOW}[DRY RUN] Skipping tarball availability check${NC}"
+fi
+
+# Download tarball with retry logic
+log_step "Downloading release tarball..."
+
+if [ "$DRY_RUN" != "true" ]; then
+    DOWNLOAD_SUCCESS=false
+    for attempt in {1..3}; do
+        if curl -L -f --max-time 60 --connect-timeout 10 -o "$TARBALL_PATH" "$TARBALL_URL"; then
+            DOWNLOAD_SUCCESS=true
+            break
+        fi
+        if [ $attempt -lt 3 ]; then
+            echo -e "${YELLOW}Download failed (attempt $attempt/3), retrying in 5 seconds...${NC}"
+            sleep 5
+        fi
+    done
+
+    if [ "$DOWNLOAD_SUCCESS" = false ]; then
+        echo -e "${RED}Error: Failed to download tarball after 3 attempts${NC}"
+        exit 1
+    fi
+
+    # Verify tarball was actually downloaded
+    if [ ! -f "$TARBALL_PATH" ] || [ ! -s "$TARBALL_PATH" ]; then
+        echo -e "${RED}Error: Tarball file not created or is empty${NC}"
+        exit 1
+    fi
+
+    echo -e "${GREEN}✓ Tarball downloaded successfully${NC}"
+else
+    echo -e "${YELLOW}[DRY RUN]${NC} curl -L -f --max-time 60 --connect-timeout 10 -o $TARBALL_PATH $TARBALL_URL"
+fi
 
 echo -e "${YELLOW}Calculating SHA256...${NC}"
 if [ "$DRY_RUN" = "true" ]; then
@@ -163,7 +276,7 @@ echo -e "${GREEN}✓ SHA256: $SHA256${NC}"
 echo ""
 
 # Update Homebrew formula
-echo -e "${YELLOW}Updating Homebrew formula...${NC}"
+log_step "Updating Homebrew formula..."
 cd "$HOMEBREW_PATH"
 
 # Update URL
@@ -187,7 +300,7 @@ git diff Formula/amos.rb
 echo ""
 
 # Commit and push formula
-echo -e "${YELLOW}Committing formula changes...${NC}"
+log_step "Committing formula changes..."
 run_cmd git add Formula/amos.rb
 run_cmd git commit -m "Bump version to v${VERSION}
 
@@ -195,10 +308,16 @@ run_cmd git commit -m "Bump version to v${VERSION}
 
 Co-Authored-By: Claude <noreply@anthropic.com>"
 
-echo -e "${YELLOW}Pushing formula to GitHub...${NC}"
+log_step "Pushing formula to GitHub..."
 run_cmd git push origin main
 
 cd "$AMOS_PATH"
+
+# Clean up temporary tarball
+if [ "$DRY_RUN" != "true" ]; then
+    rm -f "$TARBALL_PATH"
+    echo -e "${GREEN}✓ Cleaned up temporary files${NC}"
+fi
 
 echo ""
 echo -e "${GREEN}========================================${NC}"
