@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/apodacaa/amos/internal/helpers"
+	"github.com/charmbracelet/bubbles/textarea"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -32,6 +33,9 @@ func (m Model) handleViewTodoKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.view = "todos"
 		m.statusMsg = "" // Clear status message when changing views
 		return m, nil
+	case "i":
+		// Edit current todo
+		return m.handleEditTodo()
 	case "n":
 		// Check if cancelling deletion first
 		if m.deleteConfirmPending {
@@ -266,4 +270,28 @@ func (m Model) handleViewTodoKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 	return m, nil
+}
+
+// handleEditTodo transitions from todo view to editing it
+func (m Model) handleEditTodo() (tea.Model, tea.Cmd) {
+	// Copy viewing todo to current todo (preserves all fields)
+	m.currentTodo = m.viewingTodo
+
+	// Set editing mode flags
+	m.editingMode = true
+	m.originalTodoID = m.viewingTodo.ID
+
+	// Load todo title into input
+	m.todoInput.SetValue(m.viewingTodo.Title)
+	m.todoInput.Focus()
+
+	// Reset editing state - set savedContent AFTER SetValue to ensure exact match
+	m.hasUnsaved = false
+	m.savedContent = m.todoInput.Value() // Get actual value from textarea
+	m.confirmingExit = false
+
+	// Switch to add_todo form view (reused for editing)
+	m.view = "add_todo"
+
+	return m, textarea.Blink
 }

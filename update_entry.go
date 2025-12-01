@@ -13,12 +13,22 @@ func (m Model) handleEntryKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "esc":
 		// Check if showing confirmation
 		if m.confirmingExit {
-			// User pressed Esc again - discard changes and exit to entry list
-			m.view = "entries"
+			// User pressed Esc again - discard changes and exit
 			m.textarea.Blur()
 			m.confirmingExit = false
 			m.statusMsg = ""
 			m.hasUnsaved = false
+
+			// If editing, return to view_entry; if creating, return to entries list
+			if m.editingMode {
+				m.editingMode = false
+				m.originalEntryID = ""
+				m.viewingEntry = m.currentEntry
+				m.view = "view_entry"
+				return m, nil
+			}
+
+			m.view = "entries"
 			return m, m.loadEntriesAndTodos() // Reload to show any changes
 		}
 
@@ -31,10 +41,20 @@ func (m Model) handleEntryKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 
-		// No unsaved changes, safe to exit to entry list
-		m.view = "entries"
+		// No unsaved changes, safe to exit
 		m.textarea.Blur()
 		m.confirmingExit = false
+
+		// If editing, return to view_entry; if creating, return to entries list
+		if m.editingMode {
+			m.editingMode = false
+			m.originalEntryID = ""
+			m.viewingEntry = m.currentEntry
+			m.view = "view_entry"
+			return m, nil
+		}
+
+		m.view = "entries"
 		return m, m.loadEntriesAndTodos() // Reload to show any changes
 
 	case "ctrl+s":

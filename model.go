@@ -25,6 +25,9 @@ type Model struct {
 	unifiedFilterInput   textarea.Model    // Single-line input for unified filtering (tags + dates)
 	currentEntry         models.Entry      // Entry being edited
 	currentTodo          models.Todo       // Standalone todo being created
+	editingMode          bool              // true when editing existing item, false when creating new
+	originalEntryID      string            // Store entry ID being edited (empty if creating)
+	originalTodoID       string            // Store todo ID being edited (empty if creating)
 	viewingEntry         models.Entry      // Entry being viewed (read-only)
 	viewingTodo          models.Todo       // Todo being viewed (read-only)
 	scrollOffset         int               // Scroll offset for long entry view
@@ -156,9 +159,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.view == "entry" {
 				// For entries, update currentEntry with saved data (includes TodoIDs)
 				m.currentEntry = msg.entry
-				m.savedContent = m.textarea.Value()
+				m.savedContent = m.textarea.Value() // Update to current textarea value
+			} else if m.view == "add_todo" {
+				// For todos, update savedContent to match current input
+				m.savedContent = m.todoInput.Value()
 			}
-			// For add_todo, we stay in the form (user can add another or press Esc)
 		}
 		m.statusTime = time.Now()
 		return m, clearStatusAfterDelay()
