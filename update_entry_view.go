@@ -6,6 +6,7 @@ import (
 
 	"github.com/apodacaa/amos/internal/helpers"
 	"github.com/apodacaa/amos/ui"
+	"github.com/charmbracelet/bubbles/textarea"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -19,6 +20,9 @@ func (m Model) handleViewEntryKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.view = "entries"
 		m.statusMsg = "" // Clear status message when changing views
 		return m, nil
+	case "i":
+		// Edit current entry
+		return m.handleEditEntry()
 	case "n":
 		// Check if cancelling deletion first
 		if m.deleteConfirmPending {
@@ -225,4 +229,34 @@ func (m Model) handleViewEntryKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 	return m, nil
+}
+
+// handleEditEntry transitions from viewing an entry to editing it
+func (m Model) handleEditEntry() (tea.Model, tea.Cmd) {
+	// Copy viewing entry to current entry (preserves ID and all fields)
+	m.currentEntry = m.viewingEntry
+
+	// Set editing mode flags
+	m.editingMode = true
+	m.originalEntryID = m.viewingEntry.ID
+
+	// Format content for textarea: "title\n\nbody"
+	content := m.viewingEntry.Title
+	if m.viewingEntry.Body != "" {
+		content += "\n\n" + m.viewingEntry.Body
+	}
+
+	// Load content into textarea
+	m.textarea.SetValue(content)
+	m.textarea.Focus()
+
+	// Reset editing state - set savedContent AFTER SetValue to ensure exact match
+	m.hasUnsaved = false
+	m.savedContent = m.textarea.Value() // Get actual value from textarea
+	m.confirmingExit = false
+
+	// Switch to entry form view
+	m.view = "entry"
+
+	return m, textarea.Blink
 }

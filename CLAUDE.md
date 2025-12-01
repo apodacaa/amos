@@ -71,13 +71,16 @@ This codebase is small (~3000 lines) and well-organized. Work efficiently:
 - Filter workflow: `/` opens filter with current values for editing, `c` clears filter. After applying filter, status message shows "Filter applied. Press c to clear"
 
 **Entry Management:**
-- Entry form: `update_entry.go`, `ui/entry_form.go`
+- Entry form: `update_entry.go`, `ui/entry_form.go` (create and edit)
 - Entry list: `update_entries.go`, `ui/entry_list.go`
-- Entry view: `update_entry_view.go`, `ui/entry_view.go`
+- Entry view: `update_entry_view.go`, `ui/entry_view.go` (press `i` to edit)
+- Edit workflow: Entry view → `i` key → entry form (editing mode) → save or esc
 
 **Todo Management:**
 - Todo list: `update_todos.go`, `ui/todo_list.go`
-- Add todo: `update_add_todo.go`, `ui/add_todo_form.go`
+- Todo view: `update_view_todo.go`, `ui/todo_view.go` (press `i` to edit)
+- Add/Edit todo: `update_add_todo.go`, `ui/add_todo_form.go` (create and edit)
+- Edit workflow: Todo list → `enter` → todo view → `i` key → todo form (editing mode) → save or esc
 - Todo logic: `internal/helpers/todos.go`, `internal/helpers/sorting.go`
 
 **Theme Selector:**
@@ -234,7 +237,8 @@ The app follows strict brutalist principles:
 - `e` / `t` - Jump between entry list and todo list from any view
 - `s` - Open theme selector (from entry view and todo list)
 - `?` - Open help page (from any read-only view)
-- `esc` - Exits forms/modals to natural home: entry form → entry list, add todo → todo list, entry view → entry list, theme selector/help → previous view
+- `i` - Edit entry (from entry view) or edit todo (from todo list)
+- `esc` - Exits forms/modals to natural home: entry form → entry list (or entry view if editing), add todo → todo list, entry view → entry list, theme selector/help → previous view
 - `n` - New entry (works from any read-only view)
 - `a` - Add standalone todo (works from any read-only view)
 - Theme selector and help page use `m.previousView` to track return destination
@@ -343,6 +347,11 @@ Todos stored in `~/.amos/todos.json`:
 
 ## Important Notes
 
+- **Editing**: Press `i` to edit entries and todos
+  - Entry editing: Open entry view, press `i` to edit, save with `Ctrl+S`, esc returns to entry view
+  - Todo editing: Open todo view, press `i` to edit, save with `Enter`, esc returns to todo view
+  - Timestamp updates: Editing an entry updates its timestamp to now (moves to top of list)
+  - Todo extraction: When editing entries, new `!todo` items are created, existing todos preserved (additive only)
 - **Deletion**: neomutt-style multi-select pattern
   - `d` key marks/unmarks items for deletion (shows "D" prefix in lists, footer text in entry view)
   - After marking items, status message shows "X items marked. Press $ to delete"
