@@ -9,6 +9,8 @@ This document describes how to release a new version of Amos.
 - gh CLI installed and authenticated (`~/.local/bin/gh`)
   - Install: Download from https://github.com/cli/cli/releases and copy to `~/.local/bin/gh`
   - Authenticate: `~/.local/bin/gh auth login`
+- `homebrew-amos` repository cloned at `~/Github/homebrew-amos`
+- `chocolatey-amos` repository cloned at `~/Github/chocolatey-amos`
 
 ## Automated Release (Recommended)
 
@@ -57,22 +59,39 @@ This single command automatically:
 3. Pushes tag to GitHub
 4. Generates release notes from commits since last tag
 5. Creates GitHub release with notes
-6. Downloads release tarball and calculates SHA256
-7. Updates Homebrew formula in `homebrew-amos` repo:
+6. Builds Windows binary (amd64) and uploads to GitHub release
+7. Calculates SHA256 of Windows binary
+8. Updates Chocolatey package in `chocolatey-amos` repo:
+   - Version in .nuspec
+   - Release notes URL in .nuspec
+   - Version in chocolateyInstall.ps1
+   - SHA256 checksum in chocolateyInstall.ps1
+9. Commits and pushes Chocolatey package changes
+10. Downloads release tarball and calculates SHA256
+11. Updates Homebrew formula in `homebrew-amos` repo:
    - URL with new version
    - SHA256 hash
    - Version in ldflags
    - Version in test assertion
-8. Commits and pushes Homebrew formula changes
+12. Commits and pushes Homebrew formula changes
 
 ### Step 4: Verify Release
 
 1. Check GitHub release: https://github.com/apodacaa/amos/releases/tag/vX.Y.Z
-2. Check Homebrew formula: https://github.com/apodacaa/homebrew-amos/blob/main/Formula/amos.rb
-3. Test installation:
+   - Verify source tarball is present
+   - Verify Windows binary (`amos-windows-amd64-X.Y.Z.exe`) is attached
+2. Check Chocolatey package: https://github.com/apodacaa/chocolatey-amos
+3. Check Homebrew formula: https://github.com/apodacaa/homebrew-amos/blob/main/Formula/amos.rb
+4. Test Homebrew installation:
    ```bash
    brew update
    brew upgrade amos
+   amos --version  # Should show: amos version X.Y.Z
+   ```
+5. Test Chocolatey installation (on Windows):
+   ```powershell
+   choco source add -n=amos -s="https://github.com/apodacaa/chocolatey-amos"
+   choco upgrade amos
    amos --version  # Should show: amos version X.Y.Z
    ```
 
@@ -171,9 +190,11 @@ Examples:
 - [ ] Dry-run tested (`make release VERSION=X.Y.Z DRY_RUN=true`)
 - [ ] Dry-run output reviewed (no errors, versions correct)
 - [ ] Automated release executed (`make release VERSION=X.Y.Z`)
-- [ ] GitHub release verified
-- [ ] Homebrew formula verified
-- [ ] Installation tested (`brew update && brew upgrade amos && amos --version`)
+- [ ] GitHub release verified (source tarball + Windows binary present)
+- [ ] Chocolatey package verified (version and SHA256 updated)
+- [ ] Homebrew formula verified (version and SHA256 updated)
+- [ ] Homebrew installation tested (`brew update && brew upgrade amos && amos --version`)
+- [ ] Chocolatey installation tested on Windows (optional, if Windows available)
 
 ### Manual Release (if automation fails)
 - [ ] All changes committed and pushed
@@ -211,9 +232,13 @@ Examples:
   ```
 
 **Uncommitted changes detected:**
-- Commit or stash your changes first
+- Commit or stash your changes first in amos, homebrew-amos, or chocolatey-amos repos
 - Or run in dry-run mode: `make release VERSION=X.Y.Z DRY_RUN=true`
   (dry-run skips uncommitted changes check)
+
+**"Chocolatey package repo not found" error:**
+- Clone the chocolatey-amos repo: `git clone https://github.com/apodacaa/chocolatey-amos ~/Github/chocolatey-amos`
+- Or update CHOCOLATEY_PATH in scripts/release.sh to match your local path
 
 ### Homebrew
 
@@ -230,6 +255,28 @@ Examples:
 - Formula changes must be pushed to `homebrew-amos` repo
 - Run `brew update` to refresh tap
 - Check formula on GitHub: https://github.com/apodacaa/homebrew-amos/blob/main/Formula/amos.rb
+
+### Chocolatey
+
+**Package fails to install:**
+- Verify Windows binary exists in GitHub release
+- Check SHA256 matches in chocolateyInstall.ps1
+- Verify version strings match in .nuspec and chocolateyInstall.ps1
+
+**--version shows wrong version:**
+- Verify the Windows binary was built with correct ldflags
+- Check that version in chocolateyInstall.ps1 matches release
+- Uninstall and reinstall: `choco uninstall amos && choco install amos`
+
+**choco upgrade doesn't find new version:**
+- Package changes must be pushed to `chocolatey-amos` repo
+- Re-add source: `choco source remove -n=amos && choco source add -n=amos -s="https://github.com/apodacaa/chocolatey-amos"`
+- Check package on GitHub: https://github.com/apodacaa/chocolatey-amos
+
+**Windows binary not in GitHub release:**
+- Check that release.sh completed Windows binary upload step
+- Manually upload: `gh release upload vX.Y.Z amos-windows-amd64-X.Y.Z.exe --repo apodacaa/amos`
+- Update chocolatey-amos repo with correct SHA256
 
 ### GitHub Release
 

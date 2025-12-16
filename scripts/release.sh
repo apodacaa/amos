@@ -10,6 +10,7 @@ VERSION=$1
 RELEASE_NOTES_FILE=$2
 DRY_RUN=$3
 HOMEBREW_PATH="/home/anthonyapodaca/Github/homebrew-amos"
+CHOCOLATEY_PATH="/home/anthonyapodaca/Github/chocolatey-amos"
 AMOS_PATH="/home/anthonyapodaca/Github/amos"
 GH_CLI="$HOME/.local/bin/gh"
 
@@ -31,8 +32,9 @@ cleanup_on_error() {
         # Delete local tag if it exists
         git tag -d "v${VERSION}" 2>/dev/null && echo -e "${YELLOW}✓ Deleted local tag v${VERSION}${NC}" || true
         # Note: We don't delete the GitHub release as it may be intentional to keep for debugging
-        # Clean up tarball
+        # Clean up tarball and Windows binary
         rm -f "/tmp/amos-${VERSION}.tar.gz" 2>/dev/null || true
+        rm -f "/tmp/amos-windows-amd64-${VERSION}.exe" 2>/dev/null || true
     fi
 }
 trap cleanup_on_error ERR
@@ -121,6 +123,23 @@ if [ "$DRY_RUN" != "true" ]; then
 fi
 echo -e "${GREEN}✓ Homebrew tap is clean${NC}"
 
+# Check chocolatey-amos repo exists and is clean
+if [ ! -d "$CHOCOLATEY_PATH" ]; then
+    echo -e "${RED}Error: Chocolatey package repo not found at $CHOCOLATEY_PATH${NC}"
+    exit 1
+fi
+
+if [ "$DRY_RUN" != "true" ]; then
+    cd "$CHOCOLATEY_PATH"
+    if ! git diff-index --quiet HEAD --; then
+        echo -e "${RED}Error: chocolatey-amos has uncommitted changes${NC}"
+        cd "$AMOS_PATH"
+        exit 1
+    fi
+    cd "$AMOS_PATH"
+fi
+echo -e "${GREEN}✓ Chocolatey package repo is clean${NC}"
+
 # Check if tag already exists
 if git rev-parse "v${VERSION}" &>/dev/null; then
     echo -e "${RED}Error: Tag v${VERSION} already exists${NC}"
@@ -206,6 +225,104 @@ run_cmd $GH_CLI release create "v${VERSION}" \
     --title "Release v${VERSION}" \
     --notes "$RELEASE_NOTES"
 echo -e "${GREEN}✓ GitHub release created${NC}"
+echo ""
+
+# Build and upload Windows binary for Chocolatey
+log_step "Building Windows binary..."
+WINDOWS_BINARY_PATH="/tmp/amos-windows-amd64-${VERSION}.exe"
+
+if [ "$DRY_RUN" != "true" ]; then
+    GOOS=windows GOARCH=amd64 go build -ldflags "-X main.Version=${VERSION}" -o "$WINDOWS_BINARY_PATH"
+    echo -e "${GREEN}✓ Windows binary built${NC}"
+else
+    echo -e "${YELLOW}[DRY RUN]${NC} GOOS=windows GOARCH=amd64 go build -ldflags \"-X main.Version=${VERSION}\" -o $WINDOWS_BINARY_PATH"
+fi
+
+log_step "Uploading Windows binary to GitHub release..."
+run_cmd $GH_CLI release upload "v${VERSION}" "$WINDOWS_BINARY_PATH" \
+    --repo apodacaa/amos \
+    --clobber
+echo -e "${GREEN}✓ Windows binary uploaded${NC}"
+echo ""
+
+# Wait for GitHub to process the binary
+if [ "$DRY_RUN" != "true" ]; then
+    log_step "Waiting for Windows binary to be available..."
+    BINARY_URL="https://github.com/apodacaa/amos/releases/download/v${VERSION}/amos-windows-amd64-${VERSION}.exe"
+    BINARY_READY=false
+    for i in {1..30}; do
+        if timeout 5 curl -L -I -f "$BINARY_URL" &>/dev/null; then
+            echo -e "${GREEN}✓ Windows binary available (took $((i * 5)) seconds)${NC}"
+            BINARY_READY=true
+            break
+        fi
+        if [ $i -eq 30 ]; then
+            echo -e "${RED}Error: Windows binary not available after 2.5 minutes${NC}"
+            exit 1
+        fi
+        echo -n "."
+        sleep 5
+    done
+    echo ""
+else
+    echo -e "${YELLOW}[DRY RUN] Skipping Windows binary availability check${NC}"
+fi
+
+# Calculate SHA256 of Windows binary
+log_step "Calculating SHA256 of Windows binary..."
+if [ "$DRY_RUN" = "true" ]; then
+    WINDOWS_SHA256="<WINDOWS_SHA256_WOULD_BE_CALCULATED>"
+    echo -e "${YELLOW}[DRY RUN]${NC} sha256sum $WINDOWS_BINARY_PATH"
+else
+    WINDOWS_SHA256=$(sha256sum "$WINDOWS_BINARY_PATH" | awk '{print $1}')
+fi
+echo -e "${GREEN}✓ Windows SHA256: $WINDOWS_SHA256${NC}"
+echo ""
+
+# Update Chocolatey package
+log_step "Updating Chocolatey package..."
+cd "$CHOCOLATEY_PATH"
+
+# Update .nuspec version
+run_cmd sed -i "s|<version>[0-9.]*</version>|<version>${VERSION}</version>|" amos.nuspec
+
+# Update .nuspec release notes URL
+run_cmd sed -i "s|<releaseNotes>https://github.com/apodacaa/amos/releases/tag/v[0-9.]*</releaseNotes>|<releaseNotes>https://github.com/apodacaa/amos/releases/tag/v${VERSION}</releaseNotes>|" amos.nuspec
+
+# Update chocolateyInstall.ps1 version
+run_cmd sed -i "s|\$version = '[0-9.]*'|\$version = '${VERSION}'|" tools/chocolateyInstall.ps1
+
+# Update chocolateyInstall.ps1 SHA256
+run_cmd sed -i "s|\$checksum64 = '[A-Za-z0-9_]*'|\$checksum64 = '${WINDOWS_SHA256}'|" tools/chocolateyInstall.ps1
+
+echo -e "${GREEN}✓ Chocolatey package updated${NC}"
+
+# Show diff
+echo -e "${YELLOW}Chocolatey package changes:${NC}"
+git diff amos.nuspec tools/chocolateyInstall.ps1
+
+echo ""
+
+# Commit and push Chocolatey package
+log_step "Committing Chocolatey package changes..."
+run_cmd git add amos.nuspec tools/chocolateyInstall.ps1
+run_cmd git commit -m "Bump version to v${VERSION}
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>"
+
+log_step "Pushing Chocolatey package to GitHub..."
+run_cmd git push origin main
+
+cd "$AMOS_PATH"
+
+# Clean up Windows binary
+if [ "$DRY_RUN" != "true" ]; then
+    rm -f "$WINDOWS_BINARY_PATH"
+    echo -e "${GREEN}✓ Cleaned up Windows binary${NC}"
+fi
+
 echo ""
 
 # Wait for GitHub to process release and make tarball available
@@ -327,7 +444,15 @@ echo ""
 echo -e "${YELLOW}Release URL:${NC} https://github.com/apodacaa/amos/releases/tag/v${VERSION}"
 echo ""
 echo -e "${YELLOW}Users can install with:${NC}"
-echo "  brew tap apodacaa/amos"
-echo "  brew install amos"
-echo "  # or upgrade:"
-echo "  brew upgrade amos"
+echo ""
+echo "  Homebrew (macOS/Linux):"
+echo "    brew tap apodacaa/amos"
+echo "    brew install amos"
+echo "    # or upgrade:"
+echo "    brew upgrade amos"
+echo ""
+echo "  Chocolatey (Windows):"
+echo "    choco source add -n=amos -s=\"https://github.com/apodacaa/chocolatey-amos\""
+echo "    choco install amos"
+echo "    # or upgrade:"
+echo "    choco upgrade amos"

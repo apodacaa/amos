@@ -11,9 +11,14 @@ brew tap apodacaa/amos
 brew install amos
 ```
 
-Run the app:
-```bash
-amos
+### Chocolatey (Windows)
+
+```powershell
+# Add the package source (one-time setup)
+choco source add -n=amos -s="https://github.com/apodacaa/chocolatey-amos"
+
+# Install amos
+choco install amos
 ```
 
 ### From Source
@@ -25,6 +30,11 @@ git clone https://github.com/apodacaa/amos.git
 cd amos
 make build
 ./amos
+```
+
+Run the app:
+```bash
+amos
 ```
 
 **Keyboard Shortcuts:**
@@ -49,6 +59,7 @@ make build
 *Entry View (Read-Only):*
 - `n` - New Entry
 - `a` - Add Standalone Todo
+- `i` - Edit current entry (opens entry form with existing content)
 - `j/k` or `↑/↓` - Navigate between entries
 - `f/b` - Page forward/backward in long entries
 - `d` - Mark/unmark current entry for deletion (shows "[MARKED FOR DELETION]" in footer)
@@ -76,6 +87,7 @@ make build
 *Todo View (Read-Only):*
 - `n` - New Entry
 - `a` - Add Standalone Todo
+- `i` - Edit current todo (opens todo form with existing content, standalone todos only)
 - `space` - Cycle todo status: open → next → done (saves immediately)
 - `j/k` or `↑/↓` - Navigate between todos
 - `f/b` - Page forward/backward in long todos
@@ -156,6 +168,7 @@ air               # Run with auto-reload
 
 ✅ **Journal Entries**
 - Create entries with title + body
+- **Edit entries**: Press `i` in entry view to edit existing entries (updates timestamp)
 - Auto-extract @tags from content
 - **Unified filtering**: Filter by tags and/or dates with `/` key
   - Tag autocomplete (type `@` then tag name, press `tab` to complete)
@@ -172,6 +185,7 @@ air               # Run with auto-reload
 ✅ **Todo Management**
 - **Standalone todos**: Create todos independently with `a` key from any view
 - **Entry-linked todos**: Extract from entries with `!todo` syntax
+- **Edit todos**: Press `i` in todo view to edit standalone todos (entry-linked todos edited via parent entry)
 - Toggle status with `space` (immediate save)
 - **Unified filtering**: Same as entries - filter by tags and/or dates with `/` key
   - Tag autocomplete (type `@` then tag name, press `tab` to complete)
