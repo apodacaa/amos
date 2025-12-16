@@ -299,7 +299,7 @@ echo -e "${GREEN}✓ Chocolatey package updated${NC}"
 
 # Show diff
 echo -e "${YELLOW}Chocolatey package changes:${NC}"
-git diff amos.nuspec tools/chocolateyInstall.ps1
+git --no-pager diff amos.nuspec tools/chocolateyInstall.ps1
 
 echo ""
 
@@ -412,7 +412,7 @@ echo -e "${GREEN}✓ Formula updated${NC}"
 
 # Show diff
 echo -e "${YELLOW}Formula changes:${NC}"
-git diff Formula/amos.rb
+git --no-pager diff Formula/amos.rb
 
 echo ""
 
