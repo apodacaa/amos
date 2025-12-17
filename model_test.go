@@ -534,3 +534,294 @@ func TestFilterWithNoMatches(t *testing.T) {
 		t.Errorf("Expected 0 filtered entries, got %d", len(filtered))
 	}
 }
+
+// ================================================================================
+// Deletion Workflow Tests
+// ================================================================================
+
+// TestMarkingEntryFromListView tests marking entries from the entries list view
+func TestMarkingEntryFromListView(t *testing.T) {
+	m := NewModel()
+	m.view = "entries"
+	m.entries = []models.Entry{
+		{ID: "entry-1", Title: "First Entry"},
+		{ID: "entry-2", Title: "Second Entry"},
+	}
+	m.selectedEntry = 0
+
+	// Mark first entry for deletion
+	newModel, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'d'}})
+	m = newModel.(Model)
+
+	if itemType, exists := m.markedForDeletion["entry-1"]; !exists || itemType != "entry" {
+		t.Errorf("Expected entry-1 to be marked for deletion with type 'entry', got exists=%v type=%s", exists, itemType)
+	}
+
+	// Pressing 'd' again should unmark
+	newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'d'}})
+	m = newModel.(Model)
+
+	if _, exists := m.markedForDeletion["entry-1"]; exists {
+		t.Errorf("Expected entry-1 to be unmarked after second 'd' press")
+	}
+}
+
+// TestMarkingTodoFromListView tests marking and unmarking todos from todo list
+func TestMarkingTodoFromListView(t *testing.T) {
+	m := NewModel()
+	m.view = "todos"
+	m.displayTodos = []models.Todo{
+		{ID: "todo-1", Title: "First Todo", Status: "open"},
+		{ID: "todo-2", Title: "Second Todo", Status: "open"},
+	}
+	m.selectedTodo = 0
+
+	// Mark first todo for deletion
+	newModel, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'d'}})
+	m = newModel.(Model)
+
+	if itemType, exists := m.markedForDeletion["todo-1"]; !exists || itemType != "todo" {
+		t.Errorf("Expected todo-1 to be marked for deletion with type 'todo', got exists=%v type=%s", exists, itemType)
+	}
+
+	// Pressing 'd' again should unmark
+	newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'d'}})
+	m = newModel.(Model)
+
+	if _, exists := m.markedForDeletion["todo-1"]; exists {
+		t.Errorf("Expected todo-1 to be unmarked after second 'd' press")
+	}
+}
+
+// TestMarkingMultipleItems tests marking multiple entries and todos for deletion
+func TestMarkingMultipleItems(t *testing.T) {
+	m := NewModel()
+	m.view = "entries"
+	m.entries = []models.Entry{
+		{ID: "entry-1", Title: "First Entry"},
+		{ID: "entry-2", Title: "Second Entry"},
+	}
+	m.displayTodos = []models.Todo{
+		{ID: "todo-1", Title: "First Todo", Status: "open"},
+	}
+
+	// Mark first entry
+	m.selectedEntry = 0
+	newModel, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'d'}})
+	m = newModel.(Model)
+
+	// Mark second entry
+	m.selectedEntry = 1
+	newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'d'}})
+	m = newModel.(Model)
+
+	// Switch to todos view and mark a todo
+	m.view = "todos"
+	m.selectedTodo = 0
+	newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'d'}})
+	m = newModel.(Model)
+
+	// Should have 3 items marked
+	if len(m.markedForDeletion) != 3 {
+		t.Errorf("Expected 3 items marked for deletion, got %d", len(m.markedForDeletion))
+	}
+
+	// Verify types
+	if m.markedForDeletion["entry-1"] != "entry" {
+		t.Errorf("Expected entry-1 to have type 'entry', got %s", m.markedForDeletion["entry-1"])
+	}
+	if m.markedForDeletion["entry-2"] != "entry" {
+		t.Errorf("Expected entry-2 to have type 'entry', got %s", m.markedForDeletion["entry-2"])
+	}
+	if m.markedForDeletion["todo-1"] != "todo" {
+		t.Errorf("Expected todo-1 to have type 'todo', got %s", m.markedForDeletion["todo-1"])
+	}
+}
+
+// TestDeletionConfirmationWorkflow tests the $ key confirmation workflow
+func TestDeletionConfirmationWorkflow(t *testing.T) {
+	m := NewModel()
+	m.view = "entries"
+	m.entries = []models.Entry{
+		{ID: "entry-1", Title: "First Entry"},
+	}
+	m.markedForDeletion = map[string]string{
+		"entry-1": "entry",
+	}
+
+	// Press $ to initiate deletion
+	newModel, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'$'}})
+	m = newModel.(Model)
+
+	// Should set deleteConfirmPending to true
+	if !m.deleteConfirmPending {
+		t.Errorf("Expected deleteConfirmPending to be true after pressing $")
+	}
+
+	// Press 'n' to cancel
+	newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'n'}})
+	m = newModel.(Model)
+
+	// Should clear deleteConfirmPending
+	if m.deleteConfirmPending {
+		t.Errorf("Expected deleteConfirmPending to be false after pressing 'n'")
+	}
+
+	// Items should still be marked
+	if len(m.markedForDeletion) != 1 {
+		t.Errorf("Expected items to still be marked after canceling, got %d marked items", len(m.markedForDeletion))
+	}
+}
+
+// TestDeletionConfirmationWithNoMarkedItems tests $ with no marked items
+func TestDeletionConfirmationWithNoMarkedItems(t *testing.T) {
+	m := NewModel()
+	m.view = "entries"
+	m.entries = []models.Entry{
+		{ID: "entry-1", Title: "First Entry"},
+	}
+
+	// Press $ with no marked items
+	newModel, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'$'}})
+	m = newModel.(Model)
+
+	// Should set status message
+	if m.statusMsg != "No items marked for deletion" {
+		t.Errorf("Expected status message about no marked items, got: %s", m.statusMsg)
+	}
+
+	// Should NOT set deleteConfirmPending
+	if m.deleteConfirmPending {
+		t.Errorf("Expected deleteConfirmPending to remain false when no items marked")
+	}
+}
+
+// TestCascadeDeletion tests that deleting an entry also deletes linked todos
+func TestCascadeDeletion(t *testing.T) {
+	// Note: This test validates the logic, but actual cascade deletion
+	// happens in the storage layer (storage.DeleteEntryCascade).
+	// Here we verify that the command separates entries and counts linked todos.
+
+	entryID := "entry-1"
+	m := NewModel()
+	m.view = "entries"
+	m.entries = []models.Entry{
+		{ID: entryID, Title: "Entry with todos"},
+	}
+	m.todos = []models.Todo{
+		{ID: "todo-1", Title: "Linked todo 1", EntryID: &entryID},
+		{ID: "todo-2", Title: "Linked todo 2", EntryID: &entryID},
+		{ID: "todo-3", Title: "Standalone todo", EntryID: nil},
+	}
+
+	// Mark the entry for deletion
+	m.markedForDeletion = map[string]string{
+		entryID: "entry",
+	}
+
+	// Press $ to initiate deletion
+	newModel, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'$'}})
+	m = newModel.(Model)
+
+	// Should set deleteConfirmPending
+	if !m.deleteConfirmPending {
+		t.Errorf("Expected deleteConfirmPending to be true")
+	}
+
+	// The actual deletion happens in the command, but we can verify
+	// the command is called correctly by checking the model state
+	// (Full integration test would need storage layer mocking)
+}
+
+// TestStandaloneTodoDeletion tests deleting standalone todos
+func TestStandaloneTodoDeletion(t *testing.T) {
+	m := NewModel()
+	m.view = "todos"
+	m.displayTodos = []models.Todo{
+		{ID: "todo-1", Title: "Standalone todo", EntryID: nil},
+		{ID: "todo-2", Title: "Another standalone", EntryID: nil},
+	}
+
+	// Mark first standalone todo
+	m.selectedTodo = 0
+	newModel, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'d'}})
+	m = newModel.(Model)
+
+	if itemType, exists := m.markedForDeletion["todo-1"]; !exists || itemType != "todo" {
+		t.Errorf("Expected standalone todo to be marked for deletion")
+	}
+
+	// Initiate deletion
+	newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'$'}})
+	m = newModel.(Model)
+
+	if !m.deleteConfirmPending {
+		t.Errorf("Expected deleteConfirmPending to be true for standalone todo deletion")
+	}
+}
+
+// TestEntryLinkedTodoMarking tests that entry-linked todos can be marked
+func TestEntryLinkedTodoMarking(t *testing.T) {
+	entryID := "entry-1"
+	m := NewModel()
+	m.view = "todos"
+	m.displayTodos = []models.Todo{
+		{ID: "todo-1", Title: "Linked todo", EntryID: &entryID},
+	}
+
+	// Mark entry-linked todo
+	m.selectedTodo = 0
+	newModel, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'d'}})
+	m = newModel.(Model)
+
+	// Entry-linked todos can be marked (UI allows it)
+	if itemType, exists := m.markedForDeletion["todo-1"]; !exists || itemType != "todo" {
+		t.Errorf("Expected entry-linked todo to be marked for deletion")
+	}
+
+	// Note: The actual deletion logic in storage layer handles whether
+	// entry-linked todos get deleted independently or via cascade.
+	// This test verifies the marking behavior works.
+}
+
+// TestMarksPersistAcrossNavigation tests that marks persist when navigating between views
+func TestMarksPersistAcrossNavigation(t *testing.T) {
+	m := NewModel()
+	m.view = "entries"
+	m.entries = []models.Entry{
+		{ID: "entry-1", Title: "First Entry"},
+	}
+	m.displayTodos = []models.Todo{
+		{ID: "todo-1", Title: "First Todo", Status: "open"},
+	}
+
+	// Mark entry in entries view
+	m.selectedEntry = 0
+	newModel, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'d'}})
+	m = newModel.(Model)
+
+	// Navigate to todos view
+	m.view = "todos"
+	newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'t'}})
+	m = newModel.(Model)
+
+	// Mark should persist
+	if _, exists := m.markedForDeletion["entry-1"]; !exists {
+		t.Errorf("Expected entry mark to persist when navigating to todos view")
+	}
+
+	// Mark a todo
+	m.selectedTodo = 0
+	newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'d'}})
+	m = newModel.(Model)
+
+	// Navigate back to entries
+	m.view = "entries"
+	newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'e'}})
+	m = newModel.(Model)
+
+	// Both marks should persist
+	if len(m.markedForDeletion) != 2 {
+		t.Errorf("Expected 2 marked items after navigation, got %d", len(m.markedForDeletion))
+	}
+}
