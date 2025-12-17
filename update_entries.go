@@ -62,8 +62,7 @@ func (m Model) handleEntriesListKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m.clearFilters()
 	case "j", "down":
 		// Apply filters to get displayed list
-		filtered := helpers.FilterEntriesByDateRange(m.entries, m.filterDate)
-		filtered = helpers.FilterEntriesByTags(filtered, m.filterTags)
+		filtered := helpers.ApplyEntryFilters(m.entries, m.filterDate, m.filterTags)
 
 		if m.selectedEntry < len(filtered)-1 {
 			m.selectedEntry++
@@ -76,8 +75,7 @@ func (m Model) handleEntriesListKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 	case "d":
 		// Toggle mark for deletion
-		filtered := helpers.FilterEntriesByDateRange(m.entries, m.filterDate)
-		filtered = helpers.FilterEntriesByTags(filtered, m.filterTags)
+		filtered := helpers.ApplyEntryFilters(m.entries, m.filterDate, m.filterTags)
 
 		if m.selectedEntry >= 0 && m.selectedEntry < len(filtered) {
 			sorted := helpers.SortEntriesForDisplay(filtered)
@@ -183,8 +181,7 @@ func (m Model) handleEntriesListKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 
 		// Open selected entry for read-only viewing
 		// Apply filters (same logic as UI)
-		filtered := helpers.FilterEntriesByDateRange(m.entries, m.filterDate)
-		filtered = helpers.FilterEntriesByTags(filtered, m.filterTags)
+		filtered := helpers.ApplyEntryFilters(m.entries, m.filterDate, m.filterTags)
 
 		if m.selectedEntry >= 0 && m.selectedEntry < len(filtered) {
 			// Need to get the sorted entry (newest first)
