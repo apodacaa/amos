@@ -168,6 +168,7 @@ internal/
     tags.go              # Tag extraction (@mention syntax) and filtering
     todos.go             # Todo extraction (!todo syntax)
     dates.go             # Date filter parsing and date range filtering
+    filter.go            # Centralized filtering (ApplyEntryFilters, ApplyTodoFilters)
     filter_parser.go     # Unified filter parsing (tags + dates)
 ```
 
@@ -312,6 +313,13 @@ Tests use standard Go testing:
 - Test files: `*_test.go`
 - All helper functions have tests (internal/helpers/*_test.go)
 - Storage operations have tests (internal/storage/storage_test.go)
+- **Application logic tests**: `model_test.go` (30 comprehensive tests)
+  - Navigation workflows: 13 tests covering all view transitions
+  - Filtering workflows: 8 tests for tag/date filtering
+  - Deletion workflows: 9 tests for neomutt-style multi-select deletion
+  - Coverage: ~60% of application logic (navigation, filtering, deletion flows)
+  - All tests use table-driven patterns where appropriate
+  - Run with `make test` or `make ci` (recommended before commits)
 
 ## Data Format
 

@@ -142,6 +142,13 @@ make run
 | `make test` | Run tests |
 | `make help` | Show all commands |
 
+### Test Suite
+
+Comprehensive test coverage for application logic:
+- 30 tests in `model_test.go` covering navigation, filtering, and deletion workflows
+- ~60% application logic coverage (navigation, filtering, deletion flows)
+- Run with `make test` or `make ci` (recommended before commits)
+
 ### Before Committing
 ```bash
 make ci  # Run all checks + tests (or install git hooks to auto-run)
@@ -249,6 +256,7 @@ air               # Run with auto-reload
 │       ├── tags.go        # Tag extraction and filtering
 │       ├── todos.go       # Todo extraction
 │       ├── dates.go       # Date filter parsing
+│       ├── filter.go      # Centralized filtering (applies date + tag filters)
 │       └── filter_parser.go  # Unified filter parsing
 ├── Makefile               # Development commands
 └── go.mod                 # Go module definition

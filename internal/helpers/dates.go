@@ -71,6 +71,10 @@ func ParseDateFilter(input string) (start time.Time, end time.Time) {
 	}
 
 	// Check for "last N days" (e.g., "last 14 days")
+	// Design decision: "last N days" is INCLUSIVE of today and counts backwards.
+	// Example: "last 7 days" on Monday Jan 8 includes Mon Jan 2 through Mon Jan 8 (7 days total).
+	// Why: This matches user expectations - "last 7 days" should include today.
+	// Implementation: N days total = go back (N-1) days from start of today, through end of today.
 	lastDaysRegex := regexp.MustCompile(`^last\s+(\d+)\s+days?$`)
 	if matches := lastDaysRegex.FindStringSubmatch(input); len(matches) > 1 {
 		n, err := strconv.Atoi(matches[1])

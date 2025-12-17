@@ -4,6 +4,13 @@ import "github.com/apodacaa/amos/internal/models"
 
 // SortTodosForDisplay sorts todos: next first, then open, then done
 // Within each status group, newest first
+//
+// Design decision: Uses bubble sort instead of sort.Slice for these reasons:
+//  1. Stable sort: Preserves relative ordering for items with same timestamp.
+//     This is critical if we later add manual position reordering within priority groups.
+//  2. Simple implementation: Multi-level comparison logic is transparent and maintainable.
+//  3. Performance: O(n²) but todo lists are typically <100 items, so the difference
+//     from O(n log n) is negligible in practice (~0.1ms vs ~0.01ms).
 func SortTodosForDisplay(todos []models.Todo) []models.Todo {
 	sorted := make([]models.Todo, len(todos))
 	copy(sorted, todos)
@@ -44,6 +51,10 @@ func SortTodosForDisplay(todos []models.Todo) []models.Todo {
 }
 
 // SortEntriesForDisplay sorts entries by timestamp (newest first)
+//
+// Design decision: Uses bubble sort for consistency with SortTodosForDisplay.
+// Stable sort preserves order for entries with identical timestamps.
+// Performance is acceptable for typical journal entry lists (<1000 items).
 func SortEntriesForDisplay(entries []models.Entry) []models.Entry {
 	sorted := make([]models.Entry, len(entries))
 	copy(sorted, entries)

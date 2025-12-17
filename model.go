@@ -15,42 +15,89 @@ import (
 )
 
 // Model holds the application state
+//
+// Design: Follows Bubble Tea's Elm Architecture with all state in a single struct.
+// Fields are grouped by concern to make the 35+ fields easier to understand and maintain.
 type Model struct {
-	view                 string            // Current view: "entry", "entries", "view_entry", "todos", "view_todo", "unified_filter", "add_todo", "theme_selector", or "help"
-	previousView         string            // Previous view (for returning from modals like theme_selector)
-	width                int               // Terminal width
-	height               int               // Terminal height
-	textarea             textarea.Model    // Textarea for entry input
-	todoInput            textarea.Model    // Single-line input for standalone todos
-	unifiedFilterInput   textarea.Model    // Single-line input for unified filtering (tags + dates)
-	currentEntry         models.Entry      // Entry being edited
-	currentTodo          models.Todo       // Standalone todo being created
-	editingMode          bool              // true when editing existing item, false when creating new
-	originalEntryID      string            // Store entry ID being edited (empty if creating)
-	originalTodoID       string            // Store todo ID being edited (empty if creating)
-	viewingEntry         models.Entry      // Entry being viewed (read-only)
-	viewingTodo          models.Todo       // Todo being viewed (read-only)
-	scrollOffset         int               // Scroll offset for long entry view
-	statusMsg            string            // Status message to display
-	statusTime           time.Time         // When status message was set
-	hasUnsaved           bool              // Whether there are unsaved changes
-	savedContent         string            // Last saved content (to detect changes)
-	confirmingExit       bool              // Whether showing exit confirmation
-	entries              []models.Entry    // All entries (for list view)
-	selectedEntry        int               // Selected entry index in list
-	todos                []models.Todo     // All todos (raw, unsorted)
-	displayTodos         []models.Todo     // Sorted todos for display (only updated on load/refresh)
-	selectedTodo         int               // Selected todo index in list
-	filterTags           []string          // Current tag filters (empty = no filter), supports multiple tags with AND logic
-	filterContext        string            // Context for filtering: "entries" or "todos" (which view to return to)
-	filterDate           string            // Current date filter preset (empty = no filter)
-	availableTags        []string          // All unique tags across entries
-	autocompleteTag      string            // Current autocomplete suggestion for tag input
-	markedForDeletion    map[string]string // Map of ID to type ("entry" or "todo") for items marked for deletion
-	deleteConfirmPending bool              // Whether $ has been pressed once (waiting for second press)
-	config               models.Config     // User configuration (theme, etc.)
-	currentTheme         ui.Theme          // Currently active theme
-	selectedTheme        int               // Selected theme index in theme selector
+	// ============================================================
+	// View Navigation
+	// ============================================================
+	view         string // Current view: "entry", "entries", "view_entry", "todos", "view_todo", "unified_filter", "add_todo", "theme_selector", or "help"
+	previousView string // Previous view (for returning from modals like theme_selector and help)
+
+	// ============================================================
+	// Terminal Dimensions
+	// ============================================================
+	width  int // Terminal width (updated on window resize)
+	height int // Terminal height (updated on window resize)
+
+	// ============================================================
+	// Text Input Components (Bubble Tea textareas)
+	// ============================================================
+	textarea           textarea.Model // Multi-line textarea for entry input (title + body)
+	todoInput          textarea.Model // Single-line input for standalone todo title
+	unifiedFilterInput textarea.Model // Single-line input for unified filtering (tags + dates)
+
+	// ============================================================
+	// Current Editing State (mutable)
+	// Used when creating or editing entries/todos via forms
+	// ============================================================
+	currentEntry    models.Entry // Entry being created or edited
+	currentTodo     models.Todo  // Standalone todo being created or edited
+	editingMode     bool         // true = editing existing item, false = creating new
+	originalEntryID string       // Entry ID being edited (empty string if creating new)
+	originalTodoID  string       // Todo ID being edited (empty string if creating new)
+
+	// ============================================================
+	// View-Only State (read-only views)
+	// Used when viewing entries/todos in detail
+	// ============================================================
+	viewingEntry models.Entry // Entry being viewed in "view_entry" (read-only)
+	viewingTodo  models.Todo  // Todo being viewed in "view_todo" (read-only)
+	scrollOffset int          // Scroll offset for paginated views (entry/todo/help pages)
+
+	// ============================================================
+	// UI Feedback State
+	// ============================================================
+	statusMsg      string    // Status message to display (e.g., "saved", "Filter applied")
+	statusTime     time.Time // Timestamp when status message was set (for auto-clear after 3s)
+	hasUnsaved     bool      // Whether there are unsaved changes in current form
+	savedContent   string    // Last saved content (to detect changes for hasUnsaved)
+	confirmingExit bool      // Whether showing exit confirmation dialog
+
+	// ============================================================
+	// Data Collections (loaded from storage)
+	// Single source of truth: Todo.EntryID links to Entry.ID (no Entry.TodoIDs)
+	// ============================================================
+	entries       []models.Entry // All entries (unsorted, loaded from storage)
+	selectedEntry int            // Selected entry index in list view
+	todos         []models.Todo  // All todos (raw, unsorted, loaded from storage)
+	displayTodos  []models.Todo  // Sorted todos for display (updated on load/refresh)
+	selectedTodo  int            // Selected todo index in list view
+
+	// ============================================================
+	// Filtering State (unified filtering for both entries and todos)
+	// Design: Filter state persists across navigation until explicitly cleared with 'c' key
+	// ============================================================
+	filterTags      []string // Current tag filters (empty = no filter), AND logic: all tags must match
+	filterContext   string   // Context for filtering: "entries" or "todos" (determines return view from filter)
+	filterDate      string   // Current date filter string (e.g., "today", "last 14 days", "2025-01-01 to 2025-01-31")
+	availableTags   []string // All unique tags extracted from entries and todos (for autocomplete)
+	autocompleteTag string   // Current autocomplete suggestion for tag input (cleared after tab)
+
+	// ============================================================
+	// Deletion State (neomutt-style multi-select deletion)
+	// Design: 'd' marks items, '$' executes deletion, marks persist across navigation
+	// ============================================================
+	markedForDeletion    map[string]string // Map of ID -> type ("entry" or "todo") for marked items
+	deleteConfirmPending bool              // true after first '$' press (waiting for 'y' or 'n' confirmation)
+
+	// ============================================================
+	// Configuration and Theming
+	// ============================================================
+	config        models.Config // User configuration (loaded from ~/.amos/config.json)
+	currentTheme  ui.Theme      // Currently active theme (brutalist or cyberpunk)
+	selectedTheme int           // Selected theme index in theme selector modal
 }
 
 // NewModel creates a new model with default values
@@ -291,16 +338,14 @@ func (m Model) View() string {
 		return ui.RenderEntryList(m.width, m.height, m.currentTheme, m.entries, m.selectedEntry, m.todos, m.filterTags, m.filterDate, m.markedForDeletion, m.statusMsg)
 	case "view_entry":
 		// Calculate filtered/sorted entry position for footer display
-		filtered := helpers.FilterEntriesByDateRange(m.entries, m.filterDate)
-		filtered = helpers.FilterEntriesByTags(filtered, m.filterTags)
+		filtered := helpers.ApplyEntryFilters(m.entries, m.filterDate, m.filterTags)
 		sorted := helpers.SortEntriesForDisplay(filtered)
 		return ui.RenderEntryView(m.width, m.height, m.currentTheme, m.viewingEntry, m.todos, m.scrollOffset, m.markedForDeletion, m.statusMsg, m.selectedEntry, len(sorted))
 	case "todos":
 		return ui.RenderTodoList(m.width, m.height, m.currentTheme, m.displayTodos, m.entries, m.selectedTodo, m.filterTags, m.filterDate, m.markedForDeletion, m.statusMsg)
 	case "view_todo":
 		// Calculate filtered/sorted todo position for footer display
-		filtered := helpers.FilterTodosByDateRange(m.displayTodos, m.filterDate)
-		filtered = helpers.FilterTodosByTags(filtered, m.filterTags)
+		filtered := helpers.ApplyTodoFilters(m.displayTodos, m.filterDate, m.filterTags)
 		sorted := helpers.SortTodosForDisplay(filtered)
 		return ui.RenderTodoView(m.width, m.height, m.currentTheme, m.viewingTodo, m.entries, m.scrollOffset, m.markedForDeletion, m.statusMsg, m.selectedTodo, len(sorted))
 	case "unified_filter":

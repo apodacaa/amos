@@ -11,8 +11,7 @@ import (
 // RenderTodoList renders the todo list view
 func RenderTodoList(width, height int, theme Theme, todos []models.Todo, entries []models.Entry, selectedIdx int, filterTags []string, filterDate string, markedForDeletion map[string]string, statusMsg string) string {
 	// Apply filters: first date, then tags
-	filtered := helpers.FilterTodosByDateRange(todos, filterDate)
-	filtered = helpers.FilterTodosByTags(filtered, filterTags)
+	filtered := helpers.ApplyTodoFilters(todos, filterDate, filterTags)
 
 	// Build todo list
 	var listItems []string

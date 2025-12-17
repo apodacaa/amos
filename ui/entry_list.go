@@ -11,8 +11,7 @@ import (
 // RenderEntryList renders the entry list view
 func RenderEntryList(width, height int, theme Theme, entries []models.Entry, selectedIdx int, todos []models.Todo, filterTags []string, filterDate string, markedForDeletion map[string]string, statusMsg string) string {
 	// Apply filters: first date, then tags
-	filtered := helpers.FilterEntriesByDateRange(entries, filterDate)
-	filtered = helpers.FilterEntriesByTags(filtered, filterTags)
+	filtered := helpers.ApplyEntryFilters(entries, filterDate, filterTags)
 
 	// Sort entries by timestamp (newest first)
 	sorted := helpers.SortEntriesForDisplay(filtered)
