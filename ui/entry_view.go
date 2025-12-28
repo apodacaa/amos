@@ -10,11 +10,23 @@ import (
 
 // RenderEntryView renders a read-only view of an entry
 func RenderEntryView(width, height int, theme Theme, entry models.Entry, allTodos []models.Todo, scrollOffset int, markedForDeletion map[string]string, statusMsg string, currentIndex int, totalCount int) string {
-	// Title at top with date
-	dateStr := entry.CreatedAt.Format("2006-01-02")
-	styledDate := StyleDate(dateStr, theme)
+	// Build timestamp line(s)
+	createdStr := entry.CreatedAt.Format("2006-01-02")
+	updatedStr := entry.UpdatedAt.Format("2006-01-02")
+
+	var timestampLines string
+	if createdStr == updatedStr {
+		// Same date - show one line
+		timestampLines = fmt.Sprintf("Created: %s", StyleDate(createdStr, theme))
+	} else {
+		// Different dates - show both
+		timestampLines = fmt.Sprintf("Created: %s\nUpdated: %s",
+			StyleDate(createdStr, theme),
+			StyleDate(updatedStr, theme))
+	}
+
+	// Title on separate line
 	styledTitle := HighlightTagsInText(entry.Title, theme)
-	title := fmt.Sprintf("%s: %s", styledDate, styledTitle)
 
 	// Todos section (if any)
 	var todosSection string
@@ -141,8 +153,10 @@ func RenderEntryView(width, height int, theme Theme, entry models.Entry, allTodo
 
 	// Build main content (simple string concatenation to avoid lipgloss adding extra formatting)
 	var contentParts []string
-	contentParts = append(contentParts, title)
-	contentParts = append(contentParts, "") // blank line
+	contentParts = append(contentParts, timestampLines) // timestamps first
+	contentParts = append(contentParts, "")             // blank line
+	contentParts = append(contentParts, styledTitle)    // title on new line
+	contentParts = append(contentParts, "")             // blank line
 	contentParts = append(contentParts, body)
 	if todosSection != "" {
 		contentParts = append(contentParts, todosSection)

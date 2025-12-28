@@ -80,6 +80,9 @@ func (m Model) handleAddTodoKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		// If editing, preserve existing fields; if creating, set as standalone
 		if !m.editingMode {
 			m.currentTodo.EntryID = nil // Standalone todo (no entry link)
+		} else {
+			// When editing, update the UpdatedAt timestamp
+			m.currentTodo.UpdatedAt = time.Now()
 		}
 		// Note: When editing, currentTodo already has ID, Status, CreatedAt, EntryID, Position
 
@@ -96,10 +99,12 @@ func (m Model) handleAddTodoKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.view = "view_todo"
 		} else {
 			// Reset for next todo (rapid entry mode)
+			now := time.Now()
 			m.currentTodo = models.Todo{
 				ID:        m.generateID(),
 				Status:    "open",
-				CreatedAt: time.Now(),
+				CreatedAt: now,
+				UpdatedAt: now,
 			}
 			m.todoInput.Reset()
 		}

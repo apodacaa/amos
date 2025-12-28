@@ -381,10 +381,12 @@ func (m Model) handleNewEntry() (Model, tea.Cmd) {
 // handleAddTodo is a shared handler for creating a standalone todo (from any view)
 func (m Model) handleAddTodo() (Model, tea.Cmd) {
 	m.view = "add_todo"
+	now := time.Now()
 	m.currentTodo = models.Todo{
 		ID:        m.generateID(),
 		Status:    "open",
-		CreatedAt: time.Now(),
+		CreatedAt: now,
+		UpdatedAt: now,
 	}
 	m.todoInput.Reset()
 	m.todoInput.Focus()

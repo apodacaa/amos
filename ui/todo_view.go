@@ -23,11 +23,24 @@ func RenderTodoView(width, height int, theme Theme, todo models.Todo, allEntries
 		statusIcon = "[x]"
 	}
 
-	// Style status icon and date
+	// Style status icon
 	styledStatus := StyleTodoStatus(todo.Status, statusIcon, theme)
-	dateStr := todo.CreatedAt.Format("2006-01-02")
-	styledDate := StyleDate(dateStr, theme)
-	statusLine := fmt.Sprintf("%s %s", styledStatus, styledDate)
+
+	// Build timestamp line(s)
+	createdStr := todo.CreatedAt.Format("2006-01-02")
+	updatedStr := todo.UpdatedAt.Format("2006-01-02")
+
+	var timestampLines string
+	if createdStr == updatedStr {
+		// Same date - show one line
+		timestampLines = fmt.Sprintf("%s Created: %s", styledStatus, StyleDate(createdStr, theme))
+	} else {
+		// Different dates - show both
+		timestampLines = fmt.Sprintf("%s Created: %s\n   Updated: %s",
+			styledStatus,
+			StyleDate(createdStr, theme),
+			StyleDate(updatedStr, theme))
+	}
 
 	// Todo title (wrappable)
 	titleStyle := GetNormalItemStyle().
@@ -156,8 +169,8 @@ func RenderTodoView(width, height int, theme Theme, todo models.Todo, allEntries
 
 	footer := RenderFooter(width, theme, footerTitle, footerStats)
 
-	// Build main content (status + date at top, then blank line, then title)
-	mainContent := statusLine + "\n\n" + renderedTitle + linkedSection
+	// Build main content (status + timestamps at top, then blank line, then title)
+	mainContent := timestampLines + "\n\n" + renderedTitle + linkedSection
 
 	// Calculate padding to fill remaining vertical space
 	contentHeight := strings.Count(mainContent, "\n") + 1
