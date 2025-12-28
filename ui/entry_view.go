@@ -11,7 +11,7 @@ import (
 // RenderEntryView renders a read-only view of an entry
 func RenderEntryView(width, height int, theme Theme, entry models.Entry, allTodos []models.Todo, scrollOffset int, markedForDeletion map[string]string, statusMsg string, currentIndex int, totalCount int) string {
 	// Title at top with date
-	dateStr := entry.Timestamp.Format("2006-01-02")
+	dateStr := entry.CreatedAt.Format("2006-01-02")
 	styledDate := StyleDate(dateStr, theme)
 	styledTitle := HighlightTagsInText(entry.Title, theme)
 	title := fmt.Sprintf("%s: %s", styledDate, styledTitle)

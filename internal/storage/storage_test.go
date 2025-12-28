@@ -1,6 +1,8 @@
 package storage
 
 import (
+	"bytes"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
@@ -23,14 +25,16 @@ func TestSaveAndLoadEntries(t *testing.T) {
 			Title:     "Test Entry 1",
 			Body:      "Test body 1",
 			Tags:      []string{"tag1", "tag2"},
-			Timestamp: time.Now(),
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
 		},
 		{
 			ID:        "test-2",
 			Title:     "Test Entry 2",
 			Body:      "Test body 2",
 			Tags:      []string{"tag3"},
-			Timestamp: time.Now(),
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
 		},
 	}
 
@@ -89,7 +93,8 @@ func TestSaveEntryNew(t *testing.T) {
 		Title:     "New Entry",
 		Body:      "New body",
 		Tags:      []string{"new"},
-		Timestamp: time.Now(),
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
 	}
 
 	err := SaveEntry(entry)
@@ -125,7 +130,8 @@ func TestSaveEntryUpdate(t *testing.T) {
 		Title:     "Original Title",
 		Body:      "Original body",
 		Tags:      []string{"original"},
-		Timestamp: time.Now(),
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
 	}
 
 	err := SaveEntry(entry)
@@ -367,5 +373,59 @@ func TestSaveTodoUpdate(t *testing.T) {
 
 	if todos[0].Status != "done" {
 		t.Errorf("SaveTodo() updated Status = %v, want 'done'", todos[0].Status)
+	}
+}
+
+// TestEntryMigrationFromOldFormat verifies backward compatibility
+// Old entries with "timestamp" field should migrate to "created_at"/"updated_at"
+func TestEntryMigrationFromOldFormat(t *testing.T) {
+	oldJSON := `{
+		"id": "test-1",
+		"title": "Old Entry",
+		"body": "Old format",
+		"tags": ["test"],
+		"timestamp": "2025-01-01T12:00:00Z"
+	}`
+
+	var entry models.Entry
+	err := json.Unmarshal([]byte(oldJSON), &entry)
+	if err != nil {
+		t.Fatalf("Failed to unmarshal old format: %v", err)
+	}
+
+	// Verify migration
+	if entry.CreatedAt.IsZero() {
+		t.Error("CreatedAt should be set from timestamp")
+	}
+
+	if entry.UpdatedAt.IsZero() {
+		t.Error("UpdatedAt should be set from timestamp")
+	}
+
+	if !entry.CreatedAt.Equal(entry.UpdatedAt) {
+		t.Error("CreatedAt and UpdatedAt should be equal for migrated entries")
+	}
+
+	expectedTime := time.Date(2025, 1, 1, 12, 0, 0, 0, time.UTC)
+	if !entry.CreatedAt.Equal(expectedTime) {
+		t.Errorf("CreatedAt incorrect: got %v, want %v", entry.CreatedAt, expectedTime)
+	}
+
+	// Verify new JSON doesn't contain old field
+	newJSON, err := json.Marshal(entry)
+	if err != nil {
+		t.Fatalf("Failed to marshal: %v", err)
+	}
+
+	if bytes.Contains(newJSON, []byte("timestamp")) {
+		t.Error("Marshaled JSON should not contain deprecated 'timestamp' field")
+	}
+
+	if !bytes.Contains(newJSON, []byte("created_at")) {
+		t.Error("Marshaled JSON should contain 'created_at' field")
+	}
+
+	if !bytes.Contains(newJSON, []byte("updated_at")) {
+		t.Error("Marshaled JSON should contain 'updated_at' field")
 	}
 }

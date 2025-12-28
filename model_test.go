@@ -353,9 +353,9 @@ func TestFilteringByDate(t *testing.T) {
 	m := NewModel()
 	m.view = "entries"
 	m.entries = []models.Entry{
-		{ID: "1", Title: "Today's Entry", Timestamp: now},
-		{ID: "2", Title: "Yesterday's Entry", Timestamp: yesterday},
-		{ID: "3", Title: "Old Entry", Timestamp: weekAgo},
+		{ID: "1", Title: "Today's Entry", CreatedAt: now, UpdatedAt: now},
+		{ID: "2", Title: "Yesterday's Entry", CreatedAt: yesterday, UpdatedAt: yesterday},
+		{ID: "3", Title: "Old Entry", CreatedAt: weekAgo, UpdatedAt: weekAgo},
 	}
 
 	// Filter by "today"
@@ -382,9 +382,9 @@ func TestCombinedFiltering(t *testing.T) {
 	m := NewModel()
 	m.view = "entries"
 	m.entries = []models.Entry{
-		{ID: "1", Title: "Recent Work", Tags: []string{"work"}, Timestamp: now},
-		{ID: "2", Title: "Old Work", Tags: []string{"work"}, Timestamp: weekAgo},
-		{ID: "3", Title: "Recent Personal", Tags: []string{"personal"}, Timestamp: now},
+		{ID: "1", Title: "Recent Work", Tags: []string{"work"}, CreatedAt: now, UpdatedAt: now},
+		{ID: "2", Title: "Old Work", Tags: []string{"work"}, CreatedAt: weekAgo, UpdatedAt: weekAgo},
+		{ID: "3", Title: "Recent Personal", Tags: []string{"personal"}, CreatedAt: now, UpdatedAt: now},
 	}
 
 	// Apply both filters: work tag + today

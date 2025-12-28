@@ -60,7 +60,7 @@ func RenderTodoView(width, height int, theme Theme, todo models.Todo, allEntries
 			linkedParts = append(linkedParts, GetDimmedStyle(theme).Render("From entry..."))
 
 			// Date, title, tags line
-			dateStr := linkedEntry.Timestamp.Format("2006-01-02")
+			dateStr := linkedEntry.CreatedAt.Format("2006-01-02")
 			styledDate := StyleDate(dateStr, theme)
 			styledTitle := HighlightTagsInText(linkedEntry.Title, theme)
 			tagStr := ""

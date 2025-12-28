@@ -156,7 +156,8 @@ func generateEntries(count int) []models.Entry {
 			Title:     title,
 			Body:      body,
 			Tags:      tags,
-			Timestamp: timestamp,
+			CreatedAt: timestamp,
+			UpdatedAt: timestamp,
 			TodoIDs:   []string{}, // Will be populated when we link todos
 		}
 	}

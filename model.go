@@ -364,9 +364,11 @@ func (m Model) View() string {
 // handleNewEntry is a shared handler for creating a new entry (from any view)
 func (m Model) handleNewEntry() (Model, tea.Cmd) {
 	m.view = "entry"
+	now := time.Now()
 	m.currentEntry = models.Entry{
 		ID:        m.generateID(),
-		Timestamp: time.Now(),
+		CreatedAt: now,
+		UpdatedAt: now,
 	}
 	m.textarea.Reset()
 	m.textarea.Focus()

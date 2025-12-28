@@ -98,7 +98,7 @@ func (m Model) saveEntry() tea.Cmd {
 		m.currentEntry.Title = title
 		m.currentEntry.Body = body
 		m.currentEntry.Tags = tags
-		m.currentEntry.Timestamp = time.Now()
+		m.currentEntry.UpdatedAt = time.Now() // Only update UpdatedAt, preserve CreatedAt
 
 		// Save entry to storage
 		err = storage.SaveEntry(m.currentEntry)
