@@ -78,12 +78,14 @@ func (m Model) saveEntry() tea.Cmd {
 			// Check if this todo already exists for this entry
 			if _, exists := existingTodosByTitle[todoTitle]; !exists {
 				// Create new todo
+				now := time.Now()
 				todo := models.Todo{
 					ID:        uuid.New().String(),
 					Title:     todoTitle,
 					Status:    "open",
 					Tags:      helpers.ExtractTags(todoTitle), // Extract tags from todo title
-					CreatedAt: time.Now(),
+					CreatedAt: now,
+					UpdatedAt: now,
 					EntryID:   &m.currentEntry.ID, // Link to this entry (single source of truth)
 				}
 
@@ -98,7 +100,7 @@ func (m Model) saveEntry() tea.Cmd {
 		m.currentEntry.Title = title
 		m.currentEntry.Body = body
 		m.currentEntry.Tags = tags
-		m.currentEntry.Timestamp = time.Now()
+		m.currentEntry.UpdatedAt = time.Now() // Only update UpdatedAt, preserve CreatedAt
 
 		// Save entry to storage
 		err = storage.SaveEntry(m.currentEntry)

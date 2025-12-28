@@ -9,6 +9,7 @@ type Todo struct {
 	Status    string    `json:"status"` // "open", "next", or "done"
 	Tags      []string  `json:"tags"`
 	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 	EntryID   *string   `json:"entry_id,omitempty"` // Pointer - nil if standalone
 }
 

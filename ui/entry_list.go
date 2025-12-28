@@ -29,7 +29,7 @@ func RenderEntryList(width, height int, theme Theme, entries []models.Entry, sel
 		for i := start; i < end; i++ {
 			entry := sorted[i]
 			// Table format: markers  date  title
-			timestamp := entry.Timestamp.Format("2006-01-02")
+			timestamp := entry.CreatedAt.Format("2006-01-02")
 
 			// Build 2-character marker prefix (D for deletion, + for todos)
 			// GetEntryMarker returns status: "next", "open", "done", or ""

@@ -129,6 +129,13 @@ func LoadTodos() ([]models.Todo, error) {
 		return nil, err
 	}
 
+	// Migration: ensure UpdatedAt is populated (set to CreatedAt if zero)
+	for i := range todos {
+		if todos[i].UpdatedAt.IsZero() {
+			todos[i].UpdatedAt = todos[i].CreatedAt
+		}
+	}
+
 	return todos, nil
 }
 

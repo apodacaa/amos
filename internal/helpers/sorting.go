@@ -50,7 +50,7 @@ func SortTodosForDisplay(todos []models.Todo) []models.Todo {
 	return sorted
 }
 
-// SortEntriesForDisplay sorts entries by timestamp (newest first)
+// SortEntriesForDisplay sorts entries by creation date (newest first)
 //
 // Design decision: Uses bubble sort for consistency with SortTodosForDisplay.
 // Stable sort preserves order for entries with identical timestamps.
@@ -59,10 +59,11 @@ func SortEntriesForDisplay(entries []models.Entry) []models.Entry {
 	sorted := make([]models.Entry, len(entries))
 	copy(sorted, entries)
 
-	// Bubble sort by timestamp descending (newest first)
+	// Bubble sort by CreatedAt descending (newest first)
+	// Sort by creation date ensures entries don't move when edited
 	for i := 0; i < len(sorted)-1; i++ {
 		for j := i + 1; j < len(sorted); j++ {
-			if sorted[j].Timestamp.After(sorted[i].Timestamp) {
+			if sorted[j].CreatedAt.After(sorted[i].CreatedAt) {
 				sorted[i], sorted[j] = sorted[j], sorted[i]
 			}
 		}

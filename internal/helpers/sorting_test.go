@@ -92,27 +92,27 @@ func TestSortEntriesForDisplay(t *testing.T) {
 		{
 			name: "sort by timestamp descending",
 			entries: []models.Entry{
-				{ID: "1", Title: "Oldest", Timestamp: now.Add(-2 * time.Hour)},
-				{ID: "2", Title: "Newest", Timestamp: now},
-				{ID: "3", Title: "Middle", Timestamp: now.Add(-1 * time.Hour)},
+				{ID: "1", Title: "Oldest", CreatedAt: now.Add(-2 * time.Hour)},
+				{ID: "2", Title: "Newest", CreatedAt: now},
+				{ID: "3", Title: "Middle", CreatedAt: now.Add(-1 * time.Hour)},
 			},
 			expectedOrder: []string{"Newest", "Middle", "Oldest"},
 		},
 		{
 			name: "already sorted",
 			entries: []models.Entry{
-				{ID: "1", Title: "First", Timestamp: now},
-				{ID: "2", Title: "Second", Timestamp: now.Add(-1 * time.Hour)},
-				{ID: "3", Title: "Third", Timestamp: now.Add(-2 * time.Hour)},
+				{ID: "1", Title: "First", CreatedAt: now},
+				{ID: "2", Title: "Second", CreatedAt: now.Add(-1 * time.Hour)},
+				{ID: "3", Title: "Third", CreatedAt: now.Add(-2 * time.Hour)},
 			},
 			expectedOrder: []string{"First", "Second", "Third"},
 		},
 		{
 			name: "reverse order",
 			entries: []models.Entry{
-				{ID: "1", Title: "Third", Timestamp: now.Add(-2 * time.Hour)},
-				{ID: "2", Title: "Second", Timestamp: now.Add(-1 * time.Hour)},
-				{ID: "3", Title: "First", Timestamp: now},
+				{ID: "1", Title: "Third", CreatedAt: now.Add(-2 * time.Hour)},
+				{ID: "2", Title: "Second", CreatedAt: now.Add(-1 * time.Hour)},
+				{ID: "3", Title: "First", CreatedAt: now},
 			},
 			expectedOrder: []string{"First", "Second", "Third"},
 		},
