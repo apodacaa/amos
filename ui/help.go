@@ -197,10 +197,24 @@ func renderDataStorageSection(theme Theme) string {
 	title := lipgloss.NewStyle().Bold(true).Render("DATA STORAGE")
 
 	items := []string{
-		"All data is stored in plain JSON files in ~/.amos/:",
-		"  ~/.amos/entries.json   Journal entries",
-		"  ~/.amos/todos.json     Todo items",
-		"  ~/.amos/config.json    User preferences (theme)",
+		"All data is stored in plain JSON files (default: ~/.amos/):",
+		"  entries.json   Journal entries",
+		"  todos.json     Todo items",
+		"  config.json    User preferences (theme)",
+		"",
+		"Customize data directory for syncing with cloud storage:",
+		"",
+		"Option 1: Environment variable (one-time or in shell profile)",
+		"  AMOS_DATA_DIR=~/Google\\ Drive/amos amos",
+		"",
+		"Option 2: Config file (persistent, create with any text editor)",
+		"  Create file: ~/.config/amos/settings.json",
+		"  Content:     {",
+		"                 \"data_dir\": \"~/Google Drive/amos\"",
+		"               }",
+		"",
+		"Priority: AMOS_DATA_DIR > ~/.config/amos/settings.json > ~/.amos",
+		"Path formats: ~/path (tilde), /absolute/path, or ./relative/path",
 	}
 
 	return title + "\n\n" + strings.Join(items, "\n")
