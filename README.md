@@ -249,8 +249,9 @@ air               # Run with auto-reload
 │   │   ├── entry.go
 │   │   ├── todo.go
 │   │   └── config.go      # User preferences
-│   ├── storage/           # JSON persistence
-│   │   └── storage.go
+│   ├── storage/           # JSON persistence (configurable directory)
+│   │   ├── storage.go
+│   │   └── system_config.go  # System config (~/.config/amos/settings.json)
 │   └── helpers/           # Utilities
 │       ├── sorting.go     # Centralized sorting logic
 │       ├── tags.go        # Tag extraction and filtering

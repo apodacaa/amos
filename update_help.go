@@ -168,10 +168,17 @@ func renderDataStorageSectionText() string {
 	title := "DATA STORAGE"
 
 	items := []string{
-		"All data is stored in plain JSON files in ~/.amos/:",
-		"  ~/.amos/entries.json   Journal entries",
-		"  ~/.amos/todos.json     Todo items",
-		"  ~/.amos/config.json    User preferences (theme)",
+		"All data is stored in plain JSON files (default: ~/.amos/):",
+		"  entries.json   Journal entries",
+		"  todos.json     Todo items",
+		"  config.json    User preferences (theme)",
+		"",
+		"Customize data directory for syncing with cloud storage:",
+		"  AMOS_DATA_DIR=~/Google\\ Drive/amos amos   # Environment variable",
+		"  ~/.config/amos/settings.json               # System config file",
+		"",
+		"Priority: AMOS_DATA_DIR > ~/.config/amos/settings.json > ~/.amos",
+		"Supports tilde (~) expansion and relative paths.",
 	}
 
 	return title + "\n\n" + strings.Join(items, "\n")

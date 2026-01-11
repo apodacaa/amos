@@ -330,7 +330,7 @@ Tests use standard Go testing:
 
 ## Data Format
 
-Entries stored in `~/.amos/entries.json`:
+Entries stored in `<data-dir>/entries.json` (default: `~/.amos/entries.json`):
 ```json
 [
   {
@@ -345,7 +345,7 @@ Entries stored in `~/.amos/entries.json`:
 
 **Note**: Entry.TodoIDs field removed - relationships use Todo.EntryID as single source of truth.
 
-Todos stored in `~/.amos/todos.json`:
+Todos stored in `<data-dir>/todos.json` (default: `~/.amos/todos.json`):
 ```json
 [
   {
