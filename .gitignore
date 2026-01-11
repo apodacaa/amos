@@ -21,8 +21,10 @@ go.work.sum
 # Build output
 /bin/
 /dist/
-amos                # Main binary (Linux/Mac)
-amos-*              # Cross-compiled binaries (amos-linux-amd64, etc.)
+
+# Main binary and cross-compiled binaries
+amos
+amos-*
 
 # Air - Live reload for Go apps
 tmp/
