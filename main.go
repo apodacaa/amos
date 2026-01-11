@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/apodacaa/amos/internal/storage"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -15,6 +16,13 @@ func main() {
 	if len(os.Args) > 1 && (os.Args[1] == "--version" || os.Args[1] == "-v") {
 		fmt.Printf("amos version %s\n", Version)
 		os.Exit(0)
+	}
+
+	// Initialize data directory from env var or system config
+	// Must happen before NewModel() which loads data
+	if err := storage.InitializeDataDir(); err != nil {
+		fmt.Fprintf(os.Stderr, "Error initializing data directory: %v\n", err)
+		os.Exit(1)
 	}
 
 	m := NewModel()

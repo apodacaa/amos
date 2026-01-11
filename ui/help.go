@@ -105,103 +105,61 @@ func RenderHelp(width, height int, theme Theme, scrollOffset int, updateAvailabl
 }
 
 func renderSymbolsSection(theme Theme) string {
-	title := lipgloss.NewStyle().Bold(true).Render("SYMBOLS")
+	// Get plain text content
+	content := RenderSymbolsSectionText()
 
-	items := []string{
-		"Entry List Markers:",
-		"  +  Entry has linked todos (color shows highest priority)",
-		"     Green = next, Magenta = open, Dim = done",
-		"  D  Entry marked for deletion",
-		"",
-		"Todo List Markers:",
-		"  +  Todo is linked to an entry",
-		"  D  Todo marked for deletion",
-		"",
-		"Todo Status Indicators:",
-		"  [ ] Open todo",
-		"  [>] Next todo (high priority)",
-		"  [x] Done todo",
+	// Extract title and body
+	parts := strings.SplitN(content, "\n\n", 2)
+	title := lipgloss.NewStyle().Bold(true).Render(parts[0])
+	body := ""
+	if len(parts) > 1 {
+		body = parts[1]
 	}
 
-	return title + "\n\n" + strings.Join(items, "\n")
+	return title + "\n\n" + body
 }
 
 func renderCommandsSection(theme Theme) string {
-	title := lipgloss.NewStyle().Bold(true).Render("COMMANDS")
+	// Get plain text content
+	content := RenderCommandsSectionText()
 
-	items := []string{
-		"Global:",
-		"  n:new         Create new entry",
-		"  a:todo        Add standalone todo",
-		"  e:entries     Jump to entry list",
-		"  t:todos       Jump to todo list",
-		"  s:theme       Select theme",
-		"  ?:help        Show this help page",
-		"  q:quit        Quit application",
-		"",
-		"Entry List:",
-		"  j/k:nav       Navigate up/down",
-		"  enter:view    View entry detail",
-		"  d:del         Mark/unmark for deletion",
-		"  $:exec        Execute deletion (after marking)",
-		"  /:filter      Filter by tags/dates",
-		"  c:clear       Clear active filter",
-		"",
-		"Entry View:",
-		"  j/k:nav       Navigate between entries",
-		"  f/b:page      Page forward/backward in long entries",
-		"  i:edit        Edit current entry",
-		"  d:del         Mark/unmark for deletion",
-		"  esc:back      Return to entry list",
-		"",
-		"Todo List:",
-		"  j/k:nav       Navigate up/down",
-		"  space:toggle  Cycle todo status (open → next → done)",
-		"  i:edit        Edit selected todo",
-		"  d:del         Mark/unmark for deletion",
-		"  $:exec        Execute deletion (after marking)",
-		"  /:filter      Filter by tags/dates",
-		"  c:clear       Clear active filter",
-		"",
-		"Forms (Entry/Todo):",
-		"  ctrl+s:save   Save and close",
-		"  esc:cancel    Cancel without saving",
-		"",
-		"Filter:",
-		"  @tag          Filter by tag (tab to autocomplete)",
-		"  today         Show items from today",
-		"  yesterday     Show items from yesterday",
-		"  last N days   Show items from last N days",
-		"  YYYY-MM-DD    Show items from specific date",
-		"  date to date  Show items in date range",
-		"  enter:apply   Apply filter",
-		"  esc:cancel    Cancel filter",
+	// Extract title and body
+	parts := strings.SplitN(content, "\n\n", 2)
+	title := lipgloss.NewStyle().Bold(true).Render(parts[0])
+	body := ""
+	if len(parts) > 1 {
+		body = parts[1]
 	}
 
-	return title + "\n\n" + strings.Join(items, "\n")
+	return title + "\n\n" + body
 }
 
 func renderNavigationSection(theme Theme) string {
-	title := lipgloss.NewStyle().Bold(true).Render("NAVIGATION")
+	// Get plain text content
+	content := RenderNavigationSectionText()
 
-	items := []string{
-		"Entry list and todo list are peer views - use e/t to jump between them.",
-		"Global shortcuts (n, a, s, ?) work from any read-only view.",
-		"Press esc to exit forms and return to their natural home view.",
+	// Extract title and body
+	parts := strings.SplitN(content, "\n\n", 2)
+	title := lipgloss.NewStyle().Bold(true).Render(parts[0])
+	body := ""
+	if len(parts) > 1 {
+		body = parts[1]
 	}
 
-	return title + "\n\n" + strings.Join(items, "\n")
+	return title + "\n\n" + body
 }
 
 func renderDataStorageSection(theme Theme) string {
-	title := lipgloss.NewStyle().Bold(true).Render("DATA STORAGE")
+	// Get plain text content
+	content := RenderDataStorageSectionText()
 
-	items := []string{
-		"All data is stored in plain JSON files in ~/.amos/:",
-		"  ~/.amos/entries.json   Journal entries",
-		"  ~/.amos/todos.json     Todo items",
-		"  ~/.amos/config.json    User preferences (theme)",
+	// Extract title and body
+	parts := strings.SplitN(content, "\n\n", 2)
+	title := lipgloss.NewStyle().Bold(true).Render(parts[0])
+	body := ""
+	if len(parts) > 1 {
+		body = parts[1]
 	}
 
-	return title + "\n\n" + strings.Join(items, "\n")
+	return title + "\n\n" + body
 }
