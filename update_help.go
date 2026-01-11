@@ -174,11 +174,18 @@ func renderDataStorageSectionText() string {
 		"  config.json    User preferences (theme)",
 		"",
 		"Customize data directory for syncing with cloud storage:",
-		"  AMOS_DATA_DIR=~/Google\\ Drive/amos amos   # Environment variable",
-		"  ~/.config/amos/settings.json               # System config file",
+		"",
+		"Option 1: Environment variable (one-time or in shell profile)",
+		"  AMOS_DATA_DIR=~/Google\\ Drive/amos amos",
+		"",
+		"Option 2: Config file (persistent, create with any text editor)",
+		"  Create file: ~/.config/amos/settings.json",
+		"  Content:     {",
+		"                 \"data_dir\": \"~/Google Drive/amos\"",
+		"               }",
 		"",
 		"Priority: AMOS_DATA_DIR > ~/.config/amos/settings.json > ~/.amos",
-		"Supports tilde (~) expansion and relative paths.",
+		"Path formats: ~/path (tilde), /absolute/path, or ./relative/path",
 	}
 
 	return title + "\n\n" + strings.Join(items, "\n")
