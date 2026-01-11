@@ -9,7 +9,7 @@ import (
 )
 
 // RenderTodoList renders the todo list view
-func RenderTodoList(width, height int, theme Theme, todos []models.Todo, entries []models.Entry, selectedIdx int, filterTags []string, filterDate string, markedForDeletion map[string]string, statusMsg string) string {
+func RenderTodoList(width, height int, theme Theme, todos []models.Todo, entries []models.Entry, selectedIdx int, filterTags []string, filterDate string, markedForDeletion map[string]string, statusMsg string, updateAvailable bool, updateDismissed bool, latestVersion string) string {
 	// Apply filters: first date, then tags
 	filtered := helpers.ApplyTodoFilters(todos, filterDate, filterTags)
 
@@ -135,5 +135,8 @@ func RenderTodoList(width, height int, theme Theme, todos []models.Todo, entries
 
 	footer := RenderFooter(width, theme, stats, footerTitle)
 
-	return AssembleView(header, list, footer, width, height, statusMsg)
+	// Generate update notice if available
+	updateNotice := RenderUpdateNotice(width, theme, updateAvailable, updateDismissed, latestVersion)
+
+	return AssembleViewWithUpdate(header, list, footer, width, height, statusMsg, updateNotice)
 }

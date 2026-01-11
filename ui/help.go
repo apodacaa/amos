@@ -8,7 +8,7 @@ import (
 )
 
 // RenderHelp renders the help page with symbols and commands
-func RenderHelp(width, height int, theme Theme, scrollOffset int) string {
+func RenderHelp(width, height int, theme Theme, scrollOffset int, updateAvailable bool, updateDismissed bool, latestVersion string) string {
 	// Build help content sections
 	sections := []string{
 		renderSymbolsSection(theme),
@@ -78,17 +78,30 @@ func RenderHelp(width, height int, theme Theme, scrollOffset int) string {
 
 	footer := RenderFooter(width, theme, footerTitle, footerStats)
 
+	// Generate update notice if available
+	updateNotice := RenderUpdateNotice(width, theme, updateAvailable, updateDismissed, latestVersion)
+
 	// Manual assembly (since AssembleView doesn't support scrolling)
 	// Add padding to fill remaining vertical space
 	contentHeight := strings.Count(content, "\n") + 1
-	availableContentHeight := height - 3 // header + footer + message line
+	reservedLines := 3 // header + footer + message line
+	if updateNotice != "" {
+		reservedLines += 1 // update notice line
+	}
+	availableContentHeight := height - reservedLines
 	paddingNeeded := availableContentHeight - contentHeight
 	if paddingNeeded > 0 {
 		content += strings.Repeat("\n", paddingNeeded)
 	}
 
-	// Assemble: header + content + footer + empty message line
-	return header + "\n" + content + "\n" + footer + "\n"
+	// Assemble: header + content + footer + update notice + empty message line
+	result := header + "\n" + content + "\n" + footer
+	if updateNotice != "" {
+		result += "\n" + updateNotice
+	}
+	result += "\n"
+
+	return result
 }
 
 func renderSymbolsSection(theme Theme) string {

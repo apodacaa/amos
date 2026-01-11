@@ -45,3 +45,9 @@ type deleteErrorMsg struct {
 type configSavedMsg struct {
 	err error
 }
+
+// updateCheckCompleteMsg is sent when update check completes
+type updateCheckCompleteMsg struct {
+	latestVersion   string // Latest version from GitHub (e.g., "v1.5.0")
+	updateAvailable bool   // Whether an update is available
+}

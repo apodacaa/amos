@@ -9,7 +9,7 @@ import (
 )
 
 // RenderEntryView renders a read-only view of an entry
-func RenderEntryView(width, height int, theme Theme, entry models.Entry, allTodos []models.Todo, scrollOffset int, markedForDeletion map[string]string, statusMsg string, currentIndex int, totalCount int) string {
+func RenderEntryView(width, height int, theme Theme, entry models.Entry, allTodos []models.Todo, scrollOffset int, markedForDeletion map[string]string, statusMsg string, currentIndex int, totalCount int, updateAvailable bool, updateDismissed bool, latestVersion string) string {
 	// Build timestamp line(s)
 	createdStr := entry.CreatedAt.Format("2006-01-02")
 	updatedStr := entry.UpdatedAt.Format("2006-01-02")
@@ -164,9 +164,16 @@ func RenderEntryView(width, height int, theme Theme, entry models.Entry, allTodo
 
 	mainContent := strings.Join(contentParts, "\n")
 
+	// Generate update notice if available
+	updateNotice := RenderUpdateNotice(width, theme, updateAvailable, updateDismissed, latestVersion)
+
 	// Calculate padding to fill remaining vertical space
 	contentHeight := strings.Count(mainContent, "\n") + 1
-	availableContentHeight := height - 3 // header + footer + message line
+	reservedLines := 3 // header + footer + message line
+	if updateNotice != "" {
+		reservedLines += 1 // update notice line
+	}
+	availableContentHeight := height - reservedLines
 	paddingNeeded := availableContentHeight - contentHeight
 	if paddingNeeded > 0 {
 		mainContent += strings.Repeat("\n", paddingNeeded)
@@ -175,6 +182,12 @@ func RenderEntryView(width, height int, theme Theme, entry models.Entry, allTodo
 	// Build message line (neomutt-style)
 	messageLine := RenderMessageLine(width, statusMsg)
 
-	// Assemble: header + mainContent + footer + message line
-	return header + "\n" + mainContent + "\n" + footer + "\n" + messageLine
+	// Assemble: header + mainContent + footer + update notice + message line
+	result := header + "\n" + mainContent + "\n" + footer
+	if updateNotice != "" {
+		result += "\n" + updateNotice
+	}
+	result += "\n" + messageLine
+
+	return result
 }

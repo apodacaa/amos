@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"fmt"
 	"regexp"
 	"strings"
 
@@ -468,4 +469,76 @@ func RenderMessageLine(width int, statusMsg string) string {
 	}
 
 	return statusMsg
+}
+
+// RenderUpdateNotice renders update notification bar
+// Returns empty string if no update available or dismissed
+func RenderUpdateNotice(width int, theme Theme, updateAvailable bool, updateDismissed bool, latestVersion string) string {
+	if !updateAvailable || updateDismissed {
+		return ""
+	}
+
+	// Build update message (brutalist: ASCII only, no emojis)
+	msg := fmt.Sprintf("Update available: %s | brew upgrade amos | choco upgrade amos | github.com/apodacaa/amos/releases | u:dismiss", latestVersion)
+
+	// Truncate if too long
+	if len(msg) > width {
+		msg = msg[:width-3] + "..."
+	}
+
+	// Use theme-aware bar style (reverse video for brutalist, colored for cyberpunk)
+	style := lipgloss.NewStyle().
+		Bold(true).
+		Width(width)
+
+	// Apply theme colors
+	if theme.Colors.Warning != "" {
+		// Cyberpunk: use warning color (orange) for attention
+		style = style.Background(lipgloss.Color(theme.Colors.Warning)).Foreground(lipgloss.Color(theme.Colors.Foreground))
+	} else {
+		// Brutalist: reverse video
+		style = style.Reverse(true)
+	}
+
+	return style.Render(msg)
+}
+
+// AssembleViewWithUpdate builds view with update notice between footer and message line
+func AssembleViewWithUpdate(header, content, footer string, width, height int, statusMsg string, updateNotice string) string {
+	reservedLines := 3 // header + footer + message line
+	if updateNotice != "" {
+		reservedLines += 1 // update notice line
+	}
+	contentHeight := height - reservedLines
+
+	// Ensure content fits within available space
+	listLines := strings.Split(content, "\n")
+	if len(listLines) > contentHeight {
+		listLines = listLines[:contentHeight]
+	}
+
+	// Calculate padding to fill remaining space
+	padding := contentHeight - len(listLines)
+	if padding < 0 {
+		padding = 0
+	}
+
+	// Build message line (neomutt-style)
+	messageLine := RenderMessageLine(width, statusMsg)
+
+	// Assemble full view
+	result := header + "\n" + strings.Join(listLines, "\n")
+	if padding > 0 {
+		result += strings.Repeat("\n", padding)
+	}
+	result += "\n" + footer
+
+	// Add update notice between footer and message line
+	if updateNotice != "" {
+		result += "\n" + updateNotice
+	}
+
+	result += "\n" + messageLine
+
+	return result
 }

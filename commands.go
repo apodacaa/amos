@@ -168,3 +168,27 @@ func saveConfigCmd(config models.Config) tea.Cmd {
 		return configSavedMsg{err: err}
 	}
 }
+
+// checkForUpdatesCmd performs asynchronous update check against GitHub
+func checkForUpdatesCmd(currentVersion string) tea.Cmd {
+	return func() tea.Msg {
+		// Fetch latest version from GitHub API
+		latestVersion := helpers.FetchLatestVersion()
+
+		// If fetch failed or returned empty, return no update
+		if latestVersion == "" {
+			return updateCheckCompleteMsg{
+				latestVersion:   "",
+				updateAvailable: false,
+			}
+		}
+
+		// Compare versions
+		updateAvailable := helpers.IsUpdateAvailable(currentVersion, latestVersion)
+
+		return updateCheckCompleteMsg{
+			latestVersion:   latestVersion,
+			updateAvailable: updateAvailable,
+		}
+	}
+}

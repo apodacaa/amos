@@ -11,6 +11,12 @@ import (
 
 // handleViewTodoKeys processes keyboard input (view todo - read-only)
 func (m Model) handleViewTodoKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	// Check for update dismissal key 'u' (only if update notice is shown)
+	if m.updateAvailable && !m.updateDismissed && msg.String() == "u" {
+		m.updateDismissed = true
+		return m, nil
+	}
+
 	switch msg.String() {
 	case "q", "ctrl+c":
 		return m, tea.Quit

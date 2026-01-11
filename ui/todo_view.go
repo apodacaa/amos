@@ -14,7 +14,7 @@ func highlightTodoInText(body, todoTitle string) string {
 }
 
 // RenderTodoView renders a read-only view of a todo
-func RenderTodoView(width, height int, theme Theme, todo models.Todo, allEntries []models.Entry, scrollOffset int, markedForDeletion map[string]string, statusMsg string, currentIndex int, totalCount int) string {
+func RenderTodoView(width, height int, theme Theme, todo models.Todo, allEntries []models.Entry, scrollOffset int, markedForDeletion map[string]string, statusMsg string, currentIndex int, totalCount int, updateAvailable bool, updateDismissed bool, latestVersion string) string {
 	// Status and date at top
 	statusIcon := "[ ]" // open
 	if todo.Status == "next" {
@@ -172,9 +172,16 @@ func RenderTodoView(width, height int, theme Theme, todo models.Todo, allEntries
 	// Build main content (status + timestamps at top, then blank line, then title)
 	mainContent := timestampLines + "\n\n" + renderedTitle + linkedSection
 
+	// Generate update notice if available
+	updateNotice := RenderUpdateNotice(width, theme, updateAvailable, updateDismissed, latestVersion)
+
 	// Calculate padding to fill remaining vertical space
 	contentHeight := strings.Count(mainContent, "\n") + 1
-	availableContentHeight := height - 3 // header + footer + message line
+	reservedLines := 3 // header + footer + message line
+	if updateNotice != "" {
+		reservedLines += 1 // update notice line
+	}
+	availableContentHeight := height - reservedLines
 	paddingNeeded := availableContentHeight - contentHeight
 	if paddingNeeded > 0 {
 		mainContent += strings.Repeat("\n", paddingNeeded)
@@ -183,8 +190,14 @@ func RenderTodoView(width, height int, theme Theme, todo models.Todo, allEntries
 	// Build message line (neomutt-style)
 	messageLine := RenderMessageLine(width, statusMsg)
 
-	// Assemble: header + mainContent + footer + message line
-	return header + "\n" + mainContent + "\n" + footer + "\n" + messageLine
+	// Assemble: header + mainContent + footer + update notice + message line
+	result := header + "\n" + mainContent + "\n" + footer
+	if updateNotice != "" {
+		result += "\n" + updateNotice
+	}
+	result += "\n" + messageLine
+
+	return result
 }
 
 // wrapBodyText wraps body text while preserving original line breaks

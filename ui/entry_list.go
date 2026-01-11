@@ -9,7 +9,7 @@ import (
 )
 
 // RenderEntryList renders the entry list view
-func RenderEntryList(width, height int, theme Theme, entries []models.Entry, selectedIdx int, todos []models.Todo, filterTags []string, filterDate string, markedForDeletion map[string]string, statusMsg string) string {
+func RenderEntryList(width, height int, theme Theme, entries []models.Entry, selectedIdx int, todos []models.Todo, filterTags []string, filterDate string, markedForDeletion map[string]string, statusMsg string, updateAvailable bool, updateDismissed bool, latestVersion string) string {
 	// Apply filters: first date, then tags
 	filtered := helpers.ApplyEntryFilters(entries, filterDate, filterTags)
 
@@ -112,5 +112,8 @@ func RenderEntryList(width, height int, theme Theme, entries []models.Entry, sel
 
 	footer := RenderFooter(width, theme, stats, footerTitle)
 
-	return AssembleView(header, list, footer, width, height, statusMsg)
+	// Generate update notice if available
+	updateNotice := RenderUpdateNotice(width, theme, updateAvailable, updateDismissed, latestVersion)
+
+	return AssembleViewWithUpdate(header, list, footer, width, height, statusMsg, updateNotice)
 }

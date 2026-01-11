@@ -98,6 +98,14 @@ type Model struct {
 	config        models.Config // User configuration (loaded from ~/.amos/config.json)
 	currentTheme  ui.Theme      // Currently active theme (brutalist or cyberpunk)
 	selectedTheme int           // Selected theme index in theme selector modal
+
+	// ============================================================
+	// Update Notification State
+	// ============================================================
+	updateAvailable bool   // Whether newer version is available
+	latestVersion   string // Latest version string (e.g., "v1.5.0")
+	updateCheckDone bool   // Whether update check completed this session
+	updateDismissed bool   // Whether user dismissed notice with 'u' key
 }
 
 // NewModel creates a new model with default values
@@ -151,7 +159,8 @@ func NewModel() Model {
 // Init initializes the model (Elm architecture)
 func (m Model) Init() tea.Cmd {
 	// Load entries and todos on startup (single source of truth: Todo.EntryID)
-	return tea.Batch(textarea.Blink, m.loadEntriesAndTodos())
+	// Also check for updates asynchronously (non-blocking)
+	return tea.Batch(textarea.Blink, m.loadEntriesAndTodos(), checkForUpdatesCmd(Version))
 }
 
 // Update handles messages (Elm architecture)
@@ -319,6 +328,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, clearStatusAfterDelay()
 		}
 		return m, nil
+
+	case updateCheckCompleteMsg:
+		// Update check completed - mark as done and store result
+		m.updateCheckDone = true
+		m.updateAvailable = msg.updateAvailable
+		m.latestVersion = msg.latestVersion
+		// No status message - update notice shows in footer if available
+		return m, nil
 	}
 
 	// Update textarea if in entry view
@@ -335,19 +352,19 @@ func (m Model) View() string {
 	case "entry":
 		return ui.RenderEntryForm(m.width, m.height, m.currentTheme, m.textarea, m.statusMsg, m.hasUnsaved)
 	case "entries":
-		return ui.RenderEntryList(m.width, m.height, m.currentTheme, m.entries, m.selectedEntry, m.todos, m.filterTags, m.filterDate, m.markedForDeletion, m.statusMsg)
+		return ui.RenderEntryList(m.width, m.height, m.currentTheme, m.entries, m.selectedEntry, m.todos, m.filterTags, m.filterDate, m.markedForDeletion, m.statusMsg, m.updateAvailable, m.updateDismissed, m.latestVersion)
 	case "view_entry":
 		// Calculate filtered/sorted entry position for footer display
 		filtered := helpers.ApplyEntryFilters(m.entries, m.filterDate, m.filterTags)
 		sorted := helpers.SortEntriesForDisplay(filtered)
-		return ui.RenderEntryView(m.width, m.height, m.currentTheme, m.viewingEntry, m.todos, m.scrollOffset, m.markedForDeletion, m.statusMsg, m.selectedEntry, len(sorted))
+		return ui.RenderEntryView(m.width, m.height, m.currentTheme, m.viewingEntry, m.todos, m.scrollOffset, m.markedForDeletion, m.statusMsg, m.selectedEntry, len(sorted), m.updateAvailable, m.updateDismissed, m.latestVersion)
 	case "todos":
-		return ui.RenderTodoList(m.width, m.height, m.currentTheme, m.displayTodos, m.entries, m.selectedTodo, m.filterTags, m.filterDate, m.markedForDeletion, m.statusMsg)
+		return ui.RenderTodoList(m.width, m.height, m.currentTheme, m.displayTodos, m.entries, m.selectedTodo, m.filterTags, m.filterDate, m.markedForDeletion, m.statusMsg, m.updateAvailable, m.updateDismissed, m.latestVersion)
 	case "view_todo":
 		// Calculate filtered/sorted todo position for footer display
 		filtered := helpers.ApplyTodoFilters(m.displayTodos, m.filterDate, m.filterTags)
 		sorted := helpers.SortTodosForDisplay(filtered)
-		return ui.RenderTodoView(m.width, m.height, m.currentTheme, m.viewingTodo, m.entries, m.scrollOffset, m.markedForDeletion, m.statusMsg, m.selectedTodo, len(sorted))
+		return ui.RenderTodoView(m.width, m.height, m.currentTheme, m.viewingTodo, m.entries, m.scrollOffset, m.markedForDeletion, m.statusMsg, m.selectedTodo, len(sorted), m.updateAvailable, m.updateDismissed, m.latestVersion)
 	case "unified_filter":
 		return ui.RenderUnifiedFilter(m.width, m.height, m.currentTheme, m.unifiedFilterInput, m.availableTags, m.autocompleteTag, m.statusMsg)
 	case "add_todo":
@@ -355,9 +372,9 @@ func (m Model) View() string {
 	case "theme_selector":
 		return ui.RenderThemeSelector(m.width, m.height, m.currentTheme, m.selectedTheme)
 	case "help":
-		return ui.RenderHelp(m.width, m.height, m.currentTheme, m.scrollOffset)
+		return ui.RenderHelp(m.width, m.height, m.currentTheme, m.scrollOffset, m.updateAvailable, m.updateDismissed, m.latestVersion)
 	default:
-		return ui.RenderEntryList(m.width, m.height, m.currentTheme, m.entries, m.selectedEntry, m.todos, m.filterTags, m.filterDate, m.markedForDeletion, m.statusMsg)
+		return ui.RenderEntryList(m.width, m.height, m.currentTheme, m.entries, m.selectedEntry, m.todos, m.filterTags, m.filterDate, m.markedForDeletion, m.statusMsg, m.updateAvailable, m.updateDismissed, m.latestVersion)
 	}
 }
 
