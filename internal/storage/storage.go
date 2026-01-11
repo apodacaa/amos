@@ -31,7 +31,7 @@ func SetDataDir(dir string) error {
 	return nil
 }
 
-// expandPath expands ~ to home directory and converts relative paths to absolute
+// expandPath expands ~ to home directory and converts user-specified relative paths to absolute
 func expandPath(path string) (string, error) {
 	// Handle tilde expansion
 	if strings.HasPrefix(path, "~") {
@@ -55,7 +55,13 @@ func expandPath(path string) (string, error) {
 		return path, nil
 	}
 
-	// Convert relative path to absolute (relative to current working directory)
+	// Special case: ".amos" is the default and should remain relative
+	// so GetAmosDir() can join it with home directory
+	if path == ".amos" {
+		return path, nil
+	}
+
+	// Convert other relative paths to absolute (relative to current working directory)
 	absPath, err := filepath.Abs(path)
 	if err != nil {
 		return "", err
