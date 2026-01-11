@@ -317,6 +317,46 @@ make build
 - Plain JSON format (no database)
 - Auto-creates directory on first run
 
+### Custom Data Directory
+
+By default, Amos stores data in `~/.amos/`. You can customize this location for syncing with Google Drive, Tresorit, Dropbox, or custom backup solutions:
+
+**Using Environment Variable:**
+
+```bash
+export AMOS_DATA_DIR=~/Google\ Drive/amos
+amos
+```
+
+Or for a single run:
+```bash
+AMOS_DATA_DIR=~/Dropbox/amos amos
+```
+
+**Using System Config File:**
+
+Create `~/.config/amos/settings.json`:
+
+```json
+{
+  "data_dir": "~/Google Drive/amos"
+}
+```
+
+**Priority Order:**
+
+1. `AMOS_DATA_DIR` environment variable (highest priority)
+2. `~/.config/amos/settings.json` DataDir field
+3. `~/.amos` (default)
+
+**Path Formats:**
+
+- Tilde expansion supported: `~/Google Drive/amos`
+- Absolute paths: `/Users/name/sync/amos`
+- Relative paths: `./data/amos` (relative to current directory)
+
+The directory will be created automatically if it doesn't exist.
+
 ## Design Philosophy
 
 **Brutalist Principles:**

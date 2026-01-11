@@ -161,8 +161,9 @@ internal/
     entry.go             # Entry{ID, Title, Body, Tags, Timestamp}
     todo.go              # Todo{ID, Title, Status, Tags, CreatedAt, EntryID, Position}
     config.go            # Config{Theme}
-  storage/               # JSON persistence (~/.amos/)
-    storage.go           # Load/Save functions for entries.json and todos.json
+  storage/               # JSON persistence (configurable directory)
+    storage.go           # Load/Save functions, directory initialization
+    system_config.go     # System config (~/.config/amos/settings.json)
   helpers/               # Reusable business logic
     sorting.go           # Centralized sorting (todos by status→position→date)
     tags.go              # Tag extraction (@mention syntax) and filtering
@@ -190,10 +191,16 @@ internal/
 6. Update() handles result message, updates model
 
 **Data Persistence**:
-- JSON files in `~/.amos/` directory
+- JSON files in data directory (default: `~/.amos/`)
+- Customizable via `AMOS_DATA_DIR` env var or `~/.config/amos/settings.json`
+- System config: `~/.config/amos/settings.json` (stores data directory path)
+- User data files: `entries.json`, `todos.json`, `config.json` (in configured data directory)
 - `storage.LoadEntries()` / `storage.SaveEntry()` for entries
 - `storage.LoadTodos()` / `storage.SaveTodo()` for todos
 - `storage.LoadConfig()` / `storage.SaveConfig()` for user preferences (theme)
+- `storage.InitializeDataDir()` called at startup to configure directory
+- Auto-creates directory on first run
+- Supports tilde (`~`) expansion in paths
 - Save operations happen via commands (async), results via messages
 
 **Todo System**:

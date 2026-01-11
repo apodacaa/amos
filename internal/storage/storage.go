@@ -4,24 +4,110 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/apodacaa/amos/internal/models"
 )
 
 const (
-	amosDir     = ".amos"
 	entriesFile = "entries.json"
 	todosFile   = "todos.json"
 	configFile  = "config.json"
 )
 
-// GetAmosDir returns the path to ~/.amos directory
+// Package-level variable for data directory (set during initialization)
+var dataDir string = ".amos" // Default value
+
+// SetDataDir configures the data directory for this session
+// Must be called before any other storage operations
+func SetDataDir(dir string) error {
+	// Expand tilde if present
+	expanded, err := expandPath(dir)
+	if err != nil {
+		return err
+	}
+
+	dataDir = expanded
+	return nil
+}
+
+// expandPath expands ~ to home directory and converts relative paths to absolute
+func expandPath(path string) (string, error) {
+	// Handle tilde expansion
+	if strings.HasPrefix(path, "~") {
+		home, err := os.UserHomeDir()
+		if err != nil {
+			return "", err
+		}
+
+		if path == "~" {
+			return home, nil
+		}
+
+		// Replace ~/ with home/
+		if strings.HasPrefix(path, "~/") {
+			return filepath.Join(home, path[2:]), nil
+		}
+	}
+
+	// If already absolute, return as-is
+	if filepath.IsAbs(path) {
+		return path, nil
+	}
+
+	// Convert relative path to absolute (relative to current working directory)
+	absPath, err := filepath.Abs(path)
+	if err != nil {
+		return "", err
+	}
+
+	return absPath, nil
+}
+
+// InitializeDataDir sets up the data directory based on env var or system config
+// Call this once at startup before any storage operations
+func InitializeDataDir() error {
+	var dir string
+
+	// 1. Check environment variable first (highest priority)
+	if envDir := os.Getenv("AMOS_DATA_DIR"); envDir != "" {
+		dir = envDir
+	} else {
+		// 2. Check system config
+		sysConfig, err := LoadSystemConfig()
+		if err != nil {
+			// If system config fails to load, use default
+			dir = ".amos"
+		} else if sysConfig.DataDir != "" {
+			dir = sysConfig.DataDir
+		} else {
+			// System config exists but DataDir is empty - use default
+			dir = ".amos"
+		}
+	}
+
+	// Set the data directory (with tilde expansion)
+	if err := SetDataDir(dir); err != nil {
+		return err
+	}
+
+	// Ensure directory exists
+	return EnsureAmosDir()
+}
+
+// GetAmosDir returns the path to the configured data directory (expanded)
 func GetAmosDir() (string, error) {
+	// If dataDir is already an absolute path, return it as-is
+	if filepath.IsAbs(dataDir) {
+		return dataDir, nil
+	}
+
+	// Otherwise, join with home directory
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(home, amosDir), nil
+	return filepath.Join(home, dataDir), nil
 }
 
 // EnsureAmosDir creates ~/.amos directory if it doesn't exist
