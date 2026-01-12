@@ -55,6 +55,69 @@ func TestExtractTodos(t *testing.T) {
 	}
 }
 
+func TestRemoveTodoMarkup(t *testing.T) {
+	tests := []struct {
+		name     string
+		text     string
+		expected string
+	}{
+		{
+			name:     "single todo line",
+			text:     "Some text\n!todo make toast\nMore text",
+			expected: "Some text\nMore text",
+		},
+		{
+			name:     "multiple todo lines",
+			text:     "!todo first\n!todo second\nRegular text",
+			expected: "Regular text",
+		},
+		{
+			name:     "no todo lines",
+			text:     "Just regular text\nwith no todos",
+			expected: "Just regular text\nwith no todos",
+		},
+		{
+			name:     "todo with tags",
+			text:     "Notes\n!todo Buy groceries @personal\nEnd",
+			expected: "Notes\nEnd",
+		},
+		{
+			name:     "todo not at line start (should not be removed)",
+			text:     "Some text !todo inline",
+			expected: "Some text !todo inline",
+		},
+		{
+			name:     "multiple spaces after !todo",
+			text:     "!todo     Task with spaces\nText",
+			expected: "Text",
+		},
+		{
+			name:     "only todo lines",
+			text:     "!todo first\n!todo second",
+			expected: "",
+		},
+		{
+			name:     "todo lines with excess blank lines",
+			text:     "Text\n!todo task\n\n\nMore text",
+			expected: "Text\n\nMore text",
+		},
+		{
+			name:     "mixed content",
+			text:     "Meeting notes\n!todo follow up\nDiscussed features\n!todo review docs\nEnd",
+			expected: "Meeting notes\nDiscussed features\nEnd",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := RemoveTodoMarkup(tt.text)
+			if got != tt.expected {
+				t.Errorf("RemoveTodoMarkup() = %q, want %q", got, tt.expected)
+			}
+		})
+	}
+}
+
 func TestFilterTodosByEntry(t *testing.T) {
 	entryID1 := "entry-1"
 	entryID2 := "entry-2"

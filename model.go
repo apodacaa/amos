@@ -213,9 +213,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			// Mark as saved
 			m.hasUnsaved = false
 			if m.view == "entry" {
-				// For entries, update currentEntry with saved data (includes TodoIDs)
+				// For entries, update current entry and stay in form
 				m.currentEntry = msg.entry
-				m.savedContent = m.textarea.Value() // Update to current textarea value
+				m.savedContent = m.textarea.Value()
+				// STAY in entry form - don't transition
 			} else if m.view == "add_todo" {
 				// For todos, update savedContent to match current input
 				m.savedContent = m.todoInput.Value()
@@ -223,6 +224,32 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		m.statusTime = time.Now()
 		return m, clearStatusAfterDelay()
+
+	case finalizeCompleteMsg:
+		if msg.err != nil {
+			m.statusMsg = "Error finalizing: " + msg.err.Error()
+			m.statusTime = time.Now()
+			return m, clearStatusAfterDelay()
+		}
+
+		// Finalized successfully - exit to appropriate view
+		wasEditing := m.editingMode // Check before clearing
+		m.currentEntry = msg.entry
+		m.viewingEntry = msg.entry
+		m.hasUnsaved = false
+		m.editingMode = false
+		m.originalEntryID = ""
+		m.textarea.Blur()
+
+		// If editing, return to view_entry; if creating, return to entries list
+		if wasEditing {
+			m.view = "view_entry"
+		} else {
+			m.view = "entries"
+		}
+
+		// Load todos to show in next view
+		return m, m.loadEntriesAndTodos()
 
 	case entriesLoadedMsg:
 		if msg.err != nil {

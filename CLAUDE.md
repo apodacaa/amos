@@ -74,7 +74,7 @@ This codebase is small (~3000 lines) and well-organized. Work efficiently:
 - Entry form: `update_entry.go`, `ui/entry_form.go` (create and edit)
 - Entry list: `update_entries.go`, `ui/entry_list.go`
 - Entry view: `update_entry_view.go`, `ui/entry_view.go` (press `i` to edit)
-- Edit workflow: Entry view → `i` key → entry form (editing mode) → save or esc
+- Edit workflow: Entry view → `i` key → entry form (editing mode) → Ctrl+S saves work (stays in form), ESC finalizes and exits
 
 **Todo Management:**
 - Todo list: `update_todos.go`, `ui/todo_list.go`
@@ -363,10 +363,10 @@ Todos stored in `<data-dir>/todos.json` (default: `~/.amos/todos.json`):
 ## Important Notes
 
 - **Editing**: Press `i` to edit entries and todos
-  - Entry editing: Open entry view, press `i` to edit, save with `Ctrl+S`, esc returns to entry view
+  - Entry editing: Open entry view, press `i` to edit, save work with `Ctrl+S` (stays in form, preserves `!todo` markup), press `ESC` to finalize and exit (extracts todos, removes markup, exits to entry view)
   - Todo editing: Open todo view, press `i` to edit, save with `Enter`, esc returns to todo view
   - Timestamp updates: Editing an entry updates its timestamp to now (moves to top of list)
-  - Todo extraction: When editing entries, new `!todo` items are created, existing todos preserved (additive only)
+  - Todo extraction: `Ctrl+S` saves entry with `!todo` markup intact (for frequent saves without disruption). `ESC` finalizes entry on exit: extracts todos, removes `!todo` markup, saves cleaned entry. Todos become independent entities edited via todo view.
 - **Deletion**: neomutt-style multi-select pattern
   - `d` key marks/unmarks items for deletion (shows "D" prefix in lists, footer text in entry view)
   - After marking items, status message shows "X items marked. Press $ to delete"
@@ -381,7 +381,7 @@ Todos stored in `<data-dir>/todos.json` (default: `~/.amos/todos.json`):
 - **Help page**: Press `?` from any read-only view to see comprehensive documentation
 - Todo status: "open", "next", or "done" (cycle with space key)
 - Tag syntax: `@tagname` in entry body or todo title auto-extracts to Tags array
-- Todo syntax: `!todo Task description @tag` creates linked todo with extracted tags
+- Todo syntax: `!todo Task description @tag` creates linked todo with extracted tags when exiting entry form (ESC). The `!todo` line is automatically removed from entry text on exit. During editing, `!todo` markup stays visible until ESC. To edit todos, use the dedicated todo view (press `i` from todo list).
 - Unified filtering: Works identically for both entries and todos views
   - `/` key opens filter with current values for editing
   - After applying filter, status message shows "Filter applied. Press c to clear"
