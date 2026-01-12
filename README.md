@@ -40,8 +40,8 @@ amos
 **Keyboard Shortcuts:**
 
 *Entry Form:*
-- `Ctrl+S` - Save entry
-- `esc` - Cancel
+- `Ctrl+S` - Save work (stays in form, preserves !todo markup for frequent saves)
+- `esc` - Finalize and exit (extracts todos, removes !todo markup, exits to entry view)
 
 *Entry List:*
 - `n` - New Entry
@@ -176,6 +176,8 @@ air               # Run with auto-reload
 ✅ **Journal Entries**
 - Create entries with title + body
 - **Edit entries**: Press `i` in entry view to edit existing entries (updates timestamp)
+  - `Ctrl+S` saves work and stays in form (preserves `!todo` markup)
+  - `ESC` finalizes and exits (extracts todos, removes `!todo` markup)
 - Auto-extract @tags from content
 - **Unified filtering**: Filter by tags and/or dates with `/` key
   - Tag autocomplete (type `@` then tag name, press `tab` to complete)
@@ -378,7 +380,9 @@ The directory will be created automatically if it doesn't exist.
 
 **Tag Syntax:**
 - `@work` in entry content → auto-extracted to tags array
-- `!todo Task description @tag` → creates linked todo
+- `!todo Task description @tag` → creates linked todo on exit (ESC)
+  - Markup stays visible during editing, removed when exiting entry form
+  - Allows frequent saves (Ctrl+S) without disruption
 
 **Position System:**
 - Todos have position field for priority

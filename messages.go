@@ -8,6 +8,12 @@ type saveCompleteMsg struct {
 	err   error
 }
 
+// finalizeCompleteMsg is sent when entry finalization completes (todo extraction on exit)
+type finalizeCompleteMsg struct {
+	entry models.Entry
+	err   error
+}
+
 // entriesLoadedMsg is sent when entries are loaded
 type entriesLoadedMsg struct {
 	entries []models.Entry

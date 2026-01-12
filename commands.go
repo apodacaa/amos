@@ -47,7 +47,7 @@ func (m Model) toggleTodoImmediate(todo models.Todo) tea.Cmd {
 	}
 }
 
-// saveEntry saves the current entry and extracts todos
+// saveEntry saves the current entry (keeps !todo markup intact)
 func (m Model) saveEntry() tea.Cmd {
 	return func() tea.Msg {
 		content := m.textarea.Value()
@@ -55,57 +55,66 @@ func (m Model) saveEntry() tea.Cmd {
 		// Parse content into title and body
 		title, body := helpers.ParseEntryContent(content)
 
-		// Extract tags from title and body
+		// Extract tags from title and body (include !todo lines)
 		tags := helpers.ExtractTags(title + " " + body)
 
-		// Extract todos from content
-		todoTitles := helpers.ExtractTodos(content)
-
-		// Load existing todos for this entry to avoid duplicates
-		// Single source of truth: use Todo.EntryID to find linked todos
-		existingTodosByTitle := make(map[string]string) // title -> ID
-		allTodos, err := storage.LoadTodos()
-		if err == nil {
-			// Filter todos that belong to this entry
-			entryTodos := helpers.FilterTodosByEntry(allTodos, m.currentEntry.ID)
-			for _, todo := range entryTodos {
-				existingTodosByTitle[todo.Title] = todo.ID
-			}
-		}
-
-		// Create and save only NEW todos (no need to track TodoIDs on entry)
-		for _, todoTitle := range todoTitles {
-			// Check if this todo already exists for this entry
-			if _, exists := existingTodosByTitle[todoTitle]; !exists {
-				// Create new todo
-				now := time.Now()
-				todo := models.Todo{
-					ID:        uuid.New().String(),
-					Title:     todoTitle,
-					Status:    "open",
-					Tags:      helpers.ExtractTags(todoTitle), // Extract tags from todo title
-					CreatedAt: now,
-					UpdatedAt: now,
-					EntryID:   &m.currentEntry.ID, // Link to this entry (single source of truth)
-				}
-
-				// Save new todo
-				if err := storage.SaveTodo(todo); err != nil {
-					return saveCompleteMsg{err: err}
-				}
-			}
-		}
-
-		// Update current entry (no TodoIDs needed - single source of truth via Todo.EntryID)
+		// Update current entry (keep body as-is with !todo markup)
 		m.currentEntry.Title = title
-		m.currentEntry.Body = body
+		m.currentEntry.Body = body // Keep !todo markup - extraction happens on exit
 		m.currentEntry.Tags = tags
 		m.currentEntry.UpdatedAt = time.Now() // Only update UpdatedAt, preserve CreatedAt
 
 		// Save entry to storage
-		err = storage.SaveEntry(m.currentEntry)
+		err := storage.SaveEntry(m.currentEntry)
 
 		return saveCompleteMsg{entry: m.currentEntry, err: err}
+	}
+}
+
+// finalizeAndExit extracts todos, cleans entry text, and exits entry form
+// This is called when the user presses ESC to exit the entry form
+func (m Model) finalizeAndExit() tea.Cmd {
+	return func() tea.Msg {
+		// Always use m.currentEntry as source (last saved version)
+		entry := m.currentEntry
+		content := entry.Title + "\n" + entry.Body
+
+		// Extract todos from SAVED content BEFORE cleaning
+		todoTitles := helpers.ExtractTodos(content)
+
+		// Remove !todo markup from body
+		cleanedBody := helpers.RemoveTodoMarkup(entry.Body)
+
+		// Extract tags from title and cleaned body
+		tags := helpers.ExtractTags(entry.Title + " " + cleanedBody)
+
+		// Create todos from extracted !todo lines
+		for _, todoTitle := range todoTitles {
+			now := time.Now()
+			todo := models.Todo{
+				ID:        uuid.New().String(),
+				Title:     todoTitle,
+				Status:    "open",
+				Tags:      helpers.ExtractTags(todoTitle),
+				CreatedAt: now,
+				UpdatedAt: now,
+				EntryID:   &entry.ID,
+			}
+
+			if err := storage.SaveTodo(todo); err != nil {
+				return finalizeCompleteMsg{err: err}
+			}
+		}
+
+		// Update entry with cleaned body
+		entry.Body = cleanedBody
+		entry.Tags = tags
+		entry.UpdatedAt = time.Now()
+
+		// Save cleaned entry
+		err := storage.SaveEntry(entry)
+
+		return finalizeCompleteMsg{entry: entry, err: err}
 	}
 }
 

@@ -23,6 +23,19 @@ func ExtractTodos(text string) []string {
 	return todos
 }
 
+// RemoveTodoMarkup removes all lines starting with "!todo" from text
+// Returns cleaned text with !todo lines removed
+func RemoveTodoMarkup(text string) string {
+	// Match !todo followed by text until end of line (including the newline)
+	re := regexp.MustCompile(`(?m)^!todo\s+.+$\n?`)
+	cleaned := re.ReplaceAllString(text, "")
+
+	// Trim excess blank lines (don't leave gaps - max 2 newlines = 1 blank line)
+	cleaned = regexp.MustCompile(`\n{3,}`).ReplaceAllString(cleaned, "\n\n")
+
+	return strings.TrimSpace(cleaned)
+}
+
 // FilterTodosByEntry returns todos that belong to the specified entry
 func FilterTodosByEntry(todos []models.Todo, entryID string) []models.Todo {
 	filtered := []models.Todo{}
