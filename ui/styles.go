@@ -236,7 +236,7 @@ func StyleMarker(marker string, isDelete bool, theme Theme) string {
 
 	if isDelete {
 		if theme.Colors.Accent1 != "" {
-			style = style.Foreground(theme.Colors.Accent1)
+			style = style.Foreground(theme.Colors.Accent2)
 		}
 	} else {
 		if theme.Colors.Accent2 != "" {

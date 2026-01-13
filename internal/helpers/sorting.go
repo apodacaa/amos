@@ -39,8 +39,8 @@ func SortTodosForDisplay(todos []models.Todo) []models.Todo {
 			if jPriority < iPriority {
 				sorted[i], sorted[j] = sorted[j], sorted[i]
 			} else if iPriority == jPriority {
-				// Second: within same status, newest first
-				if sorted[j].CreatedAt.After(sorted[i].CreatedAt) {
+				// Second: within same status, newest first (by UpdatedAt)
+				if sorted[j].UpdatedAt.After(sorted[i].UpdatedAt) {
 					sorted[i], sorted[j] = sorted[j], sorted[i]
 				}
 			}
@@ -59,11 +59,11 @@ func SortEntriesForDisplay(entries []models.Entry) []models.Entry {
 	sorted := make([]models.Entry, len(entries))
 	copy(sorted, entries)
 
-	// Bubble sort by CreatedAt descending (newest first)
-	// Sort by creation date ensures entries don't move when edited
+	// Bubble sort by UpdatedAt descending (newest first)
+	// Sort by updated date ensures most recently modified entries appear first
 	for i := 0; i < len(sorted)-1; i++ {
 		for j := i + 1; j < len(sorted); j++ {
-			if sorted[j].CreatedAt.After(sorted[i].CreatedAt) {
+			if sorted[j].UpdatedAt.After(sorted[i].UpdatedAt) {
 				sorted[i], sorted[j] = sorted[j], sorted[i]
 			}
 		}
