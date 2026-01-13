@@ -41,21 +41,22 @@ func RenderTodoList(width, height int, theme Theme, todos []models.Todo, entries
 			}
 
 			// Table format: markers  checkbox  date  title
-			dateStr := todo.CreatedAt.Format("2006-01-02")
+			// Show UpdatedAt (last modified date)
+			dateStr := todo.UpdatedAt.Format("2006-01-02")
 
-			// Build 2-character marker prefix (D for deletion, + for linked entry)
+			// Build 2-character marker prefix: + D order
 			var markerText string
 			_, isMarked := markedForDeletion[todo.ID]
 			hasEntry := todo.EntryID != nil
 
-			if isMarked && hasEntry {
-				markerText = "D+"
-			} else if isMarked && !hasEntry {
-				markerText = "D "
-			} else if !isMarked && hasEntry {
-				markerText = " +"
+			if hasEntry && isMarked {
+				markerText = "+ D"
+			} else if hasEntry && !isMarked {
+				markerText = "+  "
+			} else if !hasEntry && isMarked {
+				markerText = "  D"
 			} else {
-				markerText = "  "
+				markerText = "   "
 			}
 
 			// Truncate title if too long
@@ -83,17 +84,23 @@ func RenderTodoList(width, height int, theme Theme, todos []models.Todo, entries
 					plainLine := fmt.Sprintf("%s %s %s  %s", markerText, checkbox, dateStr, titleText)
 					styled = GetDimmedStyle(theme).Width(width).Render(plainLine)
 				} else {
-					// Open/next: apply full color styling
+					// Open/next: apply full color styling (2-char marker: + D order)
 					var styledMarker string
-					if isMarked && hasEntry {
-						styledMarker = StyleMarker("D", true, theme) + StyleMarker("+", false, theme)
-					} else if isMarked && !hasEntry {
-						styledMarker = StyleMarker("D", true, theme) + " "
-					} else if !isMarked && hasEntry {
-						styledMarker = " " + StyleMarker("+", false, theme)
+					// Position 1: + or space
+					var pos1 string
+					if hasEntry {
+						pos1 = StyleMarker("+", false, theme)
 					} else {
-						styledMarker = "  "
+						pos1 = " "
 					}
+					// Position 2: D or space
+					var pos2 string
+					if isMarked {
+						pos2 = StyleMarker("D", false, theme)
+					} else {
+						pos2 = " "
+					}
+					styledMarker = pos1 + " " + pos2
 					styledCheckbox := StyleTodoStatus(todo.Status, checkbox, theme)
 					styledDate := StyleDate(dateStr, theme)
 					styledTitle := HighlightTagsInText(titleText, theme)

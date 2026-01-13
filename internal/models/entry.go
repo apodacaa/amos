@@ -25,9 +25,14 @@ func (e Entry) GetTags() []string {
 }
 
 // GetTimestamp returns CreatedAt (implements Timestamped interface for filtering)
-// This ensures date filters use creation date, not edit date
 func (e Entry) GetTimestamp() time.Time {
 	return e.CreatedAt
+}
+
+// GetUpdatedTimestamp returns UpdatedAt (implements Timestamped interface for filtering)
+// Date filters use OR logic: match by CreatedAt OR UpdatedAt
+func (e Entry) GetUpdatedTimestamp() time.Time {
+	return e.UpdatedAt
 }
 
 // UnmarshalJSON implements custom JSON unmarshaling for backward compatibility

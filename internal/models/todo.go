@@ -22,3 +22,9 @@ func (t Todo) GetTags() []string {
 func (t Todo) GetTimestamp() time.Time {
 	return t.CreatedAt
 }
+
+// GetUpdatedTimestamp returns the update time for the todo (implements Timestamped interface)
+// Date filters use OR logic: match by CreatedAt OR UpdatedAt
+func (t Todo) GetUpdatedTimestamp() time.Time {
+	return t.UpdatedAt
+}

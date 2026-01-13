@@ -29,22 +29,23 @@ func RenderEntryList(width, height int, theme Theme, entries []models.Entry, sel
 		for i := start; i < end; i++ {
 			entry := sorted[i]
 			// Table format: markers  date  title
-			timestamp := entry.CreatedAt.Format("2006-01-02")
+			// Show UpdatedAt (last modified date)
+			timestamp := entry.UpdatedAt.Format("2006-01-02")
 
-			// Build 2-character marker prefix (D for deletion, + for todos)
+			// Build 2-character marker prefix: + D order
 			// GetEntryMarker returns status: "next", "open", "done", or ""
 			var markerText string
 			_, isMarked := markedForDeletion[entry.ID]
 			todoStatus := helpers.GetEntryMarker(todos, entry.ID)
 
-			if isMarked && todoStatus != "" {
-				markerText = "D+"
-			} else if isMarked && todoStatus == "" {
-				markerText = "D "
-			} else if !isMarked && todoStatus != "" {
-				markerText = " +"
+			if todoStatus != "" && isMarked {
+				markerText = "+ D"
+			} else if todoStatus != "" && !isMarked {
+				markerText = "+  "
+			} else if todoStatus == "" && isMarked {
+				markerText = "  D"
 			} else {
-				markerText = "  "
+				markerText = "   "
 			}
 
 			// Truncate title if too long
@@ -62,17 +63,23 @@ func RenderEntryList(width, height int, theme Theme, entries []models.Entry, sel
 				plainLine := fmt.Sprintf("%s %s  %s", markerText, timestamp, titleText)
 				styled = GetSelectedItemStyle(width, theme).Render(plainLine)
 			} else {
-				// Not selected: apply color styling
+				// Not selected: apply color styling (2-char marker: + D order)
 				var styledMarker string
-				if isMarked && todoStatus != "" {
-					styledMarker = StyleMarker("D", true, theme) + StyleTodoStatus(todoStatus, "+", theme)
-				} else if isMarked && todoStatus == "" {
-					styledMarker = StyleMarker("D", true, theme) + " "
-				} else if !isMarked && todoStatus != "" {
-					styledMarker = " " + StyleTodoStatus(todoStatus, "+", theme)
+				// Position 1: + or space
+				var pos1 string
+				if todoStatus != "" {
+					pos1 = StyleTodoStatus(todoStatus, "+", theme)
 				} else {
-					styledMarker = "  "
+					pos1 = " "
 				}
+				// Position 2: D or space
+				var pos2 string
+				if isMarked {
+					pos2 = StyleMarker("D", false, theme)
+				} else {
+					pos2 = " "
+				}
+				styledMarker = pos1 + " " + pos2
 				styledDate := StyleDate(timestamp, theme)
 				styledTitle := HighlightTagsInText(titleText, theme)
 				line := fmt.Sprintf("%s %s  %s", styledMarker, styledDate, styledTitle)

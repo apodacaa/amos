@@ -11,10 +11,12 @@ import (
 
 // Timestamped is an interface for items that have timestamps
 type Timestamped interface {
-	GetTimestamp() time.Time
+	GetTimestamp() time.Time        // Returns CreatedAt
+	GetUpdatedTimestamp() time.Time // Returns UpdatedAt
 }
 
 // filterByDateRange is a generic function that filters items by date range
+// Matches items by UpdatedAt timestamp only
 // Returns filtered list or original list if date string is empty or invalid
 func filterByDateRange[T Timestamped](items []T, dateFilter string) []T {
 	if dateFilter == "" {
@@ -28,9 +30,13 @@ func filterByDateRange[T Timestamped](items []T, dateFilter string) []T {
 
 	filtered := []T{}
 	for _, item := range items {
-		ts := item.GetTimestamp()
-		if (ts.Equal(start) || ts.After(start)) &&
-			(ts.Equal(end) || ts.Before(end)) {
+		timestamp := item.GetUpdatedTimestamp()
+
+		// Match if UpdatedAt timestamp is in range
+		inRange := (timestamp.Equal(start) || timestamp.After(start)) &&
+			(timestamp.Equal(end) || timestamp.Before(end))
+
+		if inRange {
 			filtered = append(filtered, item)
 		}
 	}

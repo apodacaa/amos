@@ -10,20 +10,9 @@ import (
 
 // RenderEntryView renders a read-only view of an entry
 func RenderEntryView(width, height int, theme Theme, entry models.Entry, allTodos []models.Todo, scrollOffset int, markedForDeletion map[string]string, statusMsg string, currentIndex int, totalCount int, updateAvailable bool, updateDismissed bool, latestVersion string) string {
-	// Build timestamp line(s)
-	createdStr := entry.CreatedAt.Format("2006-01-02")
-	updatedStr := entry.UpdatedAt.Format("2006-01-02")
-
-	var timestampLines string
-	if createdStr == updatedStr {
-		// Same date - show one line
-		timestampLines = fmt.Sprintf("Created: %s", StyleDate(createdStr, theme))
-	} else {
-		// Different dates - show both
-		timestampLines = fmt.Sprintf("Created: %s\nUpdated: %s",
-			StyleDate(createdStr, theme),
-			StyleDate(updatedStr, theme))
-	}
+	// Build timestamp line (single UpdatedAt, no label)
+	timestampStr := entry.UpdatedAt.Format("2006-01-02 15:04")
+	timestampLines := StyleDate(timestampStr, theme)
 
 	// Title on separate line
 	styledTitle := HighlightTagsInText(entry.Title, theme)
