@@ -27,7 +27,7 @@ func RenderTodoView(width, height int, theme Theme, todo models.Todo, allEntries
 	styledStatus := StyleTodoStatus(todo.Status, statusIcon, theme)
 
 	// Build timestamp line (single UpdatedAt, no label, keep status icon)
-	timestampStr := todo.UpdatedAt.Format("2006-01-02 15:04")
+	timestampStr := todo.UpdatedAt.Format("2006-01-02")
 	timestampLines := fmt.Sprintf("%s %s", styledStatus, StyleDate(timestampStr, theme))
 
 	// Todo title (wrappable)

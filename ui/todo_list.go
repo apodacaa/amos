@@ -80,9 +80,31 @@ func RenderTodoList(width, height int, theme Theme, todos []models.Todo, entries
 			} else {
 				// Not selected: check status first
 				if todo.Status == "done" {
-					// Done: plain text, dimmed
-					plainLine := fmt.Sprintf("%s %s %s  %s", markerText, checkbox, dateStr, titleText)
-					styled = GetDimmedStyle(theme).Width(width).Render(plainLine)
+					// Done: styled markers + dimmed content
+					var styledMarker string
+					// Position 1: + or space
+					var pos1 string
+					if hasEntry {
+						pos1 = StyleMarker("+", false, theme)
+					} else {
+						pos1 = " "
+					}
+					// Position 2: D or space
+					var pos2 string
+					if isMarked {
+						pos2 = StyleMarker("D", false, theme)
+					} else {
+						pos2 = " "
+					}
+					styledMarker = pos1 + " " + pos2
+
+					// Dim the checkbox, date, and title
+					dimmedCheckbox := GetDimmedStyle(theme).Render(checkbox)
+					dimmedDate := GetDimmedStyle(theme).Render(dateStr)
+					dimmedTitle := GetDimmedStyle(theme).Render(titleText)
+
+					line := fmt.Sprintf("%s %s %s  %s", styledMarker, dimmedCheckbox, dimmedDate, dimmedTitle)
+					styled = GetNormalItemStyle().Width(width).Render(line)
 				} else {
 					// Open/next: apply full color styling (2-char marker: + D order)
 					var styledMarker string

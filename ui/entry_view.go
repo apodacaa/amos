@@ -11,7 +11,7 @@ import (
 // RenderEntryView renders a read-only view of an entry
 func RenderEntryView(width, height int, theme Theme, entry models.Entry, allTodos []models.Todo, scrollOffset int, markedForDeletion map[string]string, statusMsg string, currentIndex int, totalCount int, updateAvailable bool, updateDismissed bool, latestVersion string) string {
 	// Build timestamp line (single UpdatedAt, no label)
-	timestampStr := entry.UpdatedAt.Format("2006-01-02 15:04")
+	timestampStr := entry.UpdatedAt.Format("2006-01-02")
 	timestampLines := StyleDate(timestampStr, theme)
 
 	// Title on separate line
