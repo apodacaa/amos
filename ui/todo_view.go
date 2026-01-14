@@ -65,13 +65,15 @@ func RenderTodoView(width, height int, theme Theme, todo models.Todo, allEntries
 			styledDate := StyleDate(dateStr, theme)
 			styledTitle := HighlightTagsInText(linkedEntry.Title, theme)
 			tagStr := ""
-			if len(linkedEntry.Tags) > 0 {
-				var tagStrings []string
-				for _, tag := range linkedEntry.Tags {
-					tagStrings = append(tagStrings, "@"+tag)
-				}
-				tagStr = " " + HighlightTagsInText(strings.Join(tagStrings, " "), theme)
-			}
+
+			// Not necessary to repeate all the tags that are clearly visible in the text
+			//if len(linkedEntry.Tags) > 0 {
+			//	var tagStrings []string
+			//	for _, tag := range linkedEntry.Tags {
+			//		tagStrings = append(tagStrings, "@"+tag)
+			//	}
+			//	tagStr = " " + HighlightTagsInText(strings.Join(tagStrings, " "), theme)
+			//}
 
 			metaLine := fmt.Sprintf("%s %s%s", styledDate, styledTitle, tagStr)
 			linkedParts = append(linkedParts, metaLine)
