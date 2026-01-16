@@ -232,6 +232,16 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, clearStatusAfterDelay()
 		}
 
+		// If entry was empty and skipped, just exit without updating state
+		if msg.skipped {
+			m.hasUnsaved = false
+			m.editingMode = false
+			m.originalEntryID = ""
+			m.textarea.Blur()
+			m.view = "entries"
+			return m, m.loadEntriesAndTodos()
+		}
+
 		// Finalized successfully - exit to appropriate view
 		wasEditing := m.editingMode // Check before clearing
 		m.currentEntry = msg.entry

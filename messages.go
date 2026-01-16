@@ -10,8 +10,9 @@ type saveCompleteMsg struct {
 
 // finalizeCompleteMsg is sent when entry finalization completes (todo extraction on exit)
 type finalizeCompleteMsg struct {
-	entry models.Entry
-	err   error
+	entry   models.Entry
+	err     error
+	skipped bool // true if entry was empty and not saved
 }
 
 // entriesLoadedMsg is sent when entries are loaded
