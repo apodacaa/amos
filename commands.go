@@ -1,6 +1,7 @@
 package main
 
 import (
+	"strings"
 	"time"
 
 	"github.com/apodacaa/amos/internal/helpers"
@@ -77,6 +78,14 @@ func (m Model) finalizeAndExit() tea.Cmd {
 	return func() tea.Msg {
 		// Always use m.currentEntry as source (last saved version)
 		entry := m.currentEntry
+
+		// Skip saving if entry has no meaningful content
+		// This handles the case where user creates a new entry and immediately exits
+		hasContent := strings.TrimSpace(entry.Title) != "" || strings.TrimSpace(entry.Body) != ""
+		if !hasContent {
+			return finalizeCompleteMsg{entry: entry, err: nil, skipped: true}
+		}
+
 		content := entry.Title + "\n" + entry.Body
 
 		// Extract todos from SAVED content BEFORE cleaning
