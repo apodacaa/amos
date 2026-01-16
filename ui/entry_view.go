@@ -46,14 +46,14 @@ func RenderEntryView(width, height int, theme Theme, entry models.Entry, allTodo
 			todoLine := fmt.Sprintf("%s %s", styledCheckbox, highlightedTitle)
 
 			// Add tags if present (with bold highlighting)
-			if len(todo.Tags) > 0 {
-				var tagParts []string
-				for _, tag := range todo.Tags {
-					tagParts = append(tagParts, "@"+tag)
-				}
-				tagStr := " " + strings.Join(tagParts, " ")
-				todoLine += HighlightTagsInText(tagStr, theme)
-			}
+			//if len(todo.Tags) > 0 {
+			//	var tagParts []string
+			//	for _, tag := range todo.Tags {
+			//		tagParts = append(tagParts, "@"+tag)
+			//	}
+			//	tagStr := " " + strings.Join(tagParts, " ")
+			//	todoLine += HighlightTagsInText(tagStr, theme)
+			//}
 
 			// Dim completed todos
 			if todo.Status == "done" {
