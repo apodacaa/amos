@@ -20,6 +20,8 @@ Amos is a minimal Bubble Tea (Go) TUI for journal + todo management with a bruta
 
 **Important**: Always run `make ci` before committing. The git pre-commit hook (installed via `./scripts/install-hooks.sh`) runs this automatically.
 
+**Important**: After committing, update CLAUDE.md if the change affects architecture, key bindings, config fields, or user-facing behavior.
+
 ### Running Single Tests
 
 ```bash
@@ -162,13 +164,13 @@ internal/
     todo.go              # Todo{ID, Title, Status, Tags, CreatedAt, EntryID, Position}
   storage/               # JSON persistence (configurable directory)
     storage.go           # Load/Save functions, directory initialization
-    system_config.go     # SystemConfig{DataDir, Theme} (~/.config/amos/settings.json)
+    system_config.go     # SystemConfig{DataDir, Theme, HideCompletedTodos} (~/.config/amos/settings.json)
   helpers/               # Reusable business logic
     sorting.go           # Centralized sorting (todos by status→position→date)
     tags.go              # Tag extraction (@mention syntax) and filtering
     todos.go             # Todo extraction (!todo syntax)
     dates.go             # Date filter parsing and date range filtering
-    filter.go            # Centralized filtering (ApplyEntryFilters, ApplyTodoFilters)
+    filter.go            # Centralized filtering (ApplyEntryFilters, ApplyTodoFilters, FilterTodosByVisibility)
     filter_parser.go     # Unified filter parsing (tags + dates)
 ```
 
@@ -192,7 +194,7 @@ internal/
 **Data Persistence**:
 - JSON files in data directory (default: `~/.amos/`)
 - Customizable via `AMOS_DATA_DIR` env var or `~/.config/amos/settings.json`
-- All config: `~/.config/amos/settings.json` (stores data directory path and theme)
+- All config: `~/.config/amos/settings.json` (stores data directory path, theme, and hide_completed_todos preference)
 - User data files: `entries.json`, `todos.json` (in configured data directory)
 - `storage.LoadEntries()` / `storage.SaveEntry()` for entries
 - `storage.LoadTodos()` / `storage.SaveTodo()` for todos
@@ -248,6 +250,7 @@ The app follows strict brutalist principles:
 - `esc` - Exits forms/modals to natural home: entry form → entry list (or entry view if editing), add todo → todo list, entry view → entry list, theme selector/help → previous view
 - `n` - New entry (works from any read-only view)
 - `a` - Add standalone todo (works from any read-only view)
+- `z` - Toggle visibility of completed todos (todo list only)
 - Theme selector and help page use `m.previousView` to track return destination
 
 **Visual Design**:
@@ -379,6 +382,7 @@ Todos stored in `<data-dir>/todos.json` (default: `~/.amos/todos.json`):
 - **Page navigation**: `f/b` keys in entry/todo/help views for page forward/backward (no line scrolling)
 - **Help page**: Press `?` from any read-only view to see comprehensive documentation
 - Todo status: "open", "next", or "done" (cycle with space key)
+- **Toggle completed todos**: `z` key in todo list hides/shows done todos. Preference persists in config. Done todos always visible in entry view (preserves journal history).
 - Tag syntax: `@tagname` in entry body or todo title auto-extracts to Tags array
 - Todo syntax: `!todo Task description @tag` creates linked todo with extracted tags when exiting entry form (ESC). The `!todo` line is automatically removed from entry text on exit. During editing, `!todo` markup stays visible until ESC. To edit todos, use the dedicated todo view (press `i` from todo list).
 - Unified filtering: Works identically for both entries and todos views
