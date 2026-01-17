@@ -20,7 +20,7 @@ Amos is a minimal Bubble Tea (Go) TUI for journal + todo management with a bruta
 
 **Important**: Always run `make ci` before committing. The git pre-commit hook (installed via `./scripts/install-hooks.sh`) runs this automatically.
 
-**Important**: After committing, update CLAUDE.md if the change affects architecture, key bindings, config fields, or user-facing behavior.
+**Important**: After committing, update CLAUDE.md if the change affects architecture, key bindings, config fields, or user-facing behavior. Also update `ui/help_content.go` if key bindings change.
 
 ### Running Single Tests
 
