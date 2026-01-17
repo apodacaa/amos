@@ -179,10 +179,10 @@ func (m Model) deleteMarkedCmd() tea.Cmd {
 	}
 }
 
-// saveConfigCmd saves user configuration
-func saveConfigCmd(config models.Config) tea.Cmd {
+// saveConfigCmd saves user configuration to system config
+func saveConfigCmd(config storage.SystemConfig) tea.Cmd {
 	return func() tea.Msg {
-		err := storage.SaveConfig(config)
+		err := storage.SaveSystemConfig(config)
 		return configSavedMsg{err: err}
 	}
 }
