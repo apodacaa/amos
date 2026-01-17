@@ -103,10 +103,13 @@ func RenderDataStorageSectionText() string {
 	title := "DATA STORAGE"
 
 	items := []string{
-		"All data is stored in plain JSON files (default: ~/.amos/):",
+		"Data files stored in plain JSON (default: ~/.amos/):",
 		"  entries.json   Journal entries",
 		"  todos.json     Todo items",
-		"  config.json    User preferences (theme)",
+		"",
+		"Config stored in ~/.config/amos/settings.json:",
+		"  data_dir       Custom data directory path",
+		"  theme          Theme preference (brutalist, cyberpunk)",
 		"",
 		"Customize data directory for syncing with cloud storage:",
 		"",
@@ -114,12 +117,9 @@ func RenderDataStorageSectionText() string {
 		"  AMOS_DATA_DIR=~/Google\\ Drive/amos amos",
 		"",
 		"Option 2: Config file (persistent, create with any text editor)",
-		"  Create file: ~/.config/amos/settings.json",
-		"  Content:     {",
-		"                 \"data_dir\": \"~/Google Drive/amos\"",
-		"               }",
+		"  {\"data_dir\": \"~/Google Drive/amos\", \"theme\": \"cyberpunk\"}",
 		"",
-		"Priority: AMOS_DATA_DIR > ~/.config/amos/settings.json > ~/.amos",
+		"Priority: AMOS_DATA_DIR > settings.json > ~/.amos",
 		"Path formats: ~/path (tilde), /absolute/path, or ./relative/path",
 	}
 

@@ -249,11 +249,10 @@ air               # Run with auto-reload
 ├── internal/               # Business logic
 │   ├── models/            # Data structures
 │   │   ├── entry.go
-│   │   ├── todo.go
-│   │   └── config.go      # User preferences
+│   │   └── todo.go
 │   ├── storage/           # JSON persistence (configurable directory)
 │   │   ├── storage.go
-│   │   └── system_config.go  # System config (~/.config/amos/settings.json)
+│   │   └── system_config.go  # All config: data_dir, theme (~/.config/amos/settings.json)
 │   └── helpers/           # Utilities
 │       ├── sorting.go     # Centralized sorting logic
 │       ├── tags.go        # Tag extraction and filtering
@@ -316,7 +315,7 @@ make build
 
 - Entries stored in `~/.amos/entries.json`
 - Todos stored in `~/.amos/todos.json`
-- User config stored in `~/.amos/config.json` (theme preference)
+- All config stored in `~/.config/amos/settings.json` (data directory, theme)
 - Plain JSON format (no database)
 - Auto-creates directory on first run
 
@@ -342,14 +341,15 @@ Create `~/.config/amos/settings.json`:
 
 ```json
 {
-  "data_dir": "~/Google Drive/amos"
+  "data_dir": "~/Google Drive/amos",
+  "theme": "cyberpunk"
 }
 ```
 
 **Priority Order:**
 
 1. `AMOS_DATA_DIR` environment variable (highest priority)
-2. `~/.config/amos/settings.json` DataDir field
+2. `~/.config/amos/settings.json` data_dir field
 3. `~/.amos` (default)
 
 **Path Formats:**

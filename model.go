@@ -95,9 +95,9 @@ type Model struct {
 	// ============================================================
 	// Configuration and Theming
 	// ============================================================
-	config        models.Config // User configuration (loaded from ~/.amos/config.json)
-	currentTheme  ui.Theme      // Currently active theme (brutalist or cyberpunk)
-	selectedTheme int           // Selected theme index in theme selector modal
+	sysConfig     storage.SystemConfig // System configuration (loaded from ~/.config/amos/settings.json)
+	currentTheme  ui.Theme             // Currently active theme (brutalist or cyberpunk)
+	selectedTheme int                  // Selected theme index in theme selector modal
 
 	// ============================================================
 	// Update Notification State
@@ -136,11 +136,11 @@ func NewModel() Model {
 	unifiedFilterInput.SetHeight(1) // Single line
 	ui.ApplyTextareaStyle(&unifiedFilterInput)
 
-	// Load config from storage (or use default)
-	config, _ := storage.LoadConfig()
+	// Load system config from storage (or use default)
+	sysConfig, _ := storage.LoadSystemConfig()
 
 	// Load theme based on config
-	currentTheme := ui.GetThemeByName(config.Theme)
+	currentTheme := ui.GetThemeByName(sysConfig.Theme)
 
 	return Model{
 		view:               "entries",
@@ -150,7 +150,7 @@ func NewModel() Model {
 		todoInput:          todoInput,
 		unifiedFilterInput: unifiedFilterInput,
 		markedForDeletion:  make(map[string]string),
-		config:             config,
+		sysConfig:          sysConfig,
 		currentTheme:       currentTheme,
 		selectedTheme:      0, // Will be set when opening theme selector
 	}

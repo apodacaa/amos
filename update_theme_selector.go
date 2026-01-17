@@ -36,12 +36,12 @@ func (m Model) handleThemeSelectorKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			selectedTheme := themes[m.selectedTheme]
 			m.currentTheme = selectedTheme
 
-			// Update config
-			m.config.Theme = selectedTheme.Name
+			// Update system config
+			m.sysConfig.Theme = selectedTheme.Name
 
 			// Save config and return to previous view
 			m.view = m.previousView
-			return m, saveConfigCmd(m.config)
+			return m, saveConfigCmd(m.sysConfig)
 		}
 		return m, nil
 	}

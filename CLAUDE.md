@@ -87,7 +87,7 @@ This codebase is small (~3000 lines) and well-organized. Work efficiently:
 - Input handler: `update_theme_selector.go`
 - UI renderer: `ui/theme_selector.go`
 - Theme definitions: `ui/styles.go` (BrutalistTheme, CyberpunkTheme)
-- Config model: `internal/models/config.go`
+- Config storage: `internal/storage/system_config.go` (theme stored in SystemConfig)
 - Accessed via `s` key from entry view and todo list
 
 **Help Page:**
@@ -160,10 +160,9 @@ internal/
   models/                # Data structures
     entry.go             # Entry{ID, Title, Body, Tags, Timestamp}
     todo.go              # Todo{ID, Title, Status, Tags, CreatedAt, EntryID, Position}
-    config.go            # Config{Theme}
   storage/               # JSON persistence (configurable directory)
     storage.go           # Load/Save functions, directory initialization
-    system_config.go     # System config (~/.config/amos/settings.json)
+    system_config.go     # SystemConfig{DataDir, Theme} (~/.config/amos/settings.json)
   helpers/               # Reusable business logic
     sorting.go           # Centralized sorting (todos by status→position→date)
     tags.go              # Tag extraction (@mention syntax) and filtering
@@ -193,11 +192,11 @@ internal/
 **Data Persistence**:
 - JSON files in data directory (default: `~/.amos/`)
 - Customizable via `AMOS_DATA_DIR` env var or `~/.config/amos/settings.json`
-- System config: `~/.config/amos/settings.json` (stores data directory path)
-- User data files: `entries.json`, `todos.json`, `config.json` (in configured data directory)
+- All config: `~/.config/amos/settings.json` (stores data directory path and theme)
+- User data files: `entries.json`, `todos.json` (in configured data directory)
 - `storage.LoadEntries()` / `storage.SaveEntry()` for entries
 - `storage.LoadTodos()` / `storage.SaveTodo()` for todos
-- `storage.LoadConfig()` / `storage.SaveConfig()` for user preferences (theme)
+- `storage.LoadSystemConfig()` / `storage.SaveSystemConfig()` for settings (data_dir, theme)
 - `storage.InitializeDataDir()` called at startup to configure directory
 - Auto-creates directory on first run
 - Supports tilde (`~`) expansion in paths
