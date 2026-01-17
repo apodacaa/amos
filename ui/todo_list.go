@@ -9,9 +9,9 @@ import (
 )
 
 // RenderTodoList renders the todo list view
-func RenderTodoList(width, height int, theme Theme, todos []models.Todo, entries []models.Entry, selectedIdx int, filterTags []string, filterDate string, markedForDeletion map[string]string, statusMsg string, updateAvailable bool, updateDismissed bool, latestVersion string) string {
-	// Apply filters: first date, then tags
-	filtered := helpers.ApplyTodoFilters(todos, filterDate, filterTags)
+func RenderTodoList(width, height int, theme Theme, todos []models.Todo, entries []models.Entry, selectedIdx int, filterTags []string, filterDate string, markedForDeletion map[string]string, statusMsg string, updateAvailable bool, updateDismissed bool, latestVersion string, hideCompleted bool) string {
+	// Apply filters: visibility, date, then tags
+	filtered := helpers.ApplyTodoFilters(todos, filterDate, filterTags, hideCompleted)
 
 	// Build todo list
 	var listItems []string
@@ -138,7 +138,7 @@ func RenderTodoList(width, height int, theme Theme, todos []models.Todo, entries
 	list := strings.Join(listItems, "\n")
 
 	// Header
-	header := RenderHeader(width, theme, "n", "new", "a", "todo", "enter", "view", "j/k", "nav", "space", "cycle", "d", "del", "/", "filter", "e", "entries", "?", "help", "q", "quit")
+	header := RenderHeader(width, theme, "n", "new", "a", "todo", "enter", "view", "j/k", "nav", "space", "cycle", "d", "del", "/", "filter", "z", "toggle", "e", "entries", "?", "help", "q", "quit")
 
 	// Footer (show only filter context, no view label)
 	var footerTitle string

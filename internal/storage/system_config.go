@@ -9,8 +9,9 @@ import (
 // SystemConfig stores all application settings
 // Stored in ~/.config/amos/settings.json
 type SystemConfig struct {
-	DataDir string `json:"data_dir,omitempty"` // Custom data directory path
-	Theme   string `json:"theme,omitempty"`    // Theme name (e.g., "cyberpunk", "brutalist")
+	DataDir            string `json:"data_dir,omitempty"`             // Custom data directory path
+	Theme              string `json:"theme,omitempty"`                // Theme name (e.g., "cyberpunk", "brutalist")
+	HideCompletedTodos bool   `json:"hide_completed_todos,omitempty"` // Hide done todos in todo list
 }
 
 // DefaultSystemConfig returns the default configuration

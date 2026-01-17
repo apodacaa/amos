@@ -396,10 +396,10 @@ func (m Model) View() string {
 		sorted := helpers.SortEntriesForDisplay(filtered)
 		return ui.RenderEntryView(m.width, m.height, m.currentTheme, m.viewingEntry, m.todos, m.scrollOffset, m.markedForDeletion, m.statusMsg, m.selectedEntry, len(sorted), m.updateAvailable, m.updateDismissed, m.latestVersion)
 	case "todos":
-		return ui.RenderTodoList(m.width, m.height, m.currentTheme, m.displayTodos, m.entries, m.selectedTodo, m.filterTags, m.filterDate, m.markedForDeletion, m.statusMsg, m.updateAvailable, m.updateDismissed, m.latestVersion)
+		return ui.RenderTodoList(m.width, m.height, m.currentTheme, m.displayTodos, m.entries, m.selectedTodo, m.filterTags, m.filterDate, m.markedForDeletion, m.statusMsg, m.updateAvailable, m.updateDismissed, m.latestVersion, m.sysConfig.HideCompletedTodos)
 	case "view_todo":
 		// Calculate filtered/sorted todo position for footer display
-		filtered := helpers.ApplyTodoFilters(m.displayTodos, m.filterDate, m.filterTags)
+		filtered := helpers.ApplyTodoFilters(m.displayTodos, m.filterDate, m.filterTags, m.sysConfig.HideCompletedTodos)
 		sorted := helpers.SortTodosForDisplay(filtered)
 		return ui.RenderTodoView(m.width, m.height, m.currentTheme, m.viewingTodo, m.entries, m.scrollOffset, m.markedForDeletion, m.statusMsg, m.selectedTodo, len(sorted), m.updateAvailable, m.updateDismissed, m.latestVersion)
 	case "unified_filter":
