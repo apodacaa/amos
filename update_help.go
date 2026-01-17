@@ -15,10 +15,6 @@ func updateHelp(m Model, msg tea.KeyMsg) (Model, tea.Cmd) {
 	sections := []string{
 		ui.RenderSymbolsSectionText(),
 		"",
-		ui.RenderCommandsSectionText(),
-		"",
-		ui.RenderNavigationSectionText(),
-		"",
 		ui.RenderDataStorageSectionText(),
 	}
 	content := strings.Join(sections, "\n")

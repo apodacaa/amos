@@ -20,7 +20,7 @@ Amos is a minimal Bubble Tea (Go) TUI for journal + todo management with a bruta
 
 **Important**: Always run `make ci` before committing. The git pre-commit hook (installed via `./scripts/install-hooks.sh`) runs this automatically.
 
-**Important**: After committing, update CLAUDE.md if the change affects architecture, key bindings, config fields, or user-facing behavior. Also update `ui/help_content.go` if key bindings change.
+**Important**: After committing, update CLAUDE.md if the change affects architecture, config fields, or user-facing behavior.
 
 ### Running Single Tests
 
@@ -242,16 +242,9 @@ internal/
 The app follows strict brutalist principles:
 
 **Navigation**:
-- Entry list and todo list are peer views (no hierarchy, no back button)
-- `e` / `t` - Jump between entry list and todo list from any view
-- `s` - Open theme selector (from entry view and todo list)
-- `?` - Open help page (from any read-only view)
-- `i` - Edit entry (from entry view) or edit todo (from todo list)
-- `esc` - Exits forms/modals to natural home: entry form → entry list (or entry view if editing), add todo → todo list, entry view → entry list, theme selector/help → previous view
-- `n` - New entry (works from any read-only view)
-- `a` - Add standalone todo (works from any read-only view)
-- `z` - Toggle visibility of completed todos (todo list only)
-- Theme selector and help page use `m.previousView` to track return destination
+- Entry list and todo list are peer views (no hierarchy)
+- All key bindings are shown in view headers
+- Theme selector and help page use `m.previousView` to return to calling view
 
 **Visual Design**:
 - **All views**: Honest workspaces with left-aligned help text anchored to bottom
