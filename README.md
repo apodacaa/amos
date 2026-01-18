@@ -75,7 +75,7 @@ amos
 - `n` - New Entry
 - `a` - Add Standalone Todo
 - `j/k` or `↑/↓` - Navigate
-- `space` - Toggle todo status (saves immediately)
+- `o/p/x` - Set status: o=open, p=next (priority), x=done (saves immediately)
 - `d` - Mark/unmark todo for deletion (shows "D" prefix, can mark entry-linked todos too)
 - `$` - Delete all marked items (shown in status message after marking, y/n confirmation, only standalone todos deleted)
 - `/` - Filter by tags and/or date
@@ -88,7 +88,7 @@ amos
 - `n` - New Entry
 - `a` - Add Standalone Todo
 - `i` - Edit current todo (opens todo form with existing content, standalone todos only)
-- `space` - Cycle todo status: open → next → done (saves immediately)
+- `o/p/x` - Set status: o=open, p=next (priority), x=done (saves immediately)
 - `j/k` or `↑/↓` - Navigate between todos
 - `f/b` - Page forward/backward in long todos
 - `d` - Mark/unmark current todo for deletion (shows "[MARKED FOR DELETION]" in footer)
@@ -195,7 +195,7 @@ air               # Run with auto-reload
 - **Standalone todos**: Create todos independently with `a` key from any view
 - **Entry-linked todos**: Extract from entries with `!todo` syntax
 - **Edit todos**: Press `i` in todo view to edit standalone todos (entry-linked todos edited via parent entry)
-- Toggle status with `space` (immediate save)
+- Set status with `o/p/x` keys (immediate save)
 - **Unified filtering**: Same as entries - filter by tags and/or dates with `/` key
   - Tag autocomplete (type `@` then tag name, press `tab` to complete)
   - Date filters: `today`, `yesterday`, `last N days`, `YYYY-MM-DD`, `YYYY-MM-DD to YYYY-MM-DD`
@@ -363,7 +363,7 @@ The directory will be created automatically if it doesn't exist.
 ## Design Philosophy
 
 **Brutalist Principles:**
-1. **Immediate writes** - `space` toggles todo AND saves (no deferred state)
+1. **Immediate writes** - `o/p/x` sets todo status AND saves (no deferred state)
 2. **Full context** - Todos visible in entry view
 3. **No hidden state** - What you see is what's saved
 4. **Simple is better** - Normalize positions every move vs complex tracking

@@ -45,6 +45,9 @@ func (m Model) handleViewTodoKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "o":
 		// Set todo to open
 		return m.setViewingTodoStatus("open", "Todo set to open")
+	case "p":
+		// Set todo to next (p for priority)
+		return m.setViewingTodoStatus("next", "Todo set to next")
 	case "n":
 		// Check if cancelling deletion first
 		if m.deleteConfirmPending {
@@ -53,8 +56,8 @@ func (m Model) handleViewTodoKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.statusTime = time.Now()
 			return m, clearStatusAfterDelay()
 		}
-		// Set todo to next
-		return m.setViewingTodoStatus("next", "Todo set to next")
+		// Create new entry (using shared helper)
+		return m.handleNewEntry()
 	case "x":
 		// Set todo to done
 		return m.setViewingTodoStatus("done", "Todo marked done")

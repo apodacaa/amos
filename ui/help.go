@@ -13,6 +13,8 @@ func RenderHelp(width, height int, theme Theme, scrollOffset int, updateAvailabl
 	sections := []string{
 		renderSymbolsSection(theme),
 		"",
+		renderTodoStatusKeysSection(theme),
+		"",
 		renderEditorSection(theme),
 		"",
 		renderDataStorageSection(theme),
@@ -105,6 +107,21 @@ func RenderHelp(width, height int, theme Theme, scrollOffset int, updateAvailabl
 func renderSymbolsSection(theme Theme) string {
 	// Get plain text content
 	content := RenderSymbolsSectionText()
+
+	// Extract title and body
+	parts := strings.SplitN(content, "\n\n", 2)
+	title := lipgloss.NewStyle().Bold(true).Render(parts[0])
+	body := ""
+	if len(parts) > 1 {
+		body = parts[1]
+	}
+
+	return title + "\n\n" + body
+}
+
+func renderTodoStatusKeysSection(theme Theme) string {
+	// Get plain text content
+	content := RenderTodoStatusKeysSectionText()
 
 	// Extract title and body
 	parts := strings.SplitN(content, "\n\n", 2)

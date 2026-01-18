@@ -25,6 +25,21 @@ func RenderSymbolsSectionText() string {
 	return title + "\n\n" + strings.Join(items, "\n")
 }
 
+// RenderTodoStatusKeysSectionText returns the plain text for the todo status keys section
+func RenderTodoStatusKeysSectionText() string {
+	title := "TODO STATUS KEYS"
+
+	items := []string{
+		"  o    Set todo to open",
+		"  p    Set todo to next (priority)",
+		"  x    Set todo to done",
+		"",
+		"Changes save immediately.",
+	}
+
+	return title + "\n\n" + strings.Join(items, "\n")
+}
+
 // RenderEditorSectionText returns the plain text for the editor section
 func RenderEditorSectionText() string {
 	title := "ENTRY EDITING"
