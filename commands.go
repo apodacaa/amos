@@ -1,14 +1,13 @@
 package main
 
 import (
-	"strings"
+	"os/exec"
 	"time"
 
 	"github.com/apodacaa/amos/internal/helpers"
 	"github.com/apodacaa/amos/internal/models"
 	"github.com/apodacaa/amos/internal/storage"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/google/uuid"
 )
 
 // clearStatusAfterDelay returns a command that sends a statusTimeoutMsg after 3 seconds
@@ -48,83 +47,31 @@ func (m Model) toggleTodoImmediate(todo models.Todo) tea.Cmd {
 	}
 }
 
-// saveEntry saves the current entry (keeps !todo markup intact)
-func (m Model) saveEntry() tea.Cmd {
-	return func() tea.Msg {
-		content := m.textarea.Value()
-
-		// Parse content into title and body
-		title, body := helpers.ParseEntryContent(content)
-
-		// Extract tags from title and body (include !todo lines)
-		tags := helpers.ExtractTags(title + " " + body)
-
-		// Update current entry (keep body as-is with !todo markup)
-		m.currentEntry.Title = title
-		m.currentEntry.Body = body // Keep !todo markup - extraction happens on exit
-		m.currentEntry.Tags = tags
-		m.currentEntry.UpdatedAt = time.Now() // Only update UpdatedAt, preserve CreatedAt
-
-		// Save entry to storage
-		err := storage.SaveEntry(m.currentEntry)
-
-		return saveCompleteMsg{entry: m.currentEntry, err: err}
+// launchEditor opens the external editor for entry creation/editing
+// existingContent is the existing entry content (empty for new entries)
+func launchEditor(existingContent string) tea.Cmd {
+	// Create temp file with content or template
+	tempFile, err := helpers.CreateTempFile(existingContent)
+	if err != nil {
+		return func() tea.Msg {
+			return editorFinishedMsg{tempFile: "", err: err}
+		}
 	}
+
+	// Get editor command
+	editor := helpers.GetEditor()
+
+	// Launch editor with ExecProcess (suspends TUI, returns control on exit)
+	c := tea.ExecProcess(newEditorCmd(editor, tempFile), func(err error) tea.Msg {
+		return editorFinishedMsg{tempFile: tempFile, err: err}
+	})
+
+	return c
 }
 
-// finalizeAndExit extracts todos, cleans entry text, and exits entry form
-// This is called when the user presses ESC to exit the entry form
-func (m Model) finalizeAndExit() tea.Cmd {
-	return func() tea.Msg {
-		// Always use m.currentEntry as source (last saved version)
-		entry := m.currentEntry
-
-		// Skip saving if entry has no meaningful content
-		// This handles the case where user creates a new entry and immediately exits
-		hasContent := strings.TrimSpace(entry.Title) != "" || strings.TrimSpace(entry.Body) != ""
-		if !hasContent {
-			return finalizeCompleteMsg{entry: entry, err: nil, skipped: true}
-		}
-
-		content := entry.Title + "\n" + entry.Body
-
-		// Extract todos from SAVED content BEFORE cleaning
-		todoTitles := helpers.ExtractTodos(content)
-
-		// Remove !todo markup from body
-		cleanedBody := helpers.RemoveTodoMarkup(entry.Body)
-
-		// Extract tags from title and cleaned body
-		tags := helpers.ExtractTags(entry.Title + " " + cleanedBody)
-
-		// Create todos from extracted !todo lines
-		for _, todoTitle := range todoTitles {
-			now := time.Now()
-			todo := models.Todo{
-				ID:        uuid.New().String(),
-				Title:     todoTitle,
-				Status:    "open",
-				Tags:      helpers.ExtractTags(todoTitle),
-				CreatedAt: now,
-				UpdatedAt: now,
-				EntryID:   &entry.ID,
-			}
-
-			if err := storage.SaveTodo(todo); err != nil {
-				return finalizeCompleteMsg{err: err}
-			}
-		}
-
-		// Update entry with cleaned body
-		entry.Body = cleanedBody
-		entry.Tags = tags
-		entry.UpdatedAt = time.Now()
-
-		// Save cleaned entry
-		err := storage.SaveEntry(entry)
-
-		return finalizeCompleteMsg{entry: entry, err: err}
-	}
+// newEditorCmd creates an exec.Cmd for the given editor and file
+func newEditorCmd(editor, filePath string) *exec.Cmd {
+	return exec.Command(editor, filePath)
 }
 
 // saveTodo saves a standalone todo and returns to dashboard

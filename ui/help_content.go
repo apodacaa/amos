@@ -25,6 +25,31 @@ func RenderSymbolsSectionText() string {
 	return title + "\n\n" + strings.Join(items, "\n")
 }
 
+// RenderEditorSectionText returns the plain text for the editor section
+func RenderEditorSectionText() string {
+	title := "ENTRY EDITING"
+
+	items := []string{
+		"Entries are edited with your system's default text editor,",
+		"following Unix conventions (like git, mutt, aerc).",
+		"",
+		"Editor selection (in order of priority):",
+		"  $EDITOR    Primary editor (e.g., vim, nano, code)",
+		"  $VISUAL    Fallback for visual editors",
+		"  nano       Default if neither is set",
+		"",
+		"Entry format:",
+		"  First line becomes the title",
+		"  Use @tags anywhere for organization",
+		"  Use !todo lines to create linked tasks",
+		"",
+		"Save and exit the editor to create/update the entry.",
+		"Exit without saving (or leave empty) to cancel.",
+	}
+
+	return title + "\n\n" + strings.Join(items, "\n")
+}
+
 // RenderDataStorageSectionText returns the plain text for the data storage section
 func RenderDataStorageSectionText() string {
 	title := "DATA STORAGE"

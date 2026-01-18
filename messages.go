@@ -2,17 +2,9 @@ package main
 
 import "github.com/apodacaa/amos/internal/models"
 
-// saveCompleteMsg is sent when save operation completes
+// saveCompleteMsg is sent when save operation completes (for todos)
 type saveCompleteMsg struct {
-	entry models.Entry
-	err   error
-}
-
-// finalizeCompleteMsg is sent when entry finalization completes (todo extraction on exit)
-type finalizeCompleteMsg struct {
-	entry   models.Entry
-	err     error
-	skipped bool // true if entry was empty and not saved
+	err error
 }
 
 // entriesLoadedMsg is sent when entries are loaded
@@ -57,4 +49,10 @@ type configSavedMsg struct {
 type updateCheckCompleteMsg struct {
 	latestVersion   string // Latest version from GitHub (e.g., "v1.5.0")
 	updateAvailable bool   // Whether an update is available
+}
+
+// editorFinishedMsg is sent when the external editor exits
+type editorFinishedMsg struct {
+	tempFile string // Path to the temp file with edited content
+	err      error  // Error from editor execution (nil if successful)
 }
