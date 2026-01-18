@@ -111,10 +111,13 @@ type Model struct {
 // NewModel creates a new model with default values
 func NewModel() Model {
 	// Create single-line input for standalone todos
+	// Default width for textareas (will be updated on WindowSizeMsg)
+	defaultInputWidth := 76 // 80 - 4 margin
+
 	todoInput := textarea.New()
 	todoInput.Placeholder = "Todo title..."
 	todoInput.CharLimit = 0
-	todoInput.SetWidth(60)
+	todoInput.SetWidth(defaultInputWidth)
 	todoInput.SetHeight(1) // Single line
 	ui.ApplyTextareaStyle(&todoInput)
 
@@ -122,7 +125,7 @@ func NewModel() Model {
 	unifiedFilterInput := textarea.New()
 	unifiedFilterInput.Placeholder = "e.g. @work yesterday, last 30 days @client"
 	unifiedFilterInput.CharLimit = 0
-	unifiedFilterInput.SetWidth(60)
+	unifiedFilterInput.SetWidth(defaultInputWidth)
 	unifiedFilterInput.SetHeight(1) // Single line
 	ui.ApplyTextareaStyle(&unifiedFilterInput)
 
@@ -185,6 +188,20 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// Update terminal dimensions
 		m.width = msg.Width
 		m.height = msg.Height
+		// Update textarea widths to use available space (leave margin for padding)
+		inputWidth := msg.Width - 4
+		if inputWidth < 20 {
+			inputWidth = 20
+		}
+		// Save current values before resizing (SetWidth can lose content)
+		todoValue := m.todoInput.Value()
+		filterValue := m.unifiedFilterInput.Value()
+		// Set new widths
+		m.todoInput.SetWidth(inputWidth)
+		m.unifiedFilterInput.SetWidth(inputWidth)
+		// Restore values to force proper re-render
+		m.todoInput.SetValue(todoValue)
+		m.unifiedFilterInput.SetValue(filterValue)
 		return m, nil
 
 	case saveCompleteMsg:

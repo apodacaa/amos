@@ -2,6 +2,7 @@ package main
 
 import (
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/apodacaa/amos/internal/helpers"
@@ -137,8 +138,22 @@ func (m Model) handleViewEntryKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		if availableHeight < 5 {
 			availableHeight = 5
 		}
+
+		// Calculate max offset using wrapped body
+		wrappedBody := ui.WrapBodyText(m.viewingEntry.Body, m.width-8)
+		bodyLines := strings.Split(wrappedBody, "\n")
+		totalLines := len(bodyLines)
+
+		maxOffset := totalLines - availableHeight
+		if maxOffset < 0 {
+			maxOffset = 0
+		}
+
+		// Increment and clamp to max
 		m.scrollOffset += availableHeight
-		// UI layer will clamp to maxOffset, so we don't need to calculate it here
+		if m.scrollOffset > maxOffset {
+			m.scrollOffset = maxOffset
+		}
 		return m, nil
 	case "d":
 		// Toggle mark for deletion (for currently viewed entry)
