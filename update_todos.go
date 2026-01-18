@@ -20,6 +20,9 @@ func (m Model) handleTodosListKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch msg.String() {
 	case "q", "ctrl+c":
 		return m, tea.Quit
+	case "o":
+		// Set todo to open
+		return m.setTodoStatus("open", "Todo set to open")
 	case "n":
 		// Check if cancelling deletion first
 		if m.deleteConfirmPending {
@@ -28,8 +31,11 @@ func (m Model) handleTodosListKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.statusTime = time.Now()
 			return m, clearStatusAfterDelay()
 		}
-		// Create new entry (using shared helper)
-		return m.handleNewEntry()
+		// Set todo to next
+		return m.setTodoStatus("next", "Todo set to next")
+	case "x":
+		// Set todo to done
+		return m.setTodoStatus("done", "Todo marked done")
 	case "e":
 		// Jump to entry list (explicit navigation)
 		m.view = "entries"
@@ -185,52 +191,6 @@ func (m Model) handleTodosListKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.statusTime = time.Now()
 		return m, nil
 
-	case " ":
-		// Cycle todo status: open → next → done → open (save immediately, no re-sort)
-		// Use filtered displayTodos to keep selection stable
-		filtered := helpers.ApplyTodoFilters(m.displayTodos, m.filterDate, m.filterTags, m.sysConfig.HideCompletedTodos)
-		if m.selectedTodo >= 0 && m.selectedTodo < len(filtered) {
-			// Get the todo from filtered list (current display order)
-			todo := filtered[m.selectedTodo]
-
-			// Cycle status: open → next → done → open
-			switch todo.Status {
-			case "open":
-				todo.Status = "next"
-				m.statusMsg = "Todo marked as next"
-			case "next":
-				todo.Status = "done"
-				m.statusMsg = "Todo marked as done"
-			case "done":
-				todo.Status = "open"
-				m.statusMsg = "Todo marked as open"
-			default:
-				// Unknown status, set to open
-				todo.Status = "open"
-				m.statusMsg = "Todo marked as open"
-			}
-			m.statusTime = time.Now()
-
-			// Update in m.todos array and displayTodos (find by ID)
-			// We can't update displayTodos[m.selectedTodo] directly because
-			// we're working with a filtered view
-			for i := range m.todos {
-				if m.todos[i].ID == todo.ID {
-					m.todos[i].Status = todo.Status
-					break
-				}
-			}
-			for i := range m.displayTodos {
-				if m.displayTodos[i].ID == todo.ID {
-					m.displayTodos[i].Status = todo.Status
-					break
-				}
-			}
-
-			// Save immediately and start timer to clear status
-			return m, tea.Batch(m.toggleTodoImmediate(todo), clearStatusAfterDelay())
-		}
-		return m, nil
 	case "enter":
 		// Check if confirming deletion first
 		if m.deleteConfirmPending {
@@ -251,6 +211,37 @@ func (m Model) handleTodosListKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 		return m, nil
+	}
+	return m, nil
+}
+
+// setTodoStatus sets the status of the selected todo and saves immediately
+func (m Model) setTodoStatus(status string, statusMsg string) (tea.Model, tea.Cmd) {
+	// Apply filters to get the displayed list
+	filtered := helpers.ApplyTodoFilters(m.displayTodos, m.filterDate, m.filterTags, m.sysConfig.HideCompletedTodos)
+
+	if m.selectedTodo >= 0 && m.selectedTodo < len(filtered) {
+		todo := filtered[m.selectedTodo]
+		todo.Status = status
+		m.statusMsg = statusMsg
+		m.statusTime = time.Now()
+
+		// Update in m.todos array and displayTodos (find by ID)
+		for i := range m.todos {
+			if m.todos[i].ID == todo.ID {
+				m.todos[i].Status = todo.Status
+				break
+			}
+		}
+		for i := range m.displayTodos {
+			if m.displayTodos[i].ID == todo.ID {
+				m.displayTodos[i].Status = todo.Status
+				break
+			}
+		}
+
+		// Save immediately and start timer to clear status
+		return m, tea.Batch(m.toggleTodoImmediate(todo), clearStatusAfterDelay())
 	}
 	return m, nil
 }

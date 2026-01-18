@@ -42,6 +42,9 @@ func (m Model) handleViewTodoKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "i":
 		// Edit current todo
 		return m.handleEditTodo()
+	case "o":
+		// Set todo to open
+		return m.setViewingTodoStatus("open", "Todo set to open")
 	case "n":
 		// Check if cancelling deletion first
 		if m.deleteConfirmPending {
@@ -50,8 +53,11 @@ func (m Model) handleViewTodoKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.statusTime = time.Now()
 			return m, clearStatusAfterDelay()
 		}
-		// Create new entry (using shared helper)
-		return m.handleNewEntry()
+		// Set todo to next
+		return m.setViewingTodoStatus("next", "Todo set to next")
+	case "x":
+		// Set todo to done
+		return m.setViewingTodoStatus("done", "Todo marked done")
 	case "a":
 		// Add standalone todo (using shared helper)
 		return m.handleAddTodo()
@@ -73,48 +79,6 @@ func (m Model) handleViewTodoKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.selectedTodo = 0
 		m.statusMsg = "" // Clear status message when changing views
 		return m, m.loadEntriesAndTodos()
-	case " ":
-		// Check if confirming/cancelling deletion first
-		if m.deleteConfirmPending {
-			// Space doesn't do anything during confirmation (use y/n/enter)
-			return m, nil
-		}
-
-		// Cycle todo status: open → next → done → open (save immediately)
-		// Update the viewing todo
-		switch m.viewingTodo.Status {
-		case "open":
-			m.viewingTodo.Status = "next"
-			m.statusMsg = "Todo marked as next"
-		case "next":
-			m.viewingTodo.Status = "done"
-			m.statusMsg = "Todo marked as done"
-		case "done":
-			m.viewingTodo.Status = "open"
-			m.statusMsg = "Todo marked as open"
-		default:
-			// Unknown status, set to open
-			m.viewingTodo.Status = "open"
-			m.statusMsg = "Todo marked as open"
-		}
-		m.statusTime = time.Now()
-
-		// Update in m.todos array and displayTodos (find by ID)
-		for i := range m.todos {
-			if m.todos[i].ID == m.viewingTodo.ID {
-				m.todos[i].Status = m.viewingTodo.Status
-				break
-			}
-		}
-		for i := range m.displayTodos {
-			if m.displayTodos[i].ID == m.viewingTodo.ID {
-				m.displayTodos[i].Status = m.viewingTodo.Status
-				break
-			}
-		}
-
-		// Save immediately and start timer to clear status
-		return m, tea.Batch(m.toggleTodoImmediate(m.viewingTodo), clearStatusAfterDelay())
 	case "j", "down":
 		// Navigate to next todo (open → next → done order)
 		// Apply filters and sort (same as todo list view)
@@ -298,4 +262,28 @@ func (m Model) handleEditTodo() (tea.Model, tea.Cmd) {
 	m.view = "add_todo"
 
 	return m, textarea.Blink
+}
+
+// setViewingTodoStatus sets the status of the currently viewed todo and saves immediately
+func (m Model) setViewingTodoStatus(status string, statusMsg string) (tea.Model, tea.Cmd) {
+	m.viewingTodo.Status = status
+	m.statusMsg = statusMsg
+	m.statusTime = time.Now()
+
+	// Update in m.todos array and displayTodos (find by ID)
+	for i := range m.todos {
+		if m.todos[i].ID == m.viewingTodo.ID {
+			m.todos[i].Status = m.viewingTodo.Status
+			break
+		}
+	}
+	for i := range m.displayTodos {
+		if m.displayTodos[i].ID == m.viewingTodo.ID {
+			m.displayTodos[i].Status = m.viewingTodo.Status
+			break
+		}
+	}
+
+	// Save immediately and start timer to clear status
+	return m, tea.Batch(m.toggleTodoImmediate(m.viewingTodo), clearStatusAfterDelay())
 }

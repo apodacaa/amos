@@ -47,6 +47,8 @@ func TestNavigationFromEntryViewToEntriesList(t *testing.T) {
 
 // TestNavigationToNewEntry tests pressing 'n' to create new entry
 // With external editor support, pressing 'n' launches the editor and returns a command
+// Note: 'n' only creates new entries from entry list and entry view.
+// In todo views, 'n' sets the todo status to "next".
 func TestNavigationToNewEntry(t *testing.T) {
 	testCases := []struct {
 		name     string
@@ -54,8 +56,6 @@ func TestNavigationToNewEntry(t *testing.T) {
 	}{
 		{"from entries list", "entries"},
 		{"from entry view", "view_entry"},
-		{"from todo list", "todos"},
-		{"from todo view", "view_todo"},
 	}
 
 	for _, tc := range testCases {
