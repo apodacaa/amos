@@ -14,8 +14,10 @@ func RenderEntryView(width, height int, theme Theme, entry models.Entry, allTodo
 	timestampStr := entry.UpdatedAt.Format("2006-01-02")
 	timestampLines := StyleDate(timestampStr, theme)
 
-	// Title on separate line
-	styledTitle := HighlightTagsInText(entry.Title, theme)
+	// Title on separate line (wrap to fit width)
+	wrappedTitle := WrapBodyText(entry.Title, width-8)
+	styledTitle := HighlightTagsInText(wrappedTitle, theme)
+	titleLineCount := strings.Count(wrappedTitle, "\n") + 1
 
 	// Todos section (if any)
 	var todosSection string
@@ -70,9 +72,19 @@ func RenderEntryView(width, height int, theme Theme, entry models.Entry, allTodo
 	}
 
 	// Calculate available height for scrollable body content
-	// Reserve space for header, footer, message, title, blank line, and todos
-	// Base: header (1) + footer (1) + message (1) + title (1) + blank line (1) = 5
-	baseReserved := 5
+	// Reserve space for all fixed elements:
+	// - header (1)
+	// - timestamp (1)
+	// - blank line after timestamp (1)
+	// - title (titleLineCount)
+	// - blank line after title (1)
+	// - footer (1)
+	// - message line (1)
+	// - update notice (1 if shown)
+	baseReserved := 6 + titleLineCount // 6 fixed lines + title height
+	if updateAvailable && !updateDismissed {
+		baseReserved += 1 // update notice line
+	}
 
 	// Calculate todos section height (if present)
 	todosHeight := 0
@@ -86,7 +98,7 @@ func RenderEntryView(width, height int, theme Theme, entry models.Entry, allTodo
 	}
 
 	// Wrap body text to fit width, preserving original line breaks
-	wrappedBody := wrapBodyText(entry.Body, width-8)
+	wrappedBody := WrapBodyText(entry.Body, width-8)
 
 	// Split wrapped body into lines
 	bodyLines := strings.Split(wrappedBody, "\n")

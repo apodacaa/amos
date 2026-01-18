@@ -81,7 +81,7 @@ func RenderTodoView(width, height int, theme Theme, todo models.Todo, allEntries
 			// Body (full text) - wrap, highlight tags and todo reference
 			if linkedEntry.Body != "" {
 				// Wrap body text to fit width
-				wrappedBody := wrapBodyText(linkedEntry.Body, width-8)
+				wrappedBody := WrapBodyText(linkedEntry.Body, width-8)
 				// First highlight tags, then highlight todo reference
 				bodyWithTags := HighlightTagsInText(wrappedBody, theme)
 				styledBody := highlightTodoInText(bodyWithTags, todo.Title)
@@ -190,8 +190,8 @@ func RenderTodoView(width, height int, theme Theme, todo models.Todo, allEntries
 	return result
 }
 
-// wrapBodyText wraps body text while preserving original line breaks
-func wrapBodyText(text string, width int) string {
+// WrapBodyText wraps body text while preserving original line breaks
+func WrapBodyText(text string, width int) string {
 	if width <= 0 {
 		return text
 	}
