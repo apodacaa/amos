@@ -267,7 +267,7 @@ The app follows strict brutalist principles:
 - Multi-select: marks persist across navigation until deletion or app exit
 - Cascade delete: deleting entry removes all linked todos automatically
 - Entry-linked todos: can be marked but only deleted via parent entry
-- Immediate writes: `space` to toggle todo saves immediately
+- Immediate writes: `o/n/x` keys to set todo status save immediately
 - Full context: todos visible in entry view
 - No hidden state: all marks visible, confirmation shows counts
 
@@ -385,7 +385,7 @@ Todos stored in `<data-dir>/todos.json` (default: `~/.amos/todos.json`):
 - **Entry markers**: Color-coded `+` shows todo priority (green=next, magenta=open, dim=done)
 - **Page navigation**: `f/b` keys in entry/todo/help views for page forward/backward (no line scrolling)
 - **Help page**: Press `?` from any read-only view to see comprehensive documentation
-- Todo status: "open", "next", or "done" (cycle with space key)
+- Todo status: "open", "next", or "done" (direct keys: `o`=open, `n`=next, `x`=done)
 - **Toggle completed todos**: `z` key in todo list hides/shows done todos. Preference persists in config. Done todos always visible in entry view (preserves journal history).
 - Tag syntax: `@tagname` in entry body or todo title auto-extracts to Tags array
 - Todo syntax: `!todo Task description @tag` creates linked todo with extracted tags when exiting entry form (ESC). The `!todo` line is automatically removed from entry text on exit. During editing, `!todo` markup stays visible until ESC. To edit todos, use the dedicated todo view (press `i` from todo list).

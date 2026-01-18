@@ -141,7 +141,7 @@ func RenderTodoView(width, height int, theme Theme, todo models.Todo, allEntries
 	}
 
 	// Header
-	header := RenderHeader(width, theme, "n", "new", "a", "todo", "i", "edit", "space", "cycle", "j/k", "nav", "f/b", "page", "d", "del", "e", "entries", "t", "todos", "?", "help", "q", "quit")
+	header := RenderHeader(width, theme, "a", "todo", "i", "edit", "o/n/x", "status", "j/k", "nav", "f/b", "page", "d", "del", "e", "entries", "t", "todos", "?", "help", "q", "quit")
 
 	// Footer: position + marked indicator + scroll info
 	footerTitle := fmt.Sprintf("Todo %d of %d", currentIndex+1, totalCount)
