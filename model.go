@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -22,7 +23,7 @@ type Model struct {
 	// ============================================================
 	// View Navigation
 	// ============================================================
-	view         string // Current view: "entry", "entries", "view_entry", "todos", "view_todo", "unified_filter", "add_todo", "theme_selector", or "help"
+	view         string // Current view: "entries", "view_entry", "todos", "view_todo", "unified_filter", "add_todo", "theme_selector", or "help"
 	previousView string // Previous view (for returning from modals like theme_selector and help)
 
 	// ============================================================
@@ -34,7 +35,6 @@ type Model struct {
 	// ============================================================
 	// Text Input Components (Bubble Tea textareas)
 	// ============================================================
-	textarea           textarea.Model // Multi-line textarea for entry input (title + body)
 	todoInput          textarea.Model // Single-line input for standalone todo title
 	unifiedFilterInput textarea.Model // Single-line input for unified filtering (tags + dates)
 
@@ -110,16 +110,6 @@ type Model struct {
 
 // NewModel creates a new model with default values
 func NewModel() Model {
-	ta := textarea.New()
-	ta.Placeholder = "First line is the title...\n\nStart typing your entry here.\n\nUse @tags for organization.\n\nUse !todos for tasks."
-	ta.Focus()
-	ta.CharLimit = 0 // No limit
-	ta.SetWidth(60)
-	ta.SetHeight(10)
-
-	// Style textarea with brutalist colors
-	ui.ApplyTextareaStyle(&ta)
-
 	// Create single-line input for standalone todos
 	todoInput := textarea.New()
 	todoInput.Placeholder = "Todo title..."
@@ -146,7 +136,6 @@ func NewModel() Model {
 		view:               "entries",
 		width:              80, // Default width
 		height:             24, // Default height
-		textarea:           ta,
 		todoInput:          todoInput,
 		unifiedFilterInput: unifiedFilterInput,
 		markedForDeletion:  make(map[string]string),
@@ -160,7 +149,7 @@ func NewModel() Model {
 func (m Model) Init() tea.Cmd {
 	// Load entries and todos on startup (single source of truth: Todo.EntryID)
 	// Also check for updates asynchronously (non-blocking)
-	return tea.Batch(textarea.Blink, m.loadEntriesAndTodos(), checkForUpdatesCmd(Version))
+	return tea.Batch(m.loadEntriesAndTodos(), checkForUpdatesCmd(Version))
 }
 
 // Update handles messages (Elm architecture)
@@ -171,8 +160,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		// Route to appropriate key handler based on view
 		switch m.view {
-		case "entry":
-			return m.handleEntryKeys(msg)
 		case "entries":
 			return m.handleEntriesListKeys(msg)
 		case "view_entry":
@@ -198,11 +185,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// Update terminal dimensions
 		m.width = msg.Width
 		m.height = msg.Height
-		// Update textarea size (if terminal is large enough)
-		if msg.Width > 10 && msg.Height > 12 {
-			m.textarea.SetWidth(msg.Width - 10)
-			m.textarea.SetHeight(msg.Height - 12)
-		}
 		return m, nil
 
 	case saveCompleteMsg:
@@ -212,12 +194,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.statusMsg = "Saved"
 			// Mark as saved
 			m.hasUnsaved = false
-			if m.view == "entry" {
-				// For entries, update current entry and stay in form
-				m.currentEntry = msg.entry
-				m.savedContent = m.textarea.Value()
-				// STAY in entry form - don't transition
-			} else if m.view == "add_todo" {
+			if m.view == "add_todo" {
 				// For todos, update savedContent to match current input
 				m.savedContent = m.todoInput.Value()
 			}
@@ -225,33 +202,98 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.statusTime = time.Now()
 		return m, clearStatusAfterDelay()
 
-	case finalizeCompleteMsg:
+	case editorFinishedMsg:
+		// Clean up temp file
+		if msg.tempFile != "" {
+			defer os.Remove(msg.tempFile)
+		}
+
+		// Handle editor launch errors
 		if msg.err != nil {
-			m.statusMsg = "Error finalizing: " + msg.err.Error()
+			m.statusMsg = "Editor error: " + msg.err.Error()
+			m.statusTime = time.Now()
+			m.editingMode = false
+			m.originalEntryID = ""
+			m.view = "entries"
+			return m, clearStatusAfterDelay()
+		}
+
+		// Parse the edited file
+		content, isEmpty, err := helpers.ParseEntryFile(msg.tempFile)
+		if err != nil {
+			m.statusMsg = "Error reading file: " + err.Error()
+			m.statusTime = time.Now()
+			m.editingMode = false
+			m.originalEntryID = ""
+			m.view = "entries"
+			return m, clearStatusAfterDelay()
+		}
+
+		// If empty, user cancelled - return to appropriate view
+		if isEmpty {
+			wasEditing := m.editingMode
+			m.editingMode = false
+			m.originalEntryID = ""
+			if wasEditing {
+				m.view = "view_entry"
+			} else {
+				m.view = "entries"
+			}
+			return m, nil
+		}
+
+		// Parse title and body from content
+		title, body := helpers.ParseEntryContent(content)
+
+		// Extract todos from content BEFORE cleaning
+		todoTitles := helpers.ExtractTodos(content)
+
+		// Remove !todo markup from body
+		cleanedBody := helpers.RemoveTodoMarkup(body)
+
+		// Extract tags from title and cleaned body
+		tags := helpers.ExtractTags(title + " " + cleanedBody)
+
+		// Update entry
+		m.currentEntry.Title = title
+		m.currentEntry.Body = cleanedBody
+		m.currentEntry.Tags = tags
+		m.currentEntry.UpdatedAt = time.Now()
+
+		// Save entry
+		if err := storage.SaveEntry(m.currentEntry); err != nil {
+			m.statusMsg = "Error saving: " + err.Error()
 			m.statusTime = time.Now()
 			return m, clearStatusAfterDelay()
 		}
 
-		// If entry was empty and skipped, just exit without updating state
-		if msg.skipped {
-			m.hasUnsaved = false
-			m.editingMode = false
-			m.originalEntryID = ""
-			m.textarea.Blur()
-			m.view = "entries"
-			return m, m.loadEntriesAndTodos()
+		// Create todos from extracted !todo lines
+		for _, todoTitle := range todoTitles {
+			now := time.Now()
+			todo := models.Todo{
+				ID:        uuid.New().String(),
+				Title:     todoTitle,
+				Status:    "open",
+				Tags:      helpers.ExtractTags(todoTitle),
+				CreatedAt: now,
+				UpdatedAt: now,
+				EntryID:   &m.currentEntry.ID,
+			}
+			if err := storage.SaveTodo(todo); err != nil {
+				m.statusMsg = "Error saving todo: " + err.Error()
+				m.statusTime = time.Now()
+				return m, clearStatusAfterDelay()
+			}
 		}
 
-		// Finalized successfully - exit to appropriate view
-		wasEditing := m.editingMode // Check before clearing
-		m.currentEntry = msg.entry
-		m.viewingEntry = msg.entry
-		m.hasUnsaved = false
+		// Update viewingEntry for view_entry
+		m.viewingEntry = m.currentEntry
+
+		// Exit to appropriate view
+		wasEditing := m.editingMode
 		m.editingMode = false
 		m.originalEntryID = ""
-		m.textarea.Blur()
 
-		// If editing, return to view_entry; if creating, return to entries list
 		if wasEditing {
 			m.view = "view_entry"
 		} else {
@@ -375,19 +417,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 
-	// Update textarea if in entry view
-	if m.view == "entry" {
-		m.textarea, cmd = m.textarea.Update(msg)
-	}
-
 	return m, cmd
 }
 
 // View renders the UI (Elm architecture)
 func (m Model) View() string {
 	switch m.view {
-	case "entry":
-		return ui.RenderEntryForm(m.width, m.height, m.currentTheme, m.textarea, m.statusMsg, m.hasUnsaved)
 	case "entries":
 		return ui.RenderEntryList(m.width, m.height, m.currentTheme, m.entries, m.selectedEntry, m.todos, m.filterTags, m.filterDate, m.markedForDeletion, m.statusMsg, m.updateAvailable, m.updateDismissed, m.latestVersion)
 	case "view_entry":
@@ -417,19 +452,14 @@ func (m Model) View() string {
 
 // handleNewEntry is a shared handler for creating a new entry (from any view)
 func (m Model) handleNewEntry() (Model, tea.Cmd) {
-	m.view = "entry"
 	now := time.Now()
 	m.currentEntry = models.Entry{
 		ID:        m.generateID(),
 		CreatedAt: now,
 		UpdatedAt: now,
 	}
-	m.textarea.Reset()
-	m.textarea.Focus()
-	m.hasUnsaved = false
-	m.savedContent = ""
-	m.statusMsg = ""
-	return m, textarea.Blink
+	m.editingMode = false
+	return m, launchEditor("")
 }
 
 // handleAddTodo is a shared handler for creating a standalone todo (from any view)

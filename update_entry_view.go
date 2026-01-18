@@ -6,7 +6,6 @@ import (
 
 	"github.com/apodacaa/amos/internal/helpers"
 	"github.com/apodacaa/amos/ui"
-	"github.com/charmbracelet/bubbles/textarea"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -244,23 +243,11 @@ func (m Model) handleEditEntry() (tea.Model, tea.Cmd) {
 	m.editingMode = true
 	m.originalEntryID = m.viewingEntry.ID
 
-	// Format content for textarea: "title\n\nbody"
+	// Format content for editor: "title\n\nbody"
 	content := m.viewingEntry.Title
 	if m.viewingEntry.Body != "" {
 		content += "\n\n" + m.viewingEntry.Body
 	}
 
-	// Load content into textarea
-	m.textarea.SetValue(content)
-	m.textarea.Focus()
-
-	// Reset editing state - set savedContent AFTER SetValue to ensure exact match
-	m.hasUnsaved = false
-	m.savedContent = m.textarea.Value() // Get actual value from textarea
-	m.confirmingExit = false
-
-	// Switch to entry form view
-	m.view = "entry"
-
-	return m, textarea.Blink
+	return m, launchEditor(content)
 }

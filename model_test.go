@@ -46,6 +46,7 @@ func TestNavigationFromEntryViewToEntriesList(t *testing.T) {
 }
 
 // TestNavigationToNewEntry tests pressing 'n' to create new entry
+// With external editor support, pressing 'n' launches the editor and returns a command
 func TestNavigationToNewEntry(t *testing.T) {
 	testCases := []struct {
 		name     string
@@ -62,15 +63,21 @@ func TestNavigationToNewEntry(t *testing.T) {
 			m := NewModel()
 			m.view = tc.fromView
 
-			newModel, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'n'}})
+			newModel, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'n'}})
 			m = newModel.(Model)
 
-			if m.view != "entry" {
-				t.Errorf("Expected view to be 'entry', got '%s'", m.view)
+			// With external editor, a command should be returned to launch the editor
+			if cmd == nil {
+				t.Error("Expected a command to be returned (launchEditor)")
 			}
 
 			if m.editingMode {
 				t.Error("Expected editingMode to be false for new entry")
+			}
+
+			// currentEntry should have a new ID
+			if m.currentEntry.ID == "" {
+				t.Error("Expected currentEntry to have a new ID")
 			}
 		})
 	}
@@ -238,6 +245,7 @@ func TestNavigationCursorBounds(t *testing.T) {
 }
 
 // TestEditingExistingEntry tests pressing 'i' in entry view to edit
+// With external editor support, pressing 'i' launches the editor with existing content
 func TestEditingExistingEntry(t *testing.T) {
 	m := NewModel()
 	m.view = "view_entry"
@@ -248,11 +256,12 @@ func TestEditingExistingEntry(t *testing.T) {
 		Tags:  []string{"tag"},
 	}
 
-	newModel, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'i'}})
+	newModel, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'i'}})
 	m = newModel.(Model)
 
-	if m.view != "entry" {
-		t.Errorf("Expected view to be 'entry', got '%s'", m.view)
+	// With external editor, a command should be returned to launch the editor
+	if cmd == nil {
+		t.Error("Expected a command to be returned (launchEditor)")
 	}
 
 	if !m.editingMode {
@@ -261,6 +270,11 @@ func TestEditingExistingEntry(t *testing.T) {
 
 	if m.originalEntryID != "test-id" {
 		t.Errorf("Expected originalEntryID to be 'test-id', got '%s'", m.originalEntryID)
+	}
+
+	// currentEntry should be copied from viewingEntry
+	if m.currentEntry.ID != "test-id" {
+		t.Errorf("Expected currentEntry.ID to be 'test-id', got '%s'", m.currentEntry.ID)
 	}
 }
 

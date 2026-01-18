@@ -73,10 +73,10 @@ This codebase is small (~3000 lines) and well-organized. Work efficiently:
 - Filter workflow: `/` opens filter with current values for editing, `c` clears filter. After applying filter, status message shows "Filter applied. Press c to clear"
 
 **Entry Management:**
-- Entry form: `update_entry.go`, `ui/entry_form.go` (create and edit)
 - Entry list: `update_entries.go`, `ui/entry_list.go`
 - Entry view: `update_entry_view.go`, `ui/entry_view.go` (press `i` to edit)
-- Edit workflow: Entry view → `i` key → entry form (editing mode) → Ctrl+S saves work (stays in form), ESC finalizes and exits
+- External editor: `internal/helpers/editor.go` (GetEditor, CreateTempFile, ParseEntryFile)
+- Edit workflow: Press `n` to create or `i` from entry view to edit → launches $EDITOR → on save/exit, extracts todos and returns to TUI
 
 **Todo Management:**
 - Todo list: `update_todos.go`, `ui/todo_list.go`
@@ -138,18 +138,16 @@ The codebase uses domain-based separation for maintainability:
 main.go                  # Entry point only (~10 lines)
 model.go                 # Model struct + Init/Update/View (Elm core)
 messages.go              # All message types (saveCompleteMsg, entriesLoadedMsg, etc.)
-commands.go              # All tea.Cmd functions (side effects: save, load, etc.)
+commands.go              # All tea.Cmd functions (side effects: save, load, launchEditor, etc.)
 update_*.go              # Key handlers per view (domain separation)
-  update_entry.go        # Entry form (create/edit)
   update_entries.go      # Entry list navigation
-  update_entry_view.go   # Read-only entry view
+  update_entry_view.go   # Read-only entry view (press 'i' to launch editor)
   update_todos.go        # Todo list (toggle, reorder)
   update_unified_filter.go  # Unified filtering (tags + dates)
   update_add_todo.go     # Standalone todo form
   update_theme_selector.go  # Theme selection modal
   update_help.go         # Help page navigation
 ui/                      # Pure view renderers
-  entry_form.go
   entry_list.go
   entry_view.go
   todo_list.go
@@ -172,16 +170,18 @@ internal/
     dates.go             # Date filter parsing and date range filtering
     filter.go            # Centralized filtering (ApplyEntryFilters, ApplyTodoFilters, FilterTodosByVisibility)
     filter_parser.go     # Unified filter parsing (tags + dates)
+    editor.go            # External editor support ($EDITOR, temp files, parsing)
 ```
 
 ### Key Architectural Patterns
 
 **State Management**:
 - All state lives in the `Model` struct (model.go:17-42)
-- View routing via `m.view` string field ("entry", "entries", "view_entry", "todos", "unified_filter", "add_todo", "theme_selector", "help")
+- View routing via `m.view` string field ("entries", "view_entry", "todos", "view_todo", "unified_filter", "add_todo", "theme_selector", "help")
 - Filter context via `m.filterContext` ("entries" or "todos") - determines return view from filter
 - Theme selector and help page use `m.previousView` to return to calling view
 - App opens to "entries" view (entry list as default)
+- Entry editing uses external $EDITOR (no "entry" view state - editor runs outside TUI)
 
 **Message Flow**:
 1. User input → tea.KeyMsg
@@ -293,13 +293,19 @@ The app follows strict brutalist principles:
 2. Handle in `Update()` switch (model.go:91-204)
 3. Create command in `commands.go` that returns the message
 
-### Working with Textarea
+### Working with Textarea and External Editor
 
-The app uses `charmbracelet/bubbles/textarea`:
-- Entry form: multi-line textarea (model.go:43-58)
-- Todo form: single-line textarea with height=1 (model.go:60-73)
+**External Editor (entries)**:
+- Entry creation/editing uses $EDITOR (or $VISUAL, or nano as fallback)
+- `launchEditor()` in commands.go creates temp file and launches editor via `tea.ExecProcess`
+- `editorFinishedMsg` handler in model.go parses result and saves entry
+- Template comments (<!-- ... -->) are stripped from parsed content
+- `!todo` lines are extracted as linked todos on save
+
+**Textarea (todos and filters)**:
+- Todo form: single-line textarea with height=1 (model.go:37-39)
+- Filter input: single-line textarea for tags + dates
 - Always call `textarea.Blink` when focusing
-- Always call `m.textarea.Update(msg)` when in text entry view
 
 ## Dependencies
 
@@ -357,11 +363,16 @@ Todos stored in `<data-dir>/todos.json` (default: `~/.amos/todos.json`):
 
 ## Important Notes
 
-- **Editing**: Press `i` to edit entries and todos
-  - Entry editing: Open entry view, press `i` to edit, save work with `Ctrl+S` (stays in form, preserves `!todo` markup), press `ESC` to finalize and exit (extracts todos, removes markup, exits to entry view)
+- **Editing**: Press `n` to create new entry, `i` to edit entries and todos
+  - Entry editing: Uses external $EDITOR (vim, nano, etc.) following Unix conventions (like aerc, mutt, git)
+    - Press `n` from any list view to create new entry → opens editor with template
+    - Press `i` from entry view to edit → opens editor with existing content
+    - On save/exit: extracts `!todo` lines as linked todos, removes markup, saves entry
+    - Empty file (or only template comments) cancels the operation
+    - Editor preference: $EDITOR → $VISUAL → nano (fallback)
   - Todo editing: Open todo view, press `i` to edit, save with `Enter`, esc returns to todo view
   - Timestamp updates: Editing an entry updates its timestamp to now (moves to top of list)
-  - Todo extraction: `Ctrl+S` saves entry with `!todo` markup intact (for frequent saves without disruption). `ESC` finalizes entry on exit: extracts todos, removes `!todo` markup, saves cleaned entry. Todos become independent entities edited via todo view.
+  - Todo extraction: `!todo Task @tag` lines in editor become linked todos on save. Todos become independent entities edited via todo view.
 - **Deletion**: neomutt-style multi-select pattern
   - `d` key marks/unmarks items for deletion (shows "D" prefix in lists, footer text in entry view)
   - After marking items, status message shows "X items marked. Press $ to delete"
