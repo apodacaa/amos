@@ -15,12 +15,14 @@ func updateHelp(m Model, msg tea.KeyMsg) (Model, tea.Cmd) {
 	sections := []string{
 		ui.RenderSymbolsSectionText(),
 		"",
+		ui.RenderTodoStatusKeysSectionText(),
+		"",
 		ui.RenderEditorSectionText(),
 		"",
 		ui.RenderDataStorageSectionText(),
 	}
 	content := strings.Join(sections, "\n")
-	totalLines := strings.Count(content, "\n") + 1
+	totalLines := len(strings.Split(content, "\n"))
 
 	// Calculate available height (same as in RenderHelp)
 	availableHeight := m.height - 3 // header + footer + message line

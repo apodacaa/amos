@@ -123,7 +123,21 @@ func (m Model) handleViewEntryKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 	case "b":
 		// Scroll backward (up) one page
-		availableHeight := m.height - 3
+		// Calculate availableHeight matching ui/entry_view.go
+		wrappedTitle := ui.WrapBodyText(m.viewingEntry.Title, m.width-8)
+		titleLineCount := strings.Count(wrappedTitle, "\n") + 1
+		baseReserved := 6 + titleLineCount
+		if m.updateAvailable && !m.updateDismissed {
+			baseReserved += 1
+		}
+		// Calculate todos height
+		entryTodos := helpers.FilterTodosByEntry(m.todos, m.viewingEntry.ID)
+		todosHeight := 0
+		if len(entryTodos) > 0 {
+			// 2 blank lines + title line + one line per todo
+			todosHeight = 2 + 1 + len(entryTodos)
+		}
+		availableHeight := m.height - baseReserved - todosHeight
 		if availableHeight < 5 {
 			availableHeight = 5
 		}
@@ -134,7 +148,21 @@ func (m Model) handleViewEntryKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 	case "f":
 		// Scroll forward (down) one page
-		availableHeight := m.height - 3
+		// Calculate availableHeight matching ui/entry_view.go
+		wrappedTitle := ui.WrapBodyText(m.viewingEntry.Title, m.width-8)
+		titleLineCount := strings.Count(wrappedTitle, "\n") + 1
+		baseReserved := 6 + titleLineCount
+		if m.updateAvailable && !m.updateDismissed {
+			baseReserved += 1
+		}
+		// Calculate todos height
+		entryTodos := helpers.FilterTodosByEntry(m.todos, m.viewingEntry.ID)
+		todosHeight := 0
+		if len(entryTodos) > 0 {
+			// 2 blank lines + title line + one line per todo
+			todosHeight = 2 + 1 + len(entryTodos)
+		}
+		availableHeight := m.height - baseReserved - todosHeight
 		if availableHeight < 5 {
 			availableHeight = 5
 		}
