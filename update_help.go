@@ -12,16 +12,7 @@ func updateHelp(m Model, msg tea.KeyMsg) (Model, tea.Cmd) {
 	// Calculate total lines and max scroll offset
 	// We need to build the help content to know how many lines it has
 	// This matches the logic in ui/help.go
-	sections := []string{
-		ui.RenderSymbolsSectionText(),
-		"",
-		ui.RenderTodoStatusKeysSectionText(),
-		"",
-		ui.RenderEditorSectionText(),
-		"",
-		ui.RenderDataStorageSectionText(),
-	}
-	content := strings.Join(sections, "\n")
+	content := ui.GetHelpContent()
 	totalLines := len(strings.Split(content, "\n"))
 
 	// Calculate available height (same as in RenderHelp)

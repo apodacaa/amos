@@ -9,18 +9,9 @@ import (
 
 // RenderHelp renders the help page with symbols and commands
 func RenderHelp(width, height int, theme Theme, scrollOffset int, updateAvailable bool, updateDismissed bool, latestVersion string) string {
-	// Build help content sections
-	sections := []string{
-		renderSymbolsSection(theme),
-		"",
-		renderTodoStatusKeysSection(theme),
-		"",
-		renderEditorSection(theme),
-		"",
-		renderDataStorageSection(theme),
-	}
-
-	fullContent := strings.Join(sections, "\n")
+	// Get plain content and apply styling
+	plainContent := GetHelpContent()
+	fullContent := styleHelpContent(plainContent)
 
 	// Split content into lines
 	contentLines := strings.Split(fullContent, "\n")
@@ -104,62 +95,34 @@ func RenderHelp(width, height int, theme Theme, scrollOffset int, updateAvailabl
 	return result
 }
 
-func renderSymbolsSection(theme Theme) string {
-	// Get plain text content
-	content := RenderSymbolsSectionText()
+// styleHelpContent applies styling to help content (bold section titles)
+func styleHelpContent(content string) string {
+	// Split into sections (separated by double newlines)
+	sections := strings.Split(content, "\n\n")
+	boldStyle := lipgloss.NewStyle().Bold(true)
 
-	// Extract title and body
-	parts := strings.SplitN(content, "\n\n", 2)
-	title := lipgloss.NewStyle().Bold(true).Render(parts[0])
-	body := ""
-	if len(parts) > 1 {
-		body = parts[1]
+	for i, section := range sections {
+		// Check if this section starts with a title (all caps, single line)
+		lines := strings.SplitN(section, "\n", 2)
+		if len(lines) > 0 && isTitle(lines[0]) {
+			// Apply bold to the title
+			lines[0] = boldStyle.Render(lines[0])
+			sections[i] = strings.Join(lines, "\n")
+		}
 	}
 
-	return title + "\n\n" + body
+	return strings.Join(sections, "\n\n")
 }
 
-func renderTodoStatusKeysSection(theme Theme) string {
-	// Get plain text content
-	content := RenderTodoStatusKeysSectionText()
-
-	// Extract title and body
-	parts := strings.SplitN(content, "\n\n", 2)
-	title := lipgloss.NewStyle().Bold(true).Render(parts[0])
-	body := ""
-	if len(parts) > 1 {
-		body = parts[1]
+// isTitle checks if a line is a section title (all uppercase letters/spaces)
+func isTitle(line string) bool {
+	if line == "" {
+		return false
 	}
-
-	return title + "\n\n" + body
-}
-
-func renderEditorSection(theme Theme) string {
-	// Get plain text content
-	content := RenderEditorSectionText()
-
-	// Extract title and body
-	parts := strings.SplitN(content, "\n\n", 2)
-	title := lipgloss.NewStyle().Bold(true).Render(parts[0])
-	body := ""
-	if len(parts) > 1 {
-		body = parts[1]
+	for _, r := range line {
+		if r != ' ' && (r < 'A' || r > 'Z') {
+			return false
+		}
 	}
-
-	return title + "\n\n" + body
-}
-
-func renderDataStorageSection(theme Theme) string {
-	// Get plain text content
-	content := RenderDataStorageSectionText()
-
-	// Extract title and body
-	parts := strings.SplitN(content, "\n\n", 2)
-	title := lipgloss.NewStyle().Bold(true).Render(parts[0])
-	body := ""
-	if len(parts) > 1 {
-		body = parts[1]
-	}
-
-	return title + "\n\n" + body
+	return true
 }
