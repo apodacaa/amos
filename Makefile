@@ -24,7 +24,7 @@ build-all: ## Build binaries for all platforms
 	@echo "✓ All binaries built"
 
 run: ## Run the app
-	go run .
+	go build -ldflags "-X main.Version=1.7.2" -o amos && ./amos
 
 fmt: ## Format code
 	go fmt ./...
