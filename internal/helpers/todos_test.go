@@ -55,64 +55,155 @@ func TestExtractTodos(t *testing.T) {
 	}
 }
 
-func TestRemoveTodoMarkup(t *testing.T) {
+func TestSyncEntryTodos(t *testing.T) {
+	entryID := "entry-1"
+	otherEntryID := "entry-2"
+
 	tests := []struct {
-		name     string
-		text     string
-		expected string
+		name           string
+		allTodos       []models.Todo
+		entryID        string
+		todoTitles     []string
+		wantLinked     int // expected todos linked to entryID after sync
+		wantOrphaned   int // expected todos orphaned (EntryID set to nil) from this entry
+		wantTotalNew   int // expected new todos created
+		checkOrphanIDs []string
 	}{
 		{
-			name:     "single todo line",
-			text:     "Some text\n!todo make toast\nMore text",
-			expected: "Some text\nMore text",
+			name:         "new entry with new todos",
+			allTodos:     []models.Todo{},
+			entryID:      entryID,
+			todoTitles:   []string{"Task one", "Task two"},
+			wantLinked:   2,
+			wantTotalNew: 2,
 		},
 		{
-			name:     "multiple todo lines",
-			text:     "!todo first\n!todo second\nRegular text",
-			expected: "Regular text",
+			name: "re-save with same todos (no duplicates)",
+			allTodos: []models.Todo{
+				{ID: "t1", Title: "Task one", Status: "open", EntryID: &entryID},
+				{ID: "t2", Title: "Task two", Status: "next", EntryID: &entryID},
+			},
+			entryID:      entryID,
+			todoTitles:   []string{"Task one", "Task two"},
+			wantLinked:   2,
+			wantTotalNew: 0,
 		},
 		{
-			name:     "no todo lines",
-			text:     "Just regular text\nwith no todos",
-			expected: "Just regular text\nwith no todos",
+			name: "removed todo line orphans existing todo",
+			allTodos: []models.Todo{
+				{ID: "t1", Title: "Task one", Status: "open", EntryID: &entryID},
+				{ID: "t2", Title: "Task two", Status: "done", EntryID: &entryID},
+			},
+			entryID:        entryID,
+			todoTitles:     []string{"Task one"},
+			wantLinked:     1,
+			wantOrphaned:   1,
+			checkOrphanIDs: []string{"t2"},
 		},
 		{
-			name:     "todo with tags",
-			text:     "Notes\n!todo Buy groceries @personal\nEnd",
-			expected: "Notes\nEnd",
+			name: "added todo line creates only the new one",
+			allTodos: []models.Todo{
+				{ID: "t1", Title: "Task one", Status: "open", EntryID: &entryID},
+			},
+			entryID:      entryID,
+			todoTitles:   []string{"Task one", "Task three"},
+			wantLinked:   2,
+			wantTotalNew: 1,
 		},
 		{
-			name:     "todo not at line start (should not be removed)",
-			text:     "Some text !todo inline",
-			expected: "Some text !todo inline",
+			name: "empty todoTitles orphans all linked todos",
+			allTodos: []models.Todo{
+				{ID: "t1", Title: "Task one", Status: "open", EntryID: &entryID},
+				{ID: "t2", Title: "Task two", Status: "next", EntryID: &entryID},
+			},
+			entryID:        entryID,
+			todoTitles:     []string{},
+			wantLinked:     0,
+			wantOrphaned:   2,
+			checkOrphanIDs: []string{"t1", "t2"},
 		},
 		{
-			name:     "multiple spaces after !todo",
-			text:     "!todo     Task with spaces\nText",
-			expected: "Text",
+			name: "same title but different entryID is not deduped",
+			allTodos: []models.Todo{
+				{ID: "t1", Title: "Task one", Status: "open", EntryID: &otherEntryID},
+			},
+			entryID:      entryID,
+			todoTitles:   []string{"Task one"},
+			wantLinked:   1,
+			wantTotalNew: 1,
 		},
 		{
-			name:     "only todo lines",
-			text:     "!todo first\n!todo second",
-			expected: "",
-		},
-		{
-			name:     "todo lines with excess blank lines",
-			text:     "Text\n!todo task\n\n\nMore text",
-			expected: "Text\n\nMore text",
-		},
-		{
-			name:     "mixed content",
-			text:     "Meeting notes\n!todo follow up\nDiscussed features\n!todo review docs\nEnd",
-			expected: "Meeting notes\nDiscussed features\nEnd",
+			name: "orphaned todo preserves status and tags",
+			allTodos: []models.Todo{
+				{ID: "t1", Title: "Task @work", Status: "next", Tags: []string{"work"}, EntryID: &entryID},
+			},
+			entryID:        entryID,
+			todoTitles:     []string{},
+			wantOrphaned:   1,
+			checkOrphanIDs: []string{"t1"},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := RemoveTodoMarkup(tt.text)
-			if got != tt.expected {
-				t.Errorf("RemoveTodoMarkup() = %q, want %q", got, tt.expected)
+			// Deep copy allTodos to avoid mutation across tests
+			input := make([]models.Todo, len(tt.allTodos))
+			for i, todo := range tt.allTodos {
+				input[i] = todo
+				if todo.EntryID != nil {
+					id := *todo.EntryID
+					input[i].EntryID = &id
+				}
+			}
+
+			result := SyncEntryTodos(input, tt.entryID, tt.todoTitles)
+
+			// Count linked todos for this entry
+			linked := 0
+			for _, todo := range result {
+				if todo.EntryID != nil && *todo.EntryID == tt.entryID {
+					linked++
+				}
+			}
+			if linked != tt.wantLinked {
+				t.Errorf("linked todos = %d, want %d", linked, tt.wantLinked)
+			}
+
+			// Check orphaned todos
+			if len(tt.checkOrphanIDs) > 0 {
+				orphaned := 0
+				for _, todo := range result {
+					for _, orphanID := range tt.checkOrphanIDs {
+						if todo.ID == orphanID && todo.EntryID == nil {
+							orphaned++
+						}
+					}
+				}
+				if orphaned != tt.wantOrphaned {
+					t.Errorf("orphaned todos = %d, want %d", orphaned, tt.wantOrphaned)
+				}
+			}
+
+			// Check new todos created
+			if tt.wantTotalNew > 0 {
+				newCount := len(result) - len(tt.allTodos)
+				if newCount != tt.wantTotalNew {
+					t.Errorf("new todos created = %d, want %d", newCount, tt.wantTotalNew)
+				}
+			}
+
+			// Check orphaned todo preserves fields
+			if tt.name == "orphaned todo preserves status and tags" {
+				for _, todo := range result {
+					if todo.ID == "t1" {
+						if todo.Status != "next" {
+							t.Errorf("orphaned todo status = %q, want %q", todo.Status, "next")
+						}
+						if len(todo.Tags) != 1 || todo.Tags[0] != "work" {
+							t.Errorf("orphaned todo tags = %v, want [work]", todo.Tags)
+						}
+					}
+				}
 			}
 		})
 	}

@@ -262,18 +262,15 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// Parse title and body from content
 		title, body := helpers.ParseEntryContent(content)
 
-		// Extract todos from content BEFORE cleaning
-		todoTitles := helpers.ExtractTodos(content)
+		// Extract todos from body
+		todoTitles := helpers.ExtractTodos(body)
 
-		// Remove !todo markup from body
-		cleanedBody := helpers.RemoveTodoMarkup(body)
+		// Extract tags from title and body (includes tags from !todo lines)
+		tags := helpers.ExtractTags(title + " " + body)
 
-		// Extract tags from title and cleaned body
-		tags := helpers.ExtractTags(title + " " + cleanedBody)
-
-		// Update entry
+		// Update entry (body preserved with !todo lines intact)
 		m.currentEntry.Title = title
-		m.currentEntry.Body = cleanedBody
+		m.currentEntry.Body = body
 		m.currentEntry.Tags = tags
 		m.currentEntry.UpdatedAt = time.Now()
 
@@ -284,23 +281,18 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, clearStatusAfterDelay()
 		}
 
-		// Create todos from extracted !todo lines
-		for _, todoTitle := range todoTitles {
-			now := time.Now()
-			todo := models.Todo{
-				ID:        uuid.New().String(),
-				Title:     todoTitle,
-				Status:    "open",
-				Tags:      helpers.ExtractTags(todoTitle),
-				CreatedAt: now,
-				UpdatedAt: now,
-				EntryID:   &m.currentEntry.ID,
-			}
-			if err := storage.SaveTodo(todo); err != nil {
-				m.statusMsg = "Error saving todo: " + err.Error()
-				m.statusTime = time.Now()
-				return m, clearStatusAfterDelay()
-			}
+		// Sync todos: dedup existing, orphan removed, create new
+		allTodos, err := storage.LoadTodos()
+		if err != nil {
+			m.statusMsg = "Error loading todos: " + err.Error()
+			m.statusTime = time.Now()
+			return m, clearStatusAfterDelay()
+		}
+		allTodos = helpers.SyncEntryTodos(allTodos, m.currentEntry.ID, todoTitles)
+		if err := storage.SaveTodos(allTodos); err != nil {
+			m.statusMsg = "Error saving todos: " + err.Error()
+			m.statusTime = time.Now()
+			return m, clearStatusAfterDelay()
 		}
 
 		// Update viewingEntry for view_entry
@@ -448,10 +440,10 @@ func (m Model) View() string {
 		sorted := helpers.SortEntriesForDisplay(filtered)
 		return ui.RenderEntryView(m.width, m.height, m.currentTheme, m.viewingEntry, m.todos, m.scrollOffset, m.markedForDeletion, m.statusMsg, m.selectedEntry, len(sorted), m.updateAvailable, m.updateDismissed, m.latestVersion)
 	case "todos":
-		return ui.RenderTodoList(m.width, m.height, m.currentTheme, m.displayTodos, m.entries, m.selectedTodo, m.filterTags, m.filterDate, m.markedForDeletion, m.statusMsg, m.updateAvailable, m.updateDismissed, m.latestVersion, m.sysConfig.HideCompletedTodos)
+		return ui.RenderTodoList(m.width, m.height, m.currentTheme, m.displayTodos, m.entries, m.selectedTodo, m.filterTags, m.filterDate, m.markedForDeletion, m.statusMsg, m.updateAvailable, m.updateDismissed, m.latestVersion)
 	case "view_todo":
 		// Calculate filtered/sorted todo position for footer display
-		filtered := helpers.ApplyTodoFilters(m.displayTodos, m.filterDate, m.filterTags, m.sysConfig.HideCompletedTodos)
+		filtered := helpers.ApplyTodoFilters(m.displayTodos, m.filterDate, m.filterTags)
 		sorted := helpers.SortTodosForDisplay(filtered)
 		return ui.RenderTodoView(m.width, m.height, m.currentTheme, m.viewingTodo, m.entries, m.scrollOffset, m.markedForDeletion, m.statusMsg, m.selectedTodo, len(sorted), m.updateAvailable, m.updateDismissed, m.latestVersion)
 	case "unified_filter":

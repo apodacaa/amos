@@ -93,7 +93,7 @@ func RenderEntryList(width, height int, theme Theme, entries []models.Entry, sel
 	list := strings.Join(listItems, "\n")
 
 	// Header
-	header := RenderHeader(width, theme, "n", "new", "a", "todo", "j/k", "nav", "enter", "view", "d", "del", "/", "filter", "t", "todos", "s", "theme", "?", "help", "q", "quit")
+	header := RenderHeader(width, theme, "n", "new", "a", "todo", "j/k", "nav", "enter", "view", "d", "delete", "/", "filter", "t", "todos", "s", "theme", "?", "help", "q", "quit")
 
 	// Footer (show only filter context, no view label)
 	var footerTitle string

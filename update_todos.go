@@ -73,20 +73,9 @@ func (m Model) handleTodosListKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "c":
 		// Clear all filters
 		return m.clearFilters()
-	case "z":
-		// Toggle visibility of completed todos
-		m.sysConfig.HideCompletedTodos = !m.sysConfig.HideCompletedTodos
-		if m.sysConfig.HideCompletedTodos {
-			m.statusMsg = "Completed todos hidden"
-		} else {
-			m.statusMsg = "Showing all todos"
-		}
-		m.statusTime = time.Now()
-		m.selectedTodo = 0 // Reset selection to avoid out-of-bounds
-		return m, tea.Batch(saveConfigCmd(m.sysConfig), clearStatusAfterDelay())
 	case "j", "down":
 		// Apply filters to get the displayed list (same as UI)
-		filtered := helpers.ApplyTodoFilters(m.displayTodos, m.filterDate, m.filterTags, m.sysConfig.HideCompletedTodos)
+		filtered := helpers.ApplyTodoFilters(m.displayTodos, m.filterDate, m.filterTags)
 
 		if m.selectedTodo < len(filtered)-1 {
 			m.selectedTodo++
@@ -99,7 +88,7 @@ func (m Model) handleTodosListKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 	case "d":
 		// Toggle mark for deletion
-		filtered := helpers.ApplyTodoFilters(m.displayTodos, m.filterDate, m.filterTags, m.sysConfig.HideCompletedTodos)
+		filtered := helpers.ApplyTodoFilters(m.displayTodos, m.filterDate, m.filterTags)
 
 		if m.selectedTodo >= 0 && m.selectedTodo < len(filtered) {
 			selectedTodo := filtered[m.selectedTodo]
@@ -204,7 +193,7 @@ func (m Model) handleTodosListKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 
 		// Open selected todo for read-only viewing
 		// Apply filters (same logic as UI)
-		filtered := helpers.ApplyTodoFilters(m.displayTodos, m.filterDate, m.filterTags, m.sysConfig.HideCompletedTodos)
+		filtered := helpers.ApplyTodoFilters(m.displayTodos, m.filterDate, m.filterTags)
 
 		if m.selectedTodo >= 0 && m.selectedTodo < len(filtered) {
 			m.viewingTodo = filtered[m.selectedTodo]
@@ -221,7 +210,7 @@ func (m Model) handleTodosListKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 // setTodoStatus sets the status of the selected todo and saves immediately
 func (m Model) setTodoStatus(status string, statusMsg string) (tea.Model, tea.Cmd) {
 	// Apply filters to get the displayed list
-	filtered := helpers.ApplyTodoFilters(m.displayTodos, m.filterDate, m.filterTags, m.sysConfig.HideCompletedTodos)
+	filtered := helpers.ApplyTodoFilters(m.displayTodos, m.filterDate, m.filterTags)
 
 	if m.selectedTodo >= 0 && m.selectedTodo < len(filtered) {
 		todo := filtered[m.selectedTodo]
