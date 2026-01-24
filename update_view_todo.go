@@ -85,7 +85,7 @@ func (m Model) handleViewTodoKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "j", "down":
 		// Navigate to next todo (open → next → done order)
 		// Apply filters and sort (same as todo list view)
-		filtered := helpers.ApplyTodoFilters(m.displayTodos, m.filterDate, m.filterTags, m.sysConfig.HideCompletedTodos)
+		filtered := helpers.ApplyTodoFilters(m.displayTodos, m.filterDate, m.filterTags)
 
 		if len(filtered) > 0 {
 			// Find current todo index in filtered list
@@ -108,7 +108,7 @@ func (m Model) handleViewTodoKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "k", "up":
 		// Navigate to previous todo (open → next → done order)
 		// Apply filters and sort (same as todo list view)
-		filtered := helpers.ApplyTodoFilters(m.displayTodos, m.filterDate, m.filterTags, m.sysConfig.HideCompletedTodos)
+		filtered := helpers.ApplyTodoFilters(m.displayTodos, m.filterDate, m.filterTags)
 
 		if len(filtered) > 0 {
 			// Find current todo index in filtered list

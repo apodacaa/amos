@@ -134,7 +134,7 @@ func RenderEntryView(width, height int, theme Theme, entry models.Entry, allTodo
 	}
 
 	// Header
-	header := RenderHeader(width, theme, "n", "new", "a", "todo", "i", "edit", "j/k", "nav", "f/b", "page", "d", "del", "e", "entries", "t", "todos", "s", "theme", "?", "help", "q", "quit")
+	header := RenderHeader(width, theme, "n", "new", "a", "todo", "i", "edit", "j/k", "nav", "f/b", "page", "d", "delete", "e", "entries", "t", "todos", "s", "theme", "?", "help", "q", "quit")
 
 	// Footer: entry position + marked indicator + scroll info
 	footerTitle := fmt.Sprintf("Entry %d of %d", currentIndex+1, totalCount)

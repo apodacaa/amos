@@ -76,7 +76,7 @@ This codebase is small (~3000 lines) and well-organized. Work efficiently:
 - Entry list: `update_entries.go`, `ui/entry_list.go`
 - Entry view: `update_entry_view.go`, `ui/entry_view.go` (press `i` to edit)
 - External editor: `internal/helpers/editor.go` (GetEditor, CreateTempFile, ParseEntryFile)
-- Edit workflow: Press `n` to create or `i` from entry view to edit → launches $EDITOR → on save/exit, extracts todos and returns to TUI
+- Edit workflow: Press `n` to create or `i` from entry view to edit → launches $EDITOR → on save/exit, syncs todos via text-matching and returns to TUI
 
 **Todo Management:**
 - Todo list: `update_todos.go`, `ui/todo_list.go`
@@ -162,13 +162,13 @@ internal/
     todo.go              # Todo{ID, Title, Status, Tags, CreatedAt, EntryID, Position}
   storage/               # JSON persistence (configurable directory)
     storage.go           # Load/Save functions, directory initialization
-    system_config.go     # SystemConfig{DataDir, Theme, HideCompletedTodos} (~/.config/amos/settings.json)
+    system_config.go     # SystemConfig{DataDir, Theme} (~/.config/amos/settings.json)
   helpers/               # Reusable business logic
     sorting.go           # Centralized sorting (todos by status→position→date)
     tags.go              # Tag extraction (@mention syntax) and filtering
-    todos.go             # Todo extraction (!todo syntax)
+    todos.go             # Todo extraction (!todo syntax), SyncEntryTodos (text-match lifecycle)
     dates.go             # Date filter parsing and date range filtering
-    filter.go            # Centralized filtering (ApplyEntryFilters, ApplyTodoFilters, FilterTodosByVisibility)
+    filter.go            # Centralized filtering (ApplyEntryFilters, ApplyTodoFilters)
     filter_parser.go     # Unified filter parsing (tags + dates)
     editor.go            # External editor support ($EDITOR, temp files, parsing)
 ```
@@ -194,7 +194,7 @@ internal/
 **Data Persistence**:
 - JSON files in data directory (default: `~/.amos/`)
 - Customizable via `AMOS_DATA_DIR` env var or `~/.config/amos/settings.json`
-- All config: `~/.config/amos/settings.json` (stores data directory path, theme, and hide_completed_todos preference)
+- All config: `~/.config/amos/settings.json` (stores data directory path and theme)
 - User data files: `entries.json`, `todos.json` (in configured data directory)
 - `storage.LoadEntries()` / `storage.SaveEntry()` for entries
 - `storage.LoadTodos()` / `storage.SaveTodo()` for todos
@@ -210,7 +210,7 @@ internal/
 - **No Entry.TodoIDs field** - unidirectional relationship via Todo.EntryID only
 - Position field enables manual priority (lower = higher)
 - Sorting: open todos first → by position → newest first (helpers/sorting.go)
-- Extract from entries with `!todo Task description @tag` syntax
+- Synced from entries via text-matching: `!todo Task description @tag` syntax in entry body
 
 **Unified Filter System (Tags + Dates)**:
 - Auto-extracted tags from `@mention` syntax in entry body and todo titles
@@ -300,7 +300,7 @@ The app follows strict brutalist principles:
 - `launchEditor()` in commands.go creates temp file and launches editor via `tea.ExecProcess`
 - `editorFinishedMsg` handler in model.go parses result and saves entry
 - Template comments (<!-- ... -->) are stripped from parsed content
-- `!todo` lines are extracted as linked todos on save
+- `!todo` lines remain in entry text; todos are synced via text-matching on save
 
 **Textarea (todos and filters)**:
 - Todo form: single-line textarea with height=1 (model.go:37-39)
@@ -367,12 +367,12 @@ Todos stored in `<data-dir>/todos.json` (default: `~/.amos/todos.json`):
   - Entry editing: Uses external $EDITOR (vim, nano, etc.) following Unix conventions (like aerc, mutt, git)
     - Press `n` from any list view to create new entry → opens editor with template
     - Press `i` from entry view to edit → opens editor with existing content
-    - On save/exit: extracts `!todo` lines as linked todos, removes markup, saves entry
+    - On save/exit: syncs `!todo` lines via text-matching (dedup, orphan removed), saves entry with `!todo` lines intact
     - Empty file (or only template comments) cancels the operation
     - Editor preference: $EDITOR → $VISUAL → nano (fallback)
   - Todo editing: Open todo view, press `i` to edit, save with `Enter`, esc returns to todo view
   - Timestamp updates: Editing an entry updates its timestamp to now (moves to top of list)
-  - Todo extraction: `!todo Task @tag` lines in editor become linked todos on save. Todos become independent entities edited via todo view.
+  - Todo sync: `!todo Task @tag` lines in editor are synced via text-matching on save (dedup existing, orphan removed). `!todo` lines remain in entry text. Todos become independent entities edited via todo view.
 - **Deletion**: neomutt-style multi-select pattern
   - `d` key marks/unmarks items for deletion (shows "D" prefix in lists, footer text in entry view)
   - After marking items, status message shows "X items marked. Press $ to delete"
@@ -386,9 +386,8 @@ Todos stored in `<data-dir>/todos.json` (default: `~/.amos/todos.json`):
 - **Page navigation**: `f/b` keys in entry/todo/help views for page forward/backward (no line scrolling)
 - **Help page**: Press `?` from any read-only view to see comprehensive documentation
 - Todo status: "open", "next", or "done" (direct keys: `o`=open, `p`=next/priority, `x`=done)
-- **Toggle completed todos**: `z` key in todo list hides/shows done todos. Preference persists in config. Done todos always visible in entry view (preserves journal history).
 - Tag syntax: `@tagname` in entry body or todo title auto-extracts to Tags array
-- Todo syntax: `!todo Task description @tag` creates linked todo with extracted tags when exiting entry form (ESC). The `!todo` line is automatically removed from entry text on exit. During editing, `!todo` markup stays visible until ESC. To edit todos, use the dedicated todo view (press `i` from todo list).
+- Todo syntax: `!todo Task description @tag` creates linked todo with extracted tags on save. `!todo` lines remain in entry text permanently. Editing a `!todo` line orphans the old todo and creates a new one. Deleting a `!todo` line orphans the todo (it remains in the todo list as standalone). To edit todos, use the dedicated todo view (press `i` from todo list).
 - Unified filtering: Works identically for both entries and todos views
   - `/` key opens filter with current values for editing
   - After applying filter, status message shows "Filter applied. Press c to clear"

@@ -3,8 +3,10 @@ package helpers
 import (
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/apodacaa/amos/internal/models"
+	"github.com/google/uuid"
 )
 
 // ExtractTodos finds all !todo items in text and returns their titles
@@ -23,17 +25,55 @@ func ExtractTodos(text string) []string {
 	return todos
 }
 
-// RemoveTodoMarkup removes all lines starting with "!todo" from text
-// Returns cleaned text with !todo lines removed
-func RemoveTodoMarkup(text string) string {
-	// Match !todo followed by text until end of line (including the newline)
-	re := regexp.MustCompile(`(?m)^!todo\s+.+$\n?`)
-	cleaned := re.ReplaceAllString(text, "")
+// SyncEntryTodos reconciles the todo list with the current !todo lines in an entry.
+// For each todoTitle, if a todo with matching Title AND EntryID already exists, skip (dedup).
+// If a todoTitle has no match, create a new todo.
+// For each existing todo linked to this entry, if its title does NOT appear in todoTitles, orphan it (set EntryID to nil).
+// Returns the updated full todos slice (ready for batch save).
+func SyncEntryTodos(allTodos []models.Todo, entryID string, todoTitles []string) []models.Todo {
+	// Build set of current !todo titles
+	titleSet := make(map[string]bool, len(todoTitles))
+	for _, title := range todoTitles {
+		titleSet[strings.TrimSpace(title)] = true
+	}
 
-	// Trim excess blank lines (don't leave gaps - max 2 newlines = 1 blank line)
-	cleaned = regexp.MustCompile(`\n{3,}`).ReplaceAllString(cleaned, "\n\n")
+	// Track which titles already have matching todos
+	matched := make(map[string]bool, len(todoTitles))
 
-	return strings.TrimSpace(cleaned)
+	// Iterate existing todos: orphan removed ones, mark matched ones
+	for i := range allTodos {
+		if allTodos[i].EntryID == nil || *allTodos[i].EntryID != entryID {
+			continue
+		}
+		trimmedTitle := strings.TrimSpace(allTodos[i].Title)
+		if titleSet[trimmedTitle] {
+			matched[trimmedTitle] = true
+		} else {
+			// Orphan: title no longer in entry text
+			allTodos[i].EntryID = nil
+		}
+	}
+
+	// Create new todos for unmatched titles
+	for _, title := range todoTitles {
+		trimmed := strings.TrimSpace(title)
+		if !matched[trimmed] {
+			now := time.Now()
+			entryIDCopy := entryID
+			newTodo := models.Todo{
+				ID:        uuid.New().String(),
+				Title:     trimmed,
+				Status:    "open",
+				Tags:      ExtractTags(trimmed),
+				CreatedAt: now,
+				UpdatedAt: now,
+				EntryID:   &entryIDCopy,
+			}
+			allTodos = append(allTodos, newTodo)
+		}
+	}
+
+	return allTodos
 }
 
 // FilterTodosByEntry returns todos that belong to the specified entry
