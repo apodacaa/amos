@@ -29,6 +29,11 @@ amos-*
 # Air - Live reload for Go apps
 tmp/
 
+# Wails GUI
+cmd/gui/frontend/node_modules/
+cmd/gui/frontend/dist/
+cmd/gui/build/
+
 # Data directory
 .amos/
 

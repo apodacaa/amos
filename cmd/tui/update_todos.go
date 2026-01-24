@@ -4,13 +4,13 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/apodacaa/amos/cmd/tui/ui"
 	"github.com/apodacaa/amos/internal/helpers"
-	"github.com/apodacaa/amos/ui"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-// handleEntriesListKeys processes keyboard input (entries list view)
-func (m Model) handleEntriesListKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+// handleTodosListKeys processes keyboard input (todos list view)
+func (m Model) handleTodosListKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	// Check for update dismissal key 'u' (only if update notice is shown)
 	if m.updateAvailable && !m.updateDismissed && msg.String() == "u" {
 		m.updateDismissed = true
@@ -20,6 +20,12 @@ func (m Model) handleEntriesListKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch msg.String() {
 	case "q", "ctrl+c":
 		return m, tea.Quit
+	case "o":
+		// Set todo to open
+		return m.setTodoStatus("open", "Todo set to open")
+	case "p":
+		// Set todo to next (p for priority)
+		return m.setTodoStatus("next", "Todo set to next")
 	case "n":
 		// Check if cancelling deletion first
 		if m.deleteConfirmPending {
@@ -30,13 +36,14 @@ func (m Model) handleEntriesListKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 		// Create new entry (using shared helper)
 		return m.handleNewEntry()
-	case "t":
-		// Jump to todo list (explicit navigation)
-		m.view = "todos"
-		m.selectedTodo = 0
+	case "x":
+		// Set todo to done
+		return m.setTodoStatus("done", "Todo marked done")
+	case "e":
+		// Jump to entry list (explicit navigation)
+		m.view = "entries"
+		m.selectedEntry = 0
 		m.statusMsg = "" // Clear status message when changing views
-		// Entries already loaded, just need to ensure todos are loaded
-		// (but loadEntriesAndTodos is safe to call again)
 		return m, m.loadEntriesAndTodos()
 	case "a":
 		// Add standalone todo (using shared helper)
@@ -62,39 +69,38 @@ func (m Model) handleEntriesListKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 	case "/":
 		// Open unified filter input with current filter pre-populated
-		return m.openUnifiedFilter("entries")
+		return m.openUnifiedFilter("todos")
 	case "c":
 		// Clear all filters
 		return m.clearFilters()
 	case "j", "down":
-		// Apply filters to get displayed list
-		filtered := helpers.ApplyEntryFilters(m.entries, m.filterDate, m.filterTags)
+		// Apply filters to get the displayed list (same as UI)
+		filtered := helpers.ApplyTodoFilters(m.displayTodos, m.filterDate, m.filterTags)
 
-		if m.selectedEntry < len(filtered)-1 {
-			m.selectedEntry++
+		if m.selectedTodo < len(filtered)-1 {
+			m.selectedTodo++
 		}
 		return m, nil
 	case "k", "up":
-		if m.selectedEntry > 0 {
-			m.selectedEntry--
+		if m.selectedTodo > 0 {
+			m.selectedTodo--
 		}
 		return m, nil
 	case "d":
 		// Toggle mark for deletion
-		filtered := helpers.ApplyEntryFilters(m.entries, m.filterDate, m.filterTags)
+		filtered := helpers.ApplyTodoFilters(m.displayTodos, m.filterDate, m.filterTags)
 
-		if m.selectedEntry >= 0 && m.selectedEntry < len(filtered) {
-			sorted := helpers.SortEntriesForDisplay(filtered)
-			selectedEntry := sorted[m.selectedEntry]
+		if m.selectedTodo >= 0 && m.selectedTodo < len(filtered) {
+			selectedTodo := filtered[m.selectedTodo]
 
 			// Toggle mark
-			if _, marked := m.markedForDeletion[selectedEntry.ID]; marked {
+			if _, marked := m.markedForDeletion[selectedTodo.ID]; marked {
 				// Unmark
-				delete(m.markedForDeletion, selectedEntry.ID)
+				delete(m.markedForDeletion, selectedTodo.ID)
 				m.statusMsg = "Unmarked"
 			} else {
-				// Mark
-				m.markedForDeletion[selectedEntry.ID] = "entry"
+				// Mark (allow marking even entry-linked todos - they won't be deleted)
+				m.markedForDeletion[selectedTodo.ID] = "todo"
 				// Count total marked items
 				entryCount := 0
 				todoCount := 0
@@ -126,7 +132,7 @@ func (m Model) handleEntriesListKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 
 	case "$":
-		// Execute deletion of marked items
+		// Execute deletion of marked items (same logic as entries list)
 		if len(m.markedForDeletion) == 0 {
 			m.statusMsg = "No items marked for deletion"
 			m.statusTime = time.Now()
@@ -185,20 +191,49 @@ func (m Model) handleEntriesListKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			return m, m.deleteMarkedCmd()
 		}
 
-		// Open selected entry for read-only viewing
+		// Open selected todo for read-only viewing
 		// Apply filters (same logic as UI)
-		filtered := helpers.ApplyEntryFilters(m.entries, m.filterDate, m.filterTags)
+		filtered := helpers.ApplyTodoFilters(m.displayTodos, m.filterDate, m.filterTags)
 
-		if m.selectedEntry >= 0 && m.selectedEntry < len(filtered) {
-			// Need to get the sorted entry (newest first)
-			sorted := helpers.SortEntriesForDisplay(filtered)
-			m.viewingEntry = sorted[m.selectedEntry]
-			m.scrollOffset = 0 // Reset scroll when opening entry
-			m.view = "view_entry"
-			// Load todos so we can display them in the entry view
-			return m, m.loadTodos()
+		if m.selectedTodo >= 0 && m.selectedTodo < len(filtered) {
+			m.viewingTodo = filtered[m.selectedTodo]
+			m.scrollOffset = 0 // Reset scroll when opening todo
+			m.view = "view_todo"
+			// Entries already loaded for linked entry display
+			return m, nil
 		}
 		return m, nil
+	}
+	return m, nil
+}
+
+// setTodoStatus sets the status of the selected todo and saves immediately
+func (m Model) setTodoStatus(status string, statusMsg string) (tea.Model, tea.Cmd) {
+	// Apply filters to get the displayed list
+	filtered := helpers.ApplyTodoFilters(m.displayTodos, m.filterDate, m.filterTags)
+
+	if m.selectedTodo >= 0 && m.selectedTodo < len(filtered) {
+		todo := filtered[m.selectedTodo]
+		todo.Status = status
+		m.statusMsg = statusMsg
+		m.statusTime = time.Now()
+
+		// Update in m.todos array and displayTodos (find by ID)
+		for i := range m.todos {
+			if m.todos[i].ID == todo.ID {
+				m.todos[i].Status = todo.Status
+				break
+			}
+		}
+		for i := range m.displayTodos {
+			if m.displayTodos[i].ID == todo.ID {
+				m.displayTodos[i].Status = todo.Status
+				break
+			}
+		}
+
+		// Save immediately and start timer to clear status
+		return m, tea.Batch(m.toggleTodoImmediate(todo), clearStatusAfterDelay())
 	}
 	return m, nil
 }

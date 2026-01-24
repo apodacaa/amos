@@ -3,7 +3,7 @@ package main
 import (
 	"strings"
 
-	"github.com/apodacaa/amos/ui"
+	"github.com/apodacaa/amos/cmd/tui/ui"
 	tea "github.com/charmbracelet/bubbletea"
 )
 

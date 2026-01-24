@@ -3,7 +3,7 @@ package main
 import (
 	tea "github.com/charmbracelet/bubbletea"
 
-	"github.com/apodacaa/amos/ui"
+	"github.com/apodacaa/amos/cmd/tui/ui"
 )
 
 // handleThemeSelectorKeys processes keyboard input (theme selector modal)

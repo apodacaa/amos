@@ -5,8 +5,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/apodacaa/amos/cmd/tui/ui"
 	"github.com/apodacaa/amos/internal/helpers"
-	"github.com/apodacaa/amos/ui"
 	tea "github.com/charmbracelet/bubbletea"
 )
 

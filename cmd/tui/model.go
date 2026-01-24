@@ -6,10 +6,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/apodacaa/amos/cmd/tui/ui"
 	"github.com/apodacaa/amos/internal/helpers"
 	"github.com/apodacaa/amos/internal/models"
 	"github.com/apodacaa/amos/internal/storage"
-	"github.com/apodacaa/amos/ui"
 	"github.com/charmbracelet/bubbles/textarea"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/google/uuid"

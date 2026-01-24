@@ -1,4 +1,4 @@
-.PHONY: help build build-windows build-all run fmt vet test test-v test-cover check check-all ci ci-cover staticcheck install-air clean gen-test-data release
+.PHONY: help build build-windows build-all run run-gui build-gui fmt vet test test-v test-cover check check-all ci ci-cover staticcheck install-air clean gen-test-data release
 
 help: ## Show this help message
 	@echo 'Usage: make [target]'
@@ -7,24 +7,30 @@ help: ## Show this help message
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}'
 
 build: ## Build the binary
-	go build -ldflags "-X main.Version=1.7.2" -o amos
+	go build -ldflags "-X main.Version=1.7.2" -o amos ./cmd/tui
 
 build-windows: ## Build Windows binary (amd64)
-	GOOS=windows GOARCH=amd64 go build -ldflags "-X main.Version=1.7.2" -o amos.exe
+	GOOS=windows GOARCH=amd64 go build -ldflags "-X main.Version=1.7.2" -o amos.exe ./cmd/tui
 
 build-all: ## Build binaries for all platforms
 	@echo "Building for Linux (amd64)..."
-	GOOS=linux GOARCH=amd64 go build -ldflags "-X main.Version=1.7.2" -o amos-linux-amd64
+	GOOS=linux GOARCH=amd64 go build -ldflags "-X main.Version=1.7.2" -o amos-linux-amd64 ./cmd/tui
 	@echo "Building for macOS (amd64)..."
-	GOOS=darwin GOARCH=amd64 go build -ldflags "-X main.Version=1.7.2" -o amos-darwin-amd64
+	GOOS=darwin GOARCH=amd64 go build -ldflags "-X main.Version=1.7.2" -o amos-darwin-amd64 ./cmd/tui
 	@echo "Building for macOS (arm64)..."
-	GOOS=darwin GOARCH=arm64 go build -ldflags "-X main.Version=1.7.2" -o amos-darwin-arm64
+	GOOS=darwin GOARCH=arm64 go build -ldflags "-X main.Version=1.7.2" -o amos-darwin-arm64 ./cmd/tui
 	@echo "Building for Windows (amd64)..."
-	GOOS=windows GOARCH=amd64 go build -ldflags "-X main.Version=1.7.2" -o amos-windows-amd64.exe
-	@echo "✓ All binaries built"
+	GOOS=windows GOARCH=amd64 go build -ldflags "-X main.Version=1.7.2" -o amos-windows-amd64.exe ./cmd/tui
+	@echo "All binaries built"
 
 run: ## Run the app
-	go build -ldflags "-X main.Version=1.7.2" -o amos && ./amos
+	go build -ldflags "-X main.Version=1.7.2" -o amos ./cmd/tui && ./amos
+
+run-gui: ## Run GUI in development mode
+	cd cmd/gui && wails dev
+
+build-gui: ## Build GUI binary
+	cd cmd/gui && wails build
 
 fmt: ## Format code
 	go fmt ./...
