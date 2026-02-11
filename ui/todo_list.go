@@ -9,7 +9,7 @@ import (
 )
 
 // RenderTodoList renders the todo list view
-func RenderTodoList(width, height int, theme Theme, todos []models.Todo, entries []models.Entry, selectedIdx int, filterTags []string, filterDate string, markedForDeletion map[string]string, statusMsg string, updateAvailable bool, updateDismissed bool, latestVersion string) string {
+func RenderTodoList(width, height int, theme Theme, todos []models.Todo, entries []models.Entry, selectedIdx int, filterTags []string, filterDate string, markedForDeletion map[string]string, statusMsg string, updateAvailable bool, updateDismissed bool, latestVersion string, activeWorkspace string) string {
 	// Apply filters: date, then tags
 	filtered := helpers.ApplyTodoFilters(todos, filterDate, filterTags)
 
@@ -138,7 +138,12 @@ func RenderTodoList(width, height int, theme Theme, todos []models.Todo, entries
 	list := strings.Join(listItems, "\n")
 
 	// Header
-	header := RenderHeader(width, theme, "n", "new", "a", "todo", "enter", "view", "j/k", "nav", "o/p/x", "status", "d", "delete", "/", "filter", "e", "entries", "s", "theme", "?", "help", "q", "quit")
+	headerKeys := []string{"n", "new", "a", "todo", "enter", "view", "j/k", "nav", "o/p/x", "status", "d", "delete", "/", "filter", "e", "entries"}
+	if activeWorkspace != "" {
+		headerKeys = append(headerKeys, "w", "workspace")
+	}
+	headerKeys = append(headerKeys, "s", "theme", "?", "help", "q", "quit")
+	header := RenderHeader(width, theme, headerKeys...)
 
 	// Footer (show only filter context, no view label)
 	var footerTitle string
@@ -154,6 +159,15 @@ func RenderTodoList(width, height int, theme Theme, todos []models.Todo, entries
 	// Wrap filters in brackets if present
 	if footerTitle != "" {
 		footerTitle = "[" + footerTitle + "]"
+	}
+
+	// Add workspace name to footer
+	if activeWorkspace != "" {
+		if footerTitle != "" {
+			footerTitle = "[" + activeWorkspace + "] " + footerTitle
+		} else {
+			footerTitle = "[" + activeWorkspace + "]"
+		}
 	}
 
 	// Build stats showing selected todo position

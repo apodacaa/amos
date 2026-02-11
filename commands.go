@@ -126,6 +126,28 @@ func (m Model) deleteMarkedCmd() tea.Cmd {
 	}
 }
 
+// switchWorkspaceCmd switches data directory and reloads entries/todos
+func switchWorkspaceCmd(workspace storage.Workspace) tea.Cmd {
+	return func() tea.Msg {
+		if err := storage.SwitchWorkspace(workspace.DataDir); err != nil {
+			return workspaceSwitchedMsg{err: err, name: workspace.Name}
+		}
+		entries, err := storage.LoadEntries()
+		if err != nil {
+			return workspaceSwitchedMsg{err: err, name: workspace.Name}
+		}
+		todos, err := storage.LoadTodos()
+		if err != nil {
+			return workspaceSwitchedMsg{err: err, name: workspace.Name}
+		}
+		return workspaceSwitchedMsg{
+			entries: entries,
+			todos:   todos,
+			name:    workspace.Name,
+		}
+	}
+}
+
 // saveConfigCmd saves user configuration to system config
 func saveConfigCmd(config storage.SystemConfig) tea.Cmd {
 	return func() tea.Msg {

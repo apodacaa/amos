@@ -83,6 +83,18 @@ func InitializeDataDir() error {
 		if err != nil {
 			// If system config fails to load, use default
 			dir = ".amos"
+		} else if len(sysConfig.Workspaces) > 0 && sysConfig.ActiveWorkspace != "" {
+			// 3. Check active workspace
+			for _, ws := range sysConfig.Workspaces {
+				if ws.Name == sysConfig.ActiveWorkspace {
+					dir = ws.DataDir
+					break
+				}
+			}
+			if dir == "" {
+				// Active workspace not found in list, use default
+				dir = ".amos"
+			}
 		} else if sysConfig.DataDir != "" {
 			dir = sysConfig.DataDir
 		} else {
@@ -97,6 +109,14 @@ func InitializeDataDir() error {
 	}
 
 	// Ensure directory exists
+	return EnsureAmosDir()
+}
+
+// SwitchWorkspace switches to a new data directory and ensures it exists
+func SwitchWorkspace(dir string) error {
+	if err := SetDataDir(dir); err != nil {
+		return err
+	}
 	return EnsureAmosDir()
 }
 

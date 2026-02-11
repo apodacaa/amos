@@ -6,11 +6,27 @@ import (
 	"path/filepath"
 )
 
+// Workspace represents a named workspace with its own data directory
+type Workspace struct {
+	Name    string `json:"name"`
+	DataDir string `json:"data_dir"`
+}
+
 // SystemConfig stores all application settings
 // Stored in ~/.config/amos/settings.json
 type SystemConfig struct {
-	DataDir string `json:"data_dir,omitempty"` // Custom data directory path
-	Theme   string `json:"theme,omitempty"`    // Theme name (e.g., "cyberpunk", "brutalist")
+	DataDir         string      `json:"data_dir,omitempty"`         // Custom data directory path
+	Theme           string      `json:"theme,omitempty"`            // Theme name (e.g., "cyberpunk", "brutalist")
+	ActiveWorkspace string      `json:"active_workspace,omitempty"` // Name of active workspace
+	Workspaces      []Workspace `json:"workspaces,omitempty"`       // Named workspaces
+}
+
+// GetActiveWorkspaceName returns the active workspace name (or "" if none configured)
+func (c SystemConfig) GetActiveWorkspaceName() string {
+	if len(c.Workspaces) == 0 {
+		return ""
+	}
+	return c.ActiveWorkspace
 }
 
 // DefaultSystemConfig returns the default configuration

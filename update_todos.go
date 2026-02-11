@@ -61,6 +61,9 @@ func (m Model) handleTodosListKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			}
 		}
 		return m, nil
+	case "w":
+		// Open workspace selector
+		return m.openWorkspaceSelector()
 	case "?":
 		// Open help page
 		m.previousView = m.view

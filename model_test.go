@@ -6,6 +6,7 @@ import (
 
 	"github.com/apodacaa/amos/internal/helpers"
 	"github.com/apodacaa/amos/internal/models"
+	"github.com/apodacaa/amos/internal/storage"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -837,5 +838,250 @@ func TestMarksPersistAcrossNavigation(t *testing.T) {
 	// Both marks should persist
 	if len(m.markedForDeletion) != 2 {
 		t.Errorf("Expected 2 marked items after navigation, got %d", len(m.markedForDeletion))
+	}
+}
+
+// ================================================================================
+// Workspace Tests
+// ================================================================================
+
+// TestWorkspaceSelectorOpensFromEntries tests pressing 'w' from entries list
+func TestWorkspaceSelectorOpensFromEntries(t *testing.T) {
+	m := NewModel()
+	m.view = "entries"
+	m.sysConfig.Workspaces = []storage.Workspace{
+		{Name: "personal", DataDir: "~/.amos"},
+		{Name: "work", DataDir: "~/.amos-work"},
+	}
+	m.sysConfig.ActiveWorkspace = "personal"
+
+	newModel, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'w'}})
+	m = newModel.(Model)
+
+	if m.view != "workspace_selector" {
+		t.Errorf("Expected view to be 'workspace_selector', got '%s'", m.view)
+	}
+
+	if m.previousView != "entries" {
+		t.Errorf("Expected previousView to be 'entries', got '%s'", m.previousView)
+	}
+}
+
+// TestWorkspaceSelectorOpensFromTodos tests pressing 'w' from todos list
+func TestWorkspaceSelectorOpensFromTodos(t *testing.T) {
+	m := NewModel()
+	m.view = "todos"
+	m.sysConfig.Workspaces = []storage.Workspace{
+		{Name: "personal", DataDir: "~/.amos"},
+		{Name: "work", DataDir: "~/.amos-work"},
+	}
+	m.sysConfig.ActiveWorkspace = "personal"
+
+	newModel, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'w'}})
+	m = newModel.(Model)
+
+	if m.view != "workspace_selector" {
+		t.Errorf("Expected view to be 'workspace_selector', got '%s'", m.view)
+	}
+
+	if m.previousView != "todos" {
+		t.Errorf("Expected previousView to be 'todos', got '%s'", m.previousView)
+	}
+}
+
+// TestWorkspaceSelectorNoWorkspaces tests pressing 'w' with no workspaces configured
+func TestWorkspaceSelectorNoWorkspaces(t *testing.T) {
+	m := NewModel()
+	m.view = "entries"
+	m.sysConfig.Workspaces = nil
+
+	newModel, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'w'}})
+	m = newModel.(Model)
+
+	// Should stay on entries view and show status message
+	if m.view != "entries" {
+		t.Errorf("Expected view to remain 'entries', got '%s'", m.view)
+	}
+
+	if m.statusMsg == "" {
+		t.Error("Expected status message about no workspaces")
+	}
+}
+
+// TestWorkspaceSelectorEscCancels tests pressing Esc to cancel workspace selection
+func TestWorkspaceSelectorEscCancels(t *testing.T) {
+	m := NewModel()
+	m.view = "workspace_selector"
+	m.previousView = "entries"
+	m.sysConfig.Workspaces = []storage.Workspace{
+		{Name: "personal", DataDir: "~/.amos"},
+		{Name: "work", DataDir: "~/.amos-work"},
+	}
+
+	newModel, _ := m.Update(tea.KeyMsg{Type: tea.KeyEsc})
+	m = newModel.(Model)
+
+	if m.view != "entries" {
+		t.Errorf("Expected view to be 'entries' after Esc, got '%s'", m.view)
+	}
+}
+
+// TestWorkspaceSelectorNavigation tests j/k navigation in workspace selector
+func TestWorkspaceSelectorNavigation(t *testing.T) {
+	m := NewModel()
+	m.view = "workspace_selector"
+	m.previousView = "entries"
+	m.sysConfig.Workspaces = []storage.Workspace{
+		{Name: "personal", DataDir: "~/.amos"},
+		{Name: "work", DataDir: "~/.amos-work"},
+		{Name: "side-project", DataDir: "~/.amos-side"},
+	}
+	m.selectedWorkspace = 0
+
+	// Move down
+	newModel, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'j'}})
+	m = newModel.(Model)
+	if m.selectedWorkspace != 1 {
+		t.Errorf("Expected selectedWorkspace to be 1 after 'j', got %d", m.selectedWorkspace)
+	}
+
+	// Move down again
+	newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'j'}})
+	m = newModel.(Model)
+	if m.selectedWorkspace != 2 {
+		t.Errorf("Expected selectedWorkspace to be 2 after second 'j', got %d", m.selectedWorkspace)
+	}
+
+	// Should not go past end
+	newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'j'}})
+	m = newModel.(Model)
+	if m.selectedWorkspace != 2 {
+		t.Errorf("Expected selectedWorkspace to stay at 2, got %d", m.selectedWorkspace)
+	}
+
+	// Move up
+	newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'k'}})
+	m = newModel.(Model)
+	if m.selectedWorkspace != 1 {
+		t.Errorf("Expected selectedWorkspace to be 1 after 'k', got %d", m.selectedWorkspace)
+	}
+}
+
+// TestWorkspaceSelectorSelectSameWorkspace tests selecting already active workspace
+func TestWorkspaceSelectorSelectSameWorkspace(t *testing.T) {
+	m := NewModel()
+	m.view = "workspace_selector"
+	m.previousView = "entries"
+	m.sysConfig.Workspaces = []storage.Workspace{
+		{Name: "personal", DataDir: "~/.amos"},
+		{Name: "work", DataDir: "~/.amos-work"},
+	}
+	m.sysConfig.ActiveWorkspace = "personal"
+	m.selectedWorkspace = 0
+
+	// Select the already active workspace
+	newModel, cmd := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	m = newModel.(Model)
+
+	// Should return to previous view without switching
+	if m.view != "entries" {
+		t.Errorf("Expected view to be 'entries', got '%s'", m.view)
+	}
+
+	// No command should be returned (no switch needed)
+	if cmd != nil {
+		t.Error("Expected no command when selecting already active workspace")
+	}
+}
+
+// TestWorkspaceSwitchedMsgClearsState tests that workspace switch clears filters and marks
+func TestWorkspaceSwitchedMsgClearsState(t *testing.T) {
+	m := NewModel()
+	m.view = "entries"
+	m.filterTags = []string{"work"}
+	m.filterDate = "today"
+	m.markedForDeletion = map[string]string{"entry-1": "entry"}
+	m.selectedEntry = 5
+	m.selectedTodo = 3
+
+	// Simulate receiving workspace switched message
+	newModel, _ := m.Update(workspaceSwitchedMsg{
+		entries: []models.Entry{{ID: "new-1", Title: "New Entry"}},
+		todos:   []models.Todo{{ID: "new-t1", Title: "New Todo", Status: "open"}},
+		name:    "work",
+	})
+	m = newModel.(Model)
+
+	// Filters should be cleared
+	if len(m.filterTags) != 0 {
+		t.Errorf("Expected filterTags to be cleared, got %d", len(m.filterTags))
+	}
+	if m.filterDate != "" {
+		t.Errorf("Expected filterDate to be cleared, got '%s'", m.filterDate)
+	}
+
+	// Marks should be cleared
+	if len(m.markedForDeletion) != 0 {
+		t.Errorf("Expected markedForDeletion to be cleared, got %d", len(m.markedForDeletion))
+	}
+
+	// Selections should be reset
+	if m.selectedEntry != 0 {
+		t.Errorf("Expected selectedEntry to be 0, got %d", m.selectedEntry)
+	}
+	if m.selectedTodo != 0 {
+		t.Errorf("Expected selectedTodo to be 0, got %d", m.selectedTodo)
+	}
+
+	// New data should be loaded
+	if len(m.entries) != 1 || m.entries[0].ID != "new-1" {
+		t.Errorf("Expected new entries to be loaded")
+	}
+	if len(m.todos) != 1 || m.todos[0].ID != "new-t1" {
+		t.Errorf("Expected new todos to be loaded")
+	}
+}
+
+// TestGetActiveWorkspaceName tests the config helper
+func TestGetActiveWorkspaceName(t *testing.T) {
+	testCases := []struct {
+		name     string
+		config   storage.SystemConfig
+		expected string
+	}{
+		{
+			"no workspaces",
+			storage.SystemConfig{},
+			"",
+		},
+		{
+			"with active workspace",
+			storage.SystemConfig{
+				ActiveWorkspace: "work",
+				Workspaces: []storage.Workspace{
+					{Name: "personal", DataDir: "~/.amos"},
+					{Name: "work", DataDir: "~/.amos-work"},
+				},
+			},
+			"work",
+		},
+		{
+			"workspaces but no active",
+			storage.SystemConfig{
+				Workspaces: []storage.Workspace{
+					{Name: "personal", DataDir: "~/.amos"},
+				},
+			},
+			"",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			result := tc.config.GetActiveWorkspaceName()
+			if result != tc.expected {
+				t.Errorf("Expected '%s', got '%s'", tc.expected, result)
+			}
+		})
 	}
 }

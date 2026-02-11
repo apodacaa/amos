@@ -92,6 +92,15 @@ This codebase is small (~3000 lines) and well-organized. Work efficiently:
 - Config storage: `internal/storage/system_config.go` (theme stored in SystemConfig)
 - Accessed via `s` key from entry view and todo list
 
+**Workspace Selector:**
+- Input handler: `update_workspace_selector.go`
+- UI renderer: `ui/workspace_selector.go`
+- Config: `internal/storage/system_config.go` (Workspace struct, ActiveWorkspace, Workspaces fields)
+- Storage: `internal/storage/storage.go` (SwitchWorkspace function)
+- Accessed via `w` key from entry list and todo list (only shown when workspaces configured)
+- Footer shows `[workspace_name]` in entry list and todo list when active
+- Switching clears filters, deletion marks, and reloads data
+
 **Help Page:**
 - Input handler: `update_help.go`
 - UI renderer: `ui/help.go`
@@ -146,6 +155,7 @@ update_*.go              # Key handlers per view (domain separation)
   update_unified_filter.go  # Unified filtering (tags + dates)
   update_add_todo.go     # Standalone todo form
   update_theme_selector.go  # Theme selection modal
+  update_workspace_selector.go  # Workspace selection modal
   update_help.go         # Help page navigation
 ui/                      # Pure view renderers
   entry_list.go
@@ -154,7 +164,9 @@ ui/                      # Pure view renderers
   unified_filter.go      # Unified filter view
   add_todo_form.go
   theme_selector.go      # Theme selection modal
+  workspace_selector.go  # Workspace selection modal
   help.go                # Help page documentation
+  help_content.go        # Help page plain text sections
   styles.go              # Theme definitions and styling
 internal/
   models/                # Data structures
@@ -162,7 +174,7 @@ internal/
     todo.go              # Todo{ID, Title, Status, Tags, CreatedAt, EntryID, Position}
   storage/               # JSON persistence (configurable directory)
     storage.go           # Load/Save functions, directory initialization
-    system_config.go     # SystemConfig{DataDir, Theme} (~/.config/amos/settings.json)
+    system_config.go     # SystemConfig{DataDir, Theme, ActiveWorkspace, Workspaces} (~/.config/amos/settings.json)
   helpers/               # Reusable business logic
     sorting.go           # Centralized sorting (todos by status→position→date)
     tags.go              # Tag extraction (@mention syntax) and filtering
@@ -177,9 +189,9 @@ internal/
 
 **State Management**:
 - All state lives in the `Model` struct (model.go:17-42)
-- View routing via `m.view` string field ("entries", "view_entry", "todos", "view_todo", "unified_filter", "add_todo", "theme_selector", "help")
+- View routing via `m.view` string field ("entries", "view_entry", "todos", "view_todo", "unified_filter", "add_todo", "theme_selector", "workspace_selector", "help")
 - Filter context via `m.filterContext` ("entries" or "todos") - determines return view from filter
-- Theme selector and help page use `m.previousView` to return to calling view
+- Theme selector, workspace selector, and help page use `m.previousView` to return to calling view
 - App opens to "entries" view (entry list as default)
 - Entry editing uses external $EDITOR (no "entry" view state - editor runs outside TUI)
 
@@ -194,7 +206,7 @@ internal/
 **Data Persistence**:
 - JSON files in data directory (default: `~/.amos/`)
 - Customizable via `AMOS_DATA_DIR` env var or `~/.config/amos/settings.json`
-- All config: `~/.config/amos/settings.json` (stores data directory path and theme)
+- All config: `~/.config/amos/settings.json` (stores data directory path, theme, and workspaces)
 - User data files: `entries.json`, `todos.json` (in configured data directory)
 - `storage.LoadEntries()` / `storage.SaveEntry()` for entries
 - `storage.LoadTodos()` / `storage.SaveTodo()` for todos
@@ -244,7 +256,7 @@ The app follows strict brutalist principles:
 **Navigation**:
 - Entry list and todo list are peer views (no hierarchy)
 - All key bindings are shown in view headers
-- Theme selector and help page use `m.previousView` to return to calling view
+- Theme selector, workspace selector, and help page use `m.previousView` to return to calling view
 
 **Visual Design**:
 - **All views**: Honest workspaces with left-aligned help text anchored to bottom
@@ -321,11 +333,12 @@ Tests use standard Go testing:
 - Test files: `*_test.go`
 - All helper functions have tests (internal/helpers/*_test.go)
 - Storage operations have tests (internal/storage/storage_test.go)
-- **Application logic tests**: `model_test.go` (30 comprehensive tests)
+- **Application logic tests**: `model_test.go` (39 comprehensive tests)
   - Navigation workflows: 13 tests covering all view transitions
   - Filtering workflows: 8 tests for tag/date filtering
   - Deletion workflows: 9 tests for neomutt-style multi-select deletion
-  - Coverage: ~60% of application logic (navigation, filtering, deletion flows)
+  - Workspace workflows: 9 tests for workspace selector and switching
+  - Coverage: ~60% of application logic (navigation, filtering, deletion, workspace flows)
   - All tests use table-driven patterns where appropriate
   - Run with `make test` or `make ci` (recommended before commits)
 
@@ -395,6 +408,17 @@ Todos stored in `<data-dir>/todos.json` (default: `~/.amos/todos.json`):
   - Supports tags (@work), dates (today, yesterday, last N days, YYYY-MM-DD, date ranges)
   - Only tag autocomplete (no date autocomplete)
   - Invalid filters show error with 3-second auto-clear
+- **Workspaces**: Named workspaces with separate data directories
+  - Configure in `~/.config/amos/settings.json` with `active_workspace` and `workspaces` fields
+  - Each workspace has `name` and `data_dir` fields
+  - Press `w` from entry list or todo list to open workspace selector
+  - `w` key only shown in headers when workspaces are configured
+  - Footer shows `[workspace_name]` when a workspace is active
+  - Switching workspace: clears filters, deletion marks, resets selections, reloads data
+  - `AMOS_DATA_DIR` env var overrides workspace selection (shows status message if `w` pressed)
+  - Backward compatible: app works identically when no workspaces are configured
+  - Startup: `InitializeDataDir()` checks active workspace from config before falling back to `data_dir`
+  - Priority: `AMOS_DATA_DIR` > active workspace > `data_dir` in config > `~/.amos`
 - Save confirmations: Entry and add_todo forms show "saved" toast message (brutalist: no emoji)
 - Status messages: Auto-clear after 3 seconds (saved confirmations, filter cleared, errors)
 - Helper text: Uses non-breaking spaces and vertical spacing for better readability on narrow terminals

@@ -65,6 +65,31 @@ func RenderEditorSectionText() string {
 	return title + "\n\n" + strings.Join(items, "\n")
 }
 
+// RenderWorkspacesSectionText returns the plain text for the workspaces section
+func RenderWorkspacesSectionText() string {
+	title := "WORKSPACES"
+
+	items := []string{
+		"Named workspaces provide separate data directories for different",
+		"contexts (work, personal, etc.). Press w from list views to switch.",
+		"",
+		"Configure in ~/.config/amos/settings.json:",
+		"  {",
+		"    \"active_workspace\": \"personal\",",
+		"    \"workspaces\": [",
+		"      {\"name\": \"personal\", \"data_dir\": \"~/.amos\"},",
+		"      {\"name\": \"work\", \"data_dir\": \"~/.amos-work\"}",
+		"    ]",
+		"  }",
+		"",
+		"Each workspace has its own entries.json and todos.json.",
+		"Switching workspaces clears filters and deletion marks.",
+		"AMOS_DATA_DIR env var overrides workspace selection.",
+	}
+
+	return title + "\n\n" + strings.Join(items, "\n")
+}
+
 // RenderDataStorageSectionText returns the plain text for the data storage section
 func RenderDataStorageSectionText() string {
 	title := "DATA STORAGE"

@@ -56,3 +56,11 @@ type editorFinishedMsg struct {
 	tempFile string // Path to the temp file with edited content
 	err      error  // Error from editor execution (nil if successful)
 }
+
+// workspaceSwitchedMsg is sent when workspace switch completes
+type workspaceSwitchedMsg struct {
+	entries []models.Entry
+	todos   []models.Todo
+	name    string // Workspace name that was switched to
+	err     error
+}

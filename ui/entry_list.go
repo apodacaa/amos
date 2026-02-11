@@ -9,7 +9,7 @@ import (
 )
 
 // RenderEntryList renders the entry list view
-func RenderEntryList(width, height int, theme Theme, entries []models.Entry, selectedIdx int, todos []models.Todo, filterTags []string, filterDate string, markedForDeletion map[string]string, statusMsg string, updateAvailable bool, updateDismissed bool, latestVersion string) string {
+func RenderEntryList(width, height int, theme Theme, entries []models.Entry, selectedIdx int, todos []models.Todo, filterTags []string, filterDate string, markedForDeletion map[string]string, statusMsg string, updateAvailable bool, updateDismissed bool, latestVersion string, activeWorkspace string) string {
 	// Apply filters: first date, then tags
 	filtered := helpers.ApplyEntryFilters(entries, filterDate, filterTags)
 
@@ -93,7 +93,12 @@ func RenderEntryList(width, height int, theme Theme, entries []models.Entry, sel
 	list := strings.Join(listItems, "\n")
 
 	// Header
-	header := RenderHeader(width, theme, "n", "new", "a", "todo", "j/k", "nav", "enter", "view", "d", "delete", "/", "filter", "t", "todos", "s", "theme", "?", "help", "q", "quit")
+	headerKeys := []string{"n", "new", "a", "todo", "j/k", "nav", "enter", "view", "d", "delete", "/", "filter", "t", "todos"}
+	if activeWorkspace != "" {
+		headerKeys = append(headerKeys, "w", "workspace")
+	}
+	headerKeys = append(headerKeys, "s", "theme", "?", "help", "q", "quit")
+	header := RenderHeader(width, theme, headerKeys...)
 
 	// Footer (show only filter context, no view label)
 	var footerTitle string
@@ -109,6 +114,15 @@ func RenderEntryList(width, height int, theme Theme, entries []models.Entry, sel
 	// Wrap filters in brackets if present
 	if footerTitle != "" {
 		footerTitle = "[" + footerTitle + "]"
+	}
+
+	// Add workspace name to footer
+	if activeWorkspace != "" {
+		if footerTitle != "" {
+			footerTitle = "[" + activeWorkspace + "] " + footerTitle
+		} else {
+			footerTitle = "[" + activeWorkspace + "]"
+		}
 	}
 
 	// Build stats showing selected entry position

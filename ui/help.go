@@ -17,6 +17,8 @@ func RenderHelp(width, height int, theme Theme, scrollOffset int, updateAvailabl
 		"",
 		renderEditorSection(theme),
 		"",
+		renderWorkspacesSection(theme),
+		"",
 		renderDataStorageSection(theme),
 	}
 
@@ -137,6 +139,21 @@ func renderTodoStatusKeysSection(theme Theme) string {
 func renderEditorSection(theme Theme) string {
 	// Get plain text content
 	content := RenderEditorSectionText()
+
+	// Extract title and body
+	parts := strings.SplitN(content, "\n\n", 2)
+	title := lipgloss.NewStyle().Bold(true).Render(parts[0])
+	body := ""
+	if len(parts) > 1 {
+		body = parts[1]
+	}
+
+	return title + "\n\n" + body
+}
+
+func renderWorkspacesSection(theme Theme) string {
+	// Get plain text content
+	content := RenderWorkspacesSectionText()
 
 	// Extract title and body
 	parts := strings.SplitN(content, "\n\n", 2)

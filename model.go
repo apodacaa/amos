@@ -23,7 +23,7 @@ type Model struct {
 	// ============================================================
 	// View Navigation
 	// ============================================================
-	view         string // Current view: "entries", "view_entry", "todos", "view_todo", "unified_filter", "add_todo", "theme_selector", or "help"
+	view         string // Current view: "entries", "view_entry", "todos", "view_todo", "unified_filter", "add_todo", "theme_selector", "workspace_selector", or "help"
 	previousView string // Previous view (for returning from modals like theme_selector and help)
 
 	// ============================================================
@@ -98,6 +98,11 @@ type Model struct {
 	sysConfig     storage.SystemConfig // System configuration (loaded from ~/.config/amos/settings.json)
 	currentTheme  ui.Theme             // Currently active theme (brutalist or cyberpunk)
 	selectedTheme int                  // Selected theme index in theme selector modal
+
+	// ============================================================
+	// Workspace State
+	// ============================================================
+	selectedWorkspace int // Selected workspace index in workspace selector modal
 
 	// ============================================================
 	// Update Notification State
@@ -177,6 +182,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m.handleAddTodoKeys(msg)
 		case "theme_selector":
 			return m.handleThemeSelectorKeys(msg)
+		case "workspace_selector":
+			return m.handleWorkspaceSelectorKeys(msg)
 		case "help":
 			return updateHelp(m, msg)
 		default:
@@ -417,6 +424,27 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 
+	case workspaceSwitchedMsg:
+		if msg.err != nil {
+			m.statusMsg = "Error switching workspace: " + msg.err.Error()
+			m.statusTime = time.Now()
+			return m, clearStatusAfterDelay()
+		}
+		// Load new data
+		m.entries = msg.entries
+		m.todos = msg.todos
+		m.displayTodos = helpers.SortTodosForDisplay(m.todos)
+		// Reset selection and clear state
+		m.selectedEntry = 0
+		m.selectedTodo = 0
+		m.filterTags = []string{}
+		m.filterDate = ""
+		m.markedForDeletion = make(map[string]string)
+		m.deleteConfirmPending = false
+		m.statusMsg = "Switched to " + msg.name
+		m.statusTime = time.Now()
+		return m, clearStatusAfterDelay()
+
 	case updateCheckCompleteMsg:
 		// Update check completed - mark as done and store result
 		m.updateCheckDone = true
@@ -433,14 +461,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m Model) View() string {
 	switch m.view {
 	case "entries":
-		return ui.RenderEntryList(m.width, m.height, m.currentTheme, m.entries, m.selectedEntry, m.todos, m.filterTags, m.filterDate, m.markedForDeletion, m.statusMsg, m.updateAvailable, m.updateDismissed, m.latestVersion)
+		return ui.RenderEntryList(m.width, m.height, m.currentTheme, m.entries, m.selectedEntry, m.todos, m.filterTags, m.filterDate, m.markedForDeletion, m.statusMsg, m.updateAvailable, m.updateDismissed, m.latestVersion, m.sysConfig.GetActiveWorkspaceName())
 	case "view_entry":
 		// Calculate filtered/sorted entry position for footer display
 		filtered := helpers.ApplyEntryFilters(m.entries, m.filterDate, m.filterTags)
 		sorted := helpers.SortEntriesForDisplay(filtered)
 		return ui.RenderEntryView(m.width, m.height, m.currentTheme, m.viewingEntry, m.todos, m.scrollOffset, m.markedForDeletion, m.statusMsg, m.selectedEntry, len(sorted), m.updateAvailable, m.updateDismissed, m.latestVersion)
 	case "todos":
-		return ui.RenderTodoList(m.width, m.height, m.currentTheme, m.displayTodos, m.entries, m.selectedTodo, m.filterTags, m.filterDate, m.markedForDeletion, m.statusMsg, m.updateAvailable, m.updateDismissed, m.latestVersion)
+		return ui.RenderTodoList(m.width, m.height, m.currentTheme, m.displayTodos, m.entries, m.selectedTodo, m.filterTags, m.filterDate, m.markedForDeletion, m.statusMsg, m.updateAvailable, m.updateDismissed, m.latestVersion, m.sysConfig.GetActiveWorkspaceName())
 	case "view_todo":
 		// Calculate filtered/sorted todo position for footer display
 		filtered := helpers.ApplyTodoFilters(m.displayTodos, m.filterDate, m.filterTags)
@@ -452,10 +480,12 @@ func (m Model) View() string {
 		return ui.RenderAddTodoForm(m.width, m.height, m.currentTheme, m.todoInput, m.statusMsg, m.hasUnsaved)
 	case "theme_selector":
 		return ui.RenderThemeSelector(m.width, m.height, m.currentTheme, m.selectedTheme)
+	case "workspace_selector":
+		return ui.RenderWorkspaceSelector(m.width, m.height, m.currentTheme, m.sysConfig.Workspaces, m.selectedWorkspace, m.sysConfig.ActiveWorkspace)
 	case "help":
 		return ui.RenderHelp(m.width, m.height, m.currentTheme, m.scrollOffset, m.updateAvailable, m.updateDismissed, m.latestVersion)
 	default:
-		return ui.RenderEntryList(m.width, m.height, m.currentTheme, m.entries, m.selectedEntry, m.todos, m.filterTags, m.filterDate, m.markedForDeletion, m.statusMsg, m.updateAvailable, m.updateDismissed, m.latestVersion)
+		return ui.RenderEntryList(m.width, m.height, m.currentTheme, m.entries, m.selectedEntry, m.todos, m.filterTags, m.filterDate, m.markedForDeletion, m.statusMsg, m.updateAvailable, m.updateDismissed, m.latestVersion, m.sysConfig.GetActiveWorkspaceName())
 	}
 }
 
@@ -514,6 +544,31 @@ func (m Model) openUnifiedFilter(context string) (Model, tea.Cmd) {
 	m.view = "unified_filter"
 	m.statusMsg = ""
 	return m, textarea.Blink
+}
+
+// openWorkspaceSelector opens the workspace selector modal
+func (m Model) openWorkspaceSelector() (Model, tea.Cmd) {
+	if len(m.sysConfig.Workspaces) == 0 {
+		m.statusMsg = "No workspaces configured in ~/.config/amos/settings.json"
+		m.statusTime = time.Now()
+		return m, clearStatusAfterDelay()
+	}
+	// Check if AMOS_DATA_DIR overrides workspace switching
+	if os.Getenv("AMOS_DATA_DIR") != "" {
+		m.statusMsg = "Data directory overridden by AMOS_DATA_DIR"
+		m.statusTime = time.Now()
+		return m, clearStatusAfterDelay()
+	}
+	m.previousView = m.view
+	m.view = "workspace_selector"
+	// Set selected workspace to current active workspace
+	for i, ws := range m.sysConfig.Workspaces {
+		if ws.Name == m.sysConfig.ActiveWorkspace {
+			m.selectedWorkspace = i
+			break
+		}
+	}
+	return m, nil
 }
 
 // clearFilters clears all active filters and resets selection
