@@ -37,6 +37,34 @@ Run the app:
 amos
 ```
 
+## CLI
+
+Amos supports headless CLI commands for scripting and agent integration. All output is JSON.
+
+```bash
+# Add a journal entry
+amos add entry --title "Deploy prep @work" --body "Check staging environment"
+
+# Add a todo
+amos add todo --title "Review PR @work" --status next
+
+# List all entries
+amos list entries
+
+# List todos filtered by tag and status
+amos list todos --tag work --status open
+
+# Help
+amos --help
+```
+
+Entries support `!todo` syntax in the body — linked todos are created automatically:
+
+```bash
+amos add entry --title "Sprint planning @work" --body '!todo Update backlog @work
+!todo Schedule retro'
+```
+
 **Keyboard Shortcuts:**
 
 *Entry Form:*
@@ -225,7 +253,9 @@ air               # Run with auto-reload
 
 ```
 .
-├── main.go                 # Entry point (~10 lines)
+├── main.go                 # Entry point + CLI routing
+├── cli/
+│   └── cli.go              # CLI subcommands (add, list) - JSON interface
 ├── model.go                # Model, Init, Update, View (Elm architecture)
 ├── messages.go             # Message types for async operations
 ├── commands.go             # tea.Cmd functions (side effects)
