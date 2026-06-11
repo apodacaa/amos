@@ -25,6 +25,10 @@ func Run(args []string) bool {
 		return runAdd(args[2:])
 	case "list":
 		return runList(args[2:])
+	case "update":
+		return runUpdate(args[2:])
+	case "done":
+		return runDone(args[2:])
 	default:
 		return false
 	}
@@ -138,6 +142,95 @@ func addTodo(args []string) bool {
 
 	printJSON(todo)
 	return true
+}
+
+func runUpdate(args []string) bool {
+	if len(args) == 0 {
+		exitError("usage: amos update todo <id> --status <open|next|done>")
+		return true
+	}
+
+	switch args[0] {
+	case "todo":
+		return updateTodo(args[1:])
+	default:
+		exitError("unknown update target: %s (expected todo)", args[0])
+		return true
+	}
+}
+
+func updateTodo(args []string) bool {
+	if len(args) == 0 || strings.HasPrefix(args[0], "-") {
+		exitError("usage: amos update todo <id> --status <open|next|done>")
+		return true
+	}
+
+	id := args[0]
+
+	fs := flag.NewFlagSet("update todo", flag.ContinueOnError)
+	status := fs.String("status", "", "todo status (open, next, done)")
+
+	if err := fs.Parse(args[1:]); err != nil {
+		exitError("invalid flags: %v", err)
+		return true
+	}
+
+	if *status == "" {
+		exitError("--status is required")
+		return true
+	}
+
+	if *status != "open" && *status != "next" && *status != "done" {
+		exitError("invalid status: %s (expected open, next, or done)", *status)
+		return true
+	}
+
+	todo, err := updateTodoStatus(id, *status)
+	if err != nil {
+		exitError("%v", err)
+		return true
+	}
+
+	printJSON(todo)
+	return true
+}
+
+func runDone(args []string) bool {
+	if len(args) != 1 || strings.HasPrefix(args[0], "-") {
+		exitError("usage: amos done <id>")
+		return true
+	}
+
+	todo, err := updateTodoStatus(args[0], "done")
+	if err != nil {
+		exitError("%v", err)
+		return true
+	}
+
+	printJSON(todo)
+	return true
+}
+
+// updateTodoStatus sets the status of an existing todo by ID and refreshes
+// UpdatedAt. Idempotent: setting a status the todo already has succeeds.
+func updateTodoStatus(id, status string) (models.Todo, error) {
+	todos, err := storage.LoadTodos()
+	if err != nil {
+		return models.Todo{}, fmt.Errorf("failed to load todos: %w", err)
+	}
+
+	for i := range todos {
+		if todos[i].ID == id {
+			todos[i].Status = status
+			todos[i].UpdatedAt = time.Now()
+			if err := storage.SaveTodos(todos); err != nil {
+				return models.Todo{}, fmt.Errorf("failed to save todos: %w", err)
+			}
+			return todos[i], nil
+		}
+	}
+
+	return models.Todo{}, fmt.Errorf("todo not found: %s", id)
 }
 
 func runList(args []string) bool {

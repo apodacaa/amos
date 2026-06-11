@@ -28,12 +28,15 @@ Amos supports headless CLI commands for scripting and agent integration. All out
 | `amos add todo --title T [--status S]` | Create a standalone todo (status: open\|next\|done, default: open) |
 | `amos list entries [--tag TAG]` | List entries as JSON (optional tag filter) |
 | `amos list todos [--tag TAG] [--status S]` | List todos as JSON (optional tag/status filter) |
+| `amos update todo <id> --status S` | Update an existing todo's status by id (open\|next\|done, refreshes updated_at) |
+| `amos done <id>` | Mark a todo done (alias for `update todo <id> --status done`, idempotent) |
 | `amos --help` | Show usage information |
 
 - On success, prints created/listed item(s) as JSON to stdout
 - On error, prints `{"error": "..."}` to stderr and exits with code 1
 - Tags are auto-extracted from `@mention` syntax in title and body
 - `!todo` lines in entry body create linked todos via SyncEntryTodos
+- `update todo` / `done` take the same UUID `list todos` emits in `id`; unknown id exits 1, re-completing an already-done todo exits 0
 
 **Important**: Always run `make ci` before committing. The git pre-commit hook (installed via `./scripts/install-hooks.sh`) runs this automatically.
 
@@ -154,7 +157,7 @@ The codebase uses domain-based separation for maintainability:
 ```
 main.go                  # Entry point + CLI routing (~80 lines)
 cli/
-  cli.go                 # CLI subcommands (add, list) - headless JSON interface
+  cli.go                 # CLI subcommands (add, list, update, done) - headless JSON interface
 model.go                 # Model struct + Init/Update/View (Elm core)
 messages.go              # All message types (saveCompleteMsg, entriesLoadedMsg, etc.)
 commands.go              # All tea.Cmd functions (side effects: save, load, launchEditor, etc.)

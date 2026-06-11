@@ -54,6 +54,12 @@ amos list entries
 # List todos filtered by tag and status
 amos list todos --tag work --status open
 
+# Update an existing todo's status by id (the id field from list todos)
+amos update todo <id> --status next
+
+# Mark a todo done (alias for update todo <id> --status done)
+amos done <id>
+
 # Help
 amos --help
 ```
@@ -255,7 +261,7 @@ air               # Run with auto-reload
 .
 ├── main.go                 # Entry point + CLI routing
 ├── cli/
-│   └── cli.go              # CLI subcommands (add, list) - JSON interface
+│   └── cli.go              # CLI subcommands (add, list, update, done) - JSON interface
 ├── model.go                # Model, Init, Update, View (Elm architecture)
 ├── messages.go             # Message types for async operations
 ├── commands.go             # tea.Cmd functions (side effects)

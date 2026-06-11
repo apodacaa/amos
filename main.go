@@ -23,6 +23,8 @@ func main() {
 		fmt.Println("  amos add todo --title T [--status S]    Add a todo (status: open|next|done)")
 		fmt.Println("  amos list entries [--tag TAG]            List entries as JSON")
 		fmt.Println("  amos list todos [--tag TAG] [--status S] List todos as JSON")
+		fmt.Println("  amos update todo <id> --status S        Update a todo's status (open|next|done)")
+		fmt.Println("  amos done <id>                          Mark a todo done (alias for update todo --status done)")
 		fmt.Println("")
 		fmt.Println("Flags:")
 		fmt.Println("  -v, --version       Print version")
