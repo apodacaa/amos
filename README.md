@@ -60,6 +60,10 @@ amos update todo <id> --status next
 # Mark a todo done (alias for update todo <id> --status done)
 amos done <id>
 
+# Version / update check
+amos --version
+amos --check-update
+
 # Help
 amos --help
 ```
@@ -73,9 +77,12 @@ amos add entry --title "Sprint planning @work" --body '!todo Update backlog @wor
 
 **Keyboard Shortcuts:**
 
-*Entry Form:*
-- `Ctrl+S` - Save work (stays in form, preserves !todo markup for frequent saves)
-- `esc` - Finalize and exit (extracts todos, removes !todo markup, exits to entry view)
+*Entry Editing (External Editor):*
+- `n` from any list view - Create new entry (opens `$EDITOR` with a template)
+- `i` from entry view - Edit existing entry (opens `$EDITOR` with content)
+- On save/exit: `!todo` lines are synced to todos via text-matching and remain in the entry text
+- Empty file (or only template comments) cancels the operation
+- Editor preference: `$EDITOR` → `$VISUAL` → nano (fallback)
 
 *Entry List:*
 - `n` - New Entry
@@ -93,7 +100,7 @@ amos add entry --title "Sprint planning @work" --body '!todo Update backlog @wor
 *Entry View (Read-Only):*
 - `n` - New Entry
 - `a` - Add Standalone Todo
-- `i` - Edit current entry (opens entry form with existing content)
+- `i` - Edit current entry (opens `$EDITOR` with existing content)
 - `j/k` or `↑/↓` - Navigate between entries
 - `f/b` - Page forward/backward in long entries
 - `d` - Mark/unmark current entry for deletion (shows "[MARKED FOR DELETION]" in footer)
@@ -179,7 +186,7 @@ make run
 ### Test Suite
 
 Comprehensive test coverage for application logic:
-- 30 tests in `model_test.go` covering navigation, filtering, and deletion workflows
+- 28 tests in `model_test.go` covering navigation, filtering, and deletion workflows
 - ~60% application logic coverage (navigation, filtering, deletion flows)
 - Run with `make test` or `make ci` (recommended before commits)
 
@@ -209,9 +216,8 @@ air               # Run with auto-reload
 
 ✅ **Journal Entries**
 - Create entries with title + body
-- **Edit entries**: Press `i` in entry view to edit existing entries (updates timestamp)
-  - `Ctrl+S` saves work and stays in form (preserves `!todo` markup)
-  - `ESC` finalizes and exits (extracts todos, removes `!todo` markup)
+- **Edit entries**: Press `i` in entry view to edit in your external `$EDITOR` (updates timestamp)
+  - On save/exit, `!todo` lines are synced to todos via text-matching and remain in the entry text
 - Auto-extract @tags from content
 - **Unified filtering**: Filter by tags and/or dates with `/` key
   - Tag autocomplete (type `@` then tag name, press `tab` to complete)
@@ -253,7 +259,7 @@ air               # Run with auto-reload
 - **Theme support**: Choose between brutalist (monochrome, terminal defaults) or cyberpunk (neon colors) themes with `s` key
 - **Anchored help text**: Footer stays at bottom (no bouncing)
 - **Viewport windowing**: Long lists show 20-30 items with scroll indicators
-- **Entry scrolling**: Navigate long entries with `d/u` keys (d=down, u=up)
+- **Page navigation**: Navigate long entries with `f/b` keys (page forward/backward)
 
 ## Project Structure
 
@@ -266,21 +272,24 @@ air               # Run with auto-reload
 ├── messages.go             # Message types for async operations
 ├── commands.go             # tea.Cmd functions (side effects)
 ├── update_*.go             # Key handlers per view
-│   ├── update_entry.go
 │   ├── update_entries.go
 │   ├── update_entry_view.go
 │   ├── update_unified_filter.go
 │   ├── update_todos.go
+│   ├── update_view_todo.go
 │   ├── update_add_todo.go
-│   └── update_theme_selector.go
+│   ├── update_theme_selector.go
+│   └── update_help.go
 ├── ui/                     # View renderers (pure functions)
-│   ├── entry_form.go
 │   ├── entry_list.go
 │   ├── entry_view.go
 │   ├── unified_filter.go
 │   ├── todo_list.go
+│   ├── todo_view.go
 │   ├── add_todo_form.go
 │   ├── theme_selector.go
+│   ├── help.go
+│   ├── help_content.go
 │   └── styles.go
 ├── internal/               # Business logic
 │   ├── models/            # Data structures
@@ -295,7 +304,8 @@ air               # Run with auto-reload
 │       ├── todos.go       # Todo extraction
 │       ├── dates.go       # Date filter parsing
 │       ├── filter.go      # Centralized filtering (applies date + tag filters)
-│       └── filter_parser.go  # Unified filter parsing
+│       ├── filter_parser.go  # Unified filter parsing
+│       └── editor.go      # External editor support ($EDITOR, temp files, parsing)
 ├── Makefile               # Development commands
 └── go.mod                 # Go module definition
 ```
@@ -309,7 +319,7 @@ air               # Run with auto-reload
 - `View()` - Render UI from model state
 
 **File Organization (Bubble Tea Best Practices):**
-- `main.go` - Entry point only (~10 lines)
+- `main.go` - Entry point + CLI routing (~90 lines)
 - `model.go` - Model struct + Init/Update/View (Elm core)
 - `messages.go` - All message types
 - `commands.go` - All tea.Cmd functions (side effects)
@@ -407,7 +417,7 @@ The directory will be created automatically if it doesn't exist.
 6. **Peer navigation** - Entry list and todo list are peers, no hierarchy or back button
 7. **Global actions** - `n` and `a` keys work from any read-only view for fast creation
 8. **Honest workspaces** - All views are functional workspaces with left-aligned honest UI
-9. **Monochrome palette** - Pure black/white/gray, no colors
+9. **Monochrome by default** - Brutalist theme uses terminal defaults; optional cyberpunk theme adds color
 10. **Anchored UI** - Help text stays at bottom (no bouncing during navigation)
 11. **Consistent ordering** - Keys appear in same logical order across all views
 12. **No decorations** - No italics, no Unicode bullets, just ASCII
@@ -416,9 +426,9 @@ The directory will be created automatically if it doesn't exist.
 
 **Tag Syntax:**
 - `@work` in entry content → auto-extracted to tags array
-- `!todo Task description @tag` → creates linked todo on exit (ESC)
-  - Markup stays visible during editing, removed when exiting entry form
-  - Allows frequent saves (Ctrl+S) without disruption
+- `!todo Task description @tag` → creates linked todo when the entry is saved
+  - `!todo` lines remain in the entry text permanently and are synced via text-matching
+  - Editing a `!todo` line orphans the old todo and creates a new one; deleting the line orphans the todo (it stays in the todo list as standalone)
 
 **Position System:**
 - Todos have position field for priority
