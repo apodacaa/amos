@@ -7,24 +7,24 @@ help: ## Show this help message
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}'
 
 build: ## Build the binary
-	go build -ldflags "-X main.Version=1.7.3" -o amos
+	go build -ldflags "-X main.Version=1.8.1" -o amos
 
 build-windows: ## Build Windows binary (amd64)
-	GOOS=windows GOARCH=amd64 go build -ldflags "-X main.Version=1.7.3" -o amos.exe
+	GOOS=windows GOARCH=amd64 go build -ldflags "-X main.Version=1.8.1" -o amos.exe
 
 build-all: ## Build binaries for all platforms
 	@echo "Building for Linux (amd64)..."
-	GOOS=linux GOARCH=amd64 go build -ldflags "-X main.Version=1.7.3" -o amos-linux-amd64
+	GOOS=linux GOARCH=amd64 go build -ldflags "-X main.Version=1.8.1" -o amos-linux-amd64
 	@echo "Building for macOS (amd64)..."
-	GOOS=darwin GOARCH=amd64 go build -ldflags "-X main.Version=1.7.3" -o amos-darwin-amd64
+	GOOS=darwin GOARCH=amd64 go build -ldflags "-X main.Version=1.8.1" -o amos-darwin-amd64
 	@echo "Building for macOS (arm64)..."
-	GOOS=darwin GOARCH=arm64 go build -ldflags "-X main.Version=1.7.3" -o amos-darwin-arm64
+	GOOS=darwin GOARCH=arm64 go build -ldflags "-X main.Version=1.8.1" -o amos-darwin-arm64
 	@echo "Building for Windows (amd64)..."
-	GOOS=windows GOARCH=amd64 go build -ldflags "-X main.Version=1.7.3" -o amos-windows-amd64.exe
+	GOOS=windows GOARCH=amd64 go build -ldflags "-X main.Version=1.8.1" -o amos-windows-amd64.exe
 	@echo "✓ All binaries built"
 
 run: ## Run the app
-	go build -ldflags "-X main.Version=1.7.3" -o amos && ./amos
+	go build -ldflags "-X main.Version=1.8.1" -o amos && ./amos
 
 fmt: ## Format code
 	go fmt ./...
@@ -84,7 +84,7 @@ gen-test-data: ## Generate test data (usage: make gen-test-data ENTRIES=1000 TOD
 release: ## Create a new release (usage: make release VERSION=1.2.1 [NOTES=release-notes.md] [DRY_RUN=true])
 	@if [ -z "$(VERSION)" ]; then \
 		echo "Error: VERSION required"; \
-		echo "Usage: make release VERSION=1.7.3 [NOTES=release-notes.md] [DRY_RUN=true]"; \
+		echo "Usage: make release VERSION=1.8.0 [NOTES=release-notes.md] [DRY_RUN=true]"; \
 		exit 1; \
 	fi
 	@./scripts/release.sh $(VERSION) "$(NOTES)" "$(DRY_RUN)"

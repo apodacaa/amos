@@ -20,11 +20,18 @@ func DefaultSystemConfig() SystemConfig {
 	}
 }
 
-// GetSystemConfigPath returns ~/.config/amos/settings.json
+// GetSystemConfigPath returns the path to amos/settings.json in the user
+// config directory. XDG_CONFIG_HOME takes priority on all platforms —
+// os.UserConfigDir ignores it on macOS, which would send tests that set it
+// to the real config directory.
 func GetSystemConfigPath() (string, error) {
-	configDir, err := os.UserConfigDir() // Returns ~/.config on Unix
-	if err != nil {
-		return "", err
+	configDir := os.Getenv("XDG_CONFIG_HOME")
+	if configDir == "" {
+		var err error
+		configDir, err = os.UserConfigDir() // Returns ~/.config on Unix
+		if err != nil {
+			return "", err
+		}
 	}
 	return filepath.Join(configDir, "amos", "settings.json"), nil
 }
