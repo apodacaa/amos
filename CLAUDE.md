@@ -18,6 +18,8 @@ Amos is a minimal Bubble Tea (Go) TUI for journal + todo management with a bruta
 | `make build` | Build binary to `./amos` |
 | `make install-air` | Install air for hot reload (then run `air`) |
 
+**Important — install policy**: Homebrew is the ONLY install channel. Never copy a locally built `./amos` over the Homebrew binary (e.g. into `/opt/homebrew/Cellar/...` or anywhere on PATH). Local builds are for running tests and verifying behavior in the working directory only. To ship a change to the installed binary, follow RELEASE.md (version bump, tag, GitHub release, update `homebrew-amos` formula), then `brew upgrade amos`.
+
 ## CLI Commands
 
 Amos supports headless CLI commands for scripting and agent integration. All output is JSON.
