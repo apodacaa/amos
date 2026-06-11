@@ -32,6 +32,8 @@ Amos supports headless CLI commands for scripting and agent integration. All out
 | `amos list todos [--tag TAG] [--status S]` | List todos as JSON (optional tag/status filter) |
 | `amos update todo <id> --status S` | Update an existing todo's status by id (open\|next\|done, refreshes updated_at) |
 | `amos done <id>` | Mark a todo done (alias for `update todo <id> --status done`, idempotent) |
+| `amos -v` / `amos --version` | Print version |
+| `amos --check-update` | Check for updates |
 | `amos --help` | Show usage information |
 
 - On success, prints created/listed item(s) as JSON to stdout
@@ -167,6 +169,7 @@ update_*.go              # Key handlers per view (domain separation)
   update_entries.go      # Entry list navigation
   update_entry_view.go   # Read-only entry view (press 'i' to launch editor)
   update_todos.go        # Todo list (toggle, reorder)
+  update_view_todo.go    # Read-only todo view (press 'i' to edit)
   update_unified_filter.go  # Unified filtering (tags + dates)
   update_add_todo.go     # Standalone todo form
   update_theme_selector.go  # Theme selection modal
@@ -175,10 +178,12 @@ ui/                      # Pure view renderers
   entry_list.go
   entry_view.go
   todo_list.go
+  todo_view.go
   unified_filter.go      # Unified filter view
   add_todo_form.go
   theme_selector.go      # Theme selection modal
-  help.go                # Help page documentation
+  help.go                # Help page rendering
+  help_content.go        # Help page content (data-driven)
   styles.go              # Theme definitions and styling
 internal/
   models/                # Data structures
@@ -345,9 +350,9 @@ Tests use standard Go testing:
 - Test files: `*_test.go`
 - All helper functions have tests (internal/helpers/*_test.go)
 - Storage operations have tests (internal/storage/storage_test.go)
-- **Application logic tests**: `model_test.go` (30 comprehensive tests)
-  - Navigation workflows: 13 tests covering all view transitions
-  - Filtering workflows: 8 tests for tag/date filtering
+- **Application logic tests**: `model_test.go` (28 comprehensive tests)
+  - Navigation workflows: 12 tests covering all view transitions
+  - Filtering workflows: 7 tests for tag/date filtering
   - Deletion workflows: 9 tests for neomutt-style multi-select deletion
   - Coverage: ~60% of application logic (navigation, filtering, deletion flows)
   - All tests use table-driven patterns where appropriate
